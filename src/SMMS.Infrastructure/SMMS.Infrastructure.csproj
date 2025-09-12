@@ -6,4 +6,11 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="ExternalService\Email\" />
+    <Folder Include="FileStorage\" />
+    <Folder Include="ExternalService\Google\" />
+    <Folder Include="ExternalService\SMS\" />
+  </ItemGroup>
+
 </Project>

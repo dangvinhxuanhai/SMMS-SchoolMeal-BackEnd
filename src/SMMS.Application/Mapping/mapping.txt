@@ -1,0 +1,4 @@
+→ sử dụng auto mapper
+có 2 hướng:
+    1. nối dto với entities của domain
+    2.

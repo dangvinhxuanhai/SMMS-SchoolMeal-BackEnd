@@ -1,0 +1,29 @@
+có 2 trường hợp:
+    1. tách biệt command query với handler & validators
+        → cmd + q = interface
+        → handler = impl
+    2. đưa handler + validators vào command & query
+        → handler ngay sau usecase đó
+
+structure demo sample:
+
+    ├── MyApp.Application
+    │   ├── DTOs/                      (Request/Response DTO)
+    │   ├── Interfaces/                (IUserService, IAuthService…)
+    │   ├── Features/
+    │   │   ├── Movies/
+    │   │   │   ├── Commands/
+    │   │   │   │   ├── CreateMovie/
+    │   │   │   │   │   ├── CreateMovieCommand.cs
+    │   │   │   │   │   ├── CreateMovieHandler.cs
+    │   │   │   │   │   └── CreateMovieValidator.cs
+    │   │   │   ├── Queries/
+    │   │   │   │   ├── GetMovieById/
+    │   │   │   │   │   ├── GetMovieByIdQuery.cs
+    │   │   │   │   │   └── GetMovieByIdHandler.cs
+    │   │   │   └── Dtos/
+    │   │   └── Common/                (Behaviors, Pipeline, Base classes)
+    │   └── DependencyInjection.cs
+
+    → case 2, có vẻ ngắn gọn và rõ ràng hơn đỡ rối rắm structure
+    → phải tạo nhiều uc liên quan, tương ứng

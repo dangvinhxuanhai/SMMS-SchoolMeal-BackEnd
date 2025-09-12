@@ -1,0 +1,2 @@
+có thể là ko tác dụng → vì có lẽ liên quan đến "Event-sourcing"
+thường thì CQRS đi với Event-sourcing → nhưng dự án này ko sử dụng

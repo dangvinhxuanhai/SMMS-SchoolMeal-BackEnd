@@ -14,4 +14,14 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Controllers\Modules\Identity\" />
+    <Folder Include="Controllers\Modules\Inventory\" />
+    <Folder Include="Controllers\Modules\Meal\" />
+    <Folder Include="Controllers\Modules\Notifications\" />
+    <Folder Include="Middlewares\" />
+    <Folder Include="Extensions\" />
+    <Folder Include="Filters\" />
+  </ItemGroup>
+
 </Project>
