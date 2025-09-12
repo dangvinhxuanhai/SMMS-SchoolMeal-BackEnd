@@ -1,0 +1,71 @@
+# =========================================
+# Normalize line endings for consistency
+# =========================================
+# Convert all text files to LF line endings
+* text=auto eol=lf
+
+# Explicit for common source & config files
+*.cs      text eol=lf
+*.csproj  text eol=lf
+*.sln     text eol=lf
+*.json    text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.config  text eol=lf
+*.env     text eol=lf
+*.md      text eol=lf
+*.ts      text eol=lf
+*.tsx     text eol=lf
+*.html    text eol=lf
+*.css     text eol=lf
+*.js      text eol=lf
+*.jsx     text eol=lf
+
+# Force CRLF for Windows scripts
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+
+# =========================================
+# Binary Files – don't diff
+# =========================================
+*.dll     binary -diff
+*.exe     binary -diff
+*.pfx     binary -diff
+*.snk     binary -diff
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.ico     binary
+*.pdf     binary
+*.woff    binary
+*.woff2   binary
+*.eot     binary
+*.ttf     binary
+*.otf     binary
+*.zip     binary
+*.gz      binary
+*.7z      binary
+
+# =========================================
+# Merge settings (prevent merge conflicts)
+# =========================================
+*.csproj  merge=union
+*.sln     merge=union
+*.json    merge=union
+*.yml     merge=union
+*.yaml    merge=union
+*.env     merge=union
+
+# =========================================
+# GitHub Linguist language hints
+# =========================================
+*.cs      linguist-language=C#
+*.ts      linguist-language=TypeScript
+*.tsx     linguist-language=TypeScript
+*.sql     linguist-language=SQL
+
+# =========================================
+# End-of-file newline
+# =========================================
+# Ensure every file ends with a newline
+* text=auto eol=lf
