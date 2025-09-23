@@ -1,0 +1,4 @@
+RecipeId,Name,Description,Calories,Protein,Fat,Carbs,Allergens,IngredientsJson,doc_text
+320,30,8,25,,"[""ức gà""",xà lách,cà chua,dưa chuột],"30. 8 Calories: 25, Protein: nang, Fat: [""ức gà""g, Carbs: xà láchg. Allergens: cà chua. Ingredients: dưa chuột]"
+350,32,10,20,,"[""gà""",gừng,hành lá],,"32. 10 Calories: 20, Protein: nang, Fat: [""gà""g, Carbs: gừngg. Allergens: hành lá]. Ingredients: nan"
+450,28,20,35,đậu phộng,"[""gà""",lạc,ớt chuông,hành tây],"28. 20 Calories: 35, Protein: đậu phộngg, Fat: [""gà""g, Carbs: lạcg. Allergens: ớt chuông. Ingredients: hành tây]"

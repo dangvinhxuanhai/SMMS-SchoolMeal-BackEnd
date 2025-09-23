@@ -1,0 +1,4 @@
+RecipeId,Name,Description,Calories,Protein,Fat,Carbs,Allergens,IngredientsJson
+1,Salad ức gà,Salad với ức gà luộc và rau củ,320,30,8,25,"",["ức gà","xà lách","cà chua","dưa chuột"]
+2,Gà hấp gừng,Gà hấp với gừng và hành lá,350,32,10,20,"",["gà","gừng","hành lá"]
+3,Gà xào lạc,Gà xào với lạc và rau củ,450,28,20,35,"đậu phộng",["gà","lạc","ớt chuông","hành tây"]
