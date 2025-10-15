@@ -1,0 +1,60 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+using SMMS.Domain.Models.auth;
+using SMMS.Domain.Models.fridge;
+using SMMS.Domain.Models.purchasing;
+using SMMS.Domain.Models.school;
+
+namespace SMMS.Domain.Models.foodmenu;
+
+[Table("Menus", Schema = "foodmenu")]
+public partial class Menu
+{
+    [Key]
+    public int MenuId { get; set; }
+
+    public DateTime? PublishedAt { get; set; }
+
+    public Guid SchoolId { get; set; }
+
+    public bool IsVisible { get; set; }
+
+    public short? WeekNo { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public Guid? ConfirmedBy { get; set; }
+
+    public DateTime? ConfirmedAt { get; set; }
+
+    public bool AskToDelete { get; set; }
+
+    public int? YearId { get; set; }
+
+    [ForeignKey("ConfirmedBy")]
+    [InverseProperty("Menus")]
+    public virtual User? ConfirmedByNavigation { get; set; }
+
+    [InverseProperty("Menu")]
+    public virtual ICollection<FoodInFridge> FoodInFridges { get; set; } = new List<FoodInFridge>();
+
+    [InverseProperty("Menu")]
+    public virtual ICollection<MenuDay> MenuDays { get; set; } = new List<MenuDay>();
+
+    [InverseProperty("Menu")]
+    public virtual ICollection<PurchasePlan> PurchasePlans { get; set; } = new List<PurchasePlan>();
+
+    [InverseProperty("Menu")]
+    public virtual ICollection<ScheduleMeal> ScheduleMeals { get; set; } = new List<ScheduleMeal>();
+
+    [ForeignKey("SchoolId")]
+    [InverseProperty("Menus")]
+    public virtual School School { get; set; } = null!;
+
+    [ForeignKey("YearId")]
+    [InverseProperty("Menus")]
+    public virtual AcademicYear? Year { get; set; }
+}

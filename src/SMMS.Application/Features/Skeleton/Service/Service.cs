@@ -7,8 +7,10 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Skeleton.Interfaces;
 using SMMS.Domain.Entities;
+using SMMS.Persistence.DbContextSite;
 
 namespace SMMS.Application.Features.Skeleton.Service;
+//public class InventoryService : Service<Inventory>, IInventoryService
 public class Service<T> : IService<T> where T : class
 {
     protected readonly EduMealContext _dbContext;

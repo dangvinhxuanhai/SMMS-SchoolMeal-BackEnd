@@ -1,0 +1,17 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using SMMS.Application.Features.foodmenu.Interfaces;
+using SMMS.Application.Features.Skeleton.Service;
+using SMMS.Domain.Models.foodmenu;
+using SMMS.Persistence.DbContextSite;
+
+namespace SMMS.Application.Features.NotigicationGroup.Service;
+public class FeedbackService : Service<Feedback>, IFeedbackService
+{
+    public FeedbackService(EduMealContext dbContext) : base(dbContext)
+    {
+    }
+}

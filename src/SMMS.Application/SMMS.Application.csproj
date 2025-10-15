@@ -7,21 +7,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Common\Behaviors\" />
-    <Folder Include="Common\Exceptions\" />
-    <Folder Include="Common\Validators\" />
-    <Folder Include="Features\Identity\" />
-    <Folder Include="Features\Inventory\Commands\" />
-    <Folder Include="Features\Inventory\DTOs\" />
-    <Folder Include="Features\Inventory\Interfaces\" />
-    <Folder Include="Features\Inventory\Handlers\" />
-    <Folder Include="Features\Inventory\Validators\" />
-    <Folder Include="Features\Inventory\Queries\" />
-    <Folder Include="Features\Meal\" />
-    <Folder Include="Features\Notifications\" />
-    <Folder Include="Features\School\" />
-    <Folder Include="Features\Payment\" />
-    <Folder Include="Features\Plan\" />
+    <Folder Include="Features\InventoryGroup\Commands\" />
+    <Folder Include="Features\InventoryGroup\DTOs\" />
+    <Folder Include="Features\InventoryGroup\Handlers\" />
+    <Folder Include="Features\InventoryGroup\Validators\" />
+    <Folder Include="Features\InventoryGroup\Queries\" />
+    <Folder Include="Features\PaymentGroup\" />
+    <Folder Include="Features\PlanGroup\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SMMS.Domain\SMMS.Domain.csproj" />
+    <ProjectReference Include="..\SMMS.Infrastructure\SMMS.Infrastructure.csproj" />
+    <ProjectReference Include="..\SMMS.Persistence\SMMS.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

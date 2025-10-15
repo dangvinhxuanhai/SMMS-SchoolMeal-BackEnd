@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 namespace SMMS.WebAPI.Controllers.Modules;
-public class HomeController : Controller
+public class ParentSendFeedBackController : Controller
 {
     public IActionResult Index()
     {
