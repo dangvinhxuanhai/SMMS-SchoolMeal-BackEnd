@@ -1,7 +1,16 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Entities;
+using SMMS.Domain.Models.auth;
+using SMMS.Domain.Models.billing;
+using SMMS.Domain.Models.foodmenu;
+using SMMS.Domain.Models.fridge;
+using SMMS.Domain.Models.inventory;
+using SMMS.Domain.Models.logs;
+using SMMS.Domain.Models.nutrition;
+using SMMS.Domain.Models.purchasing;
+using SMMS.Domain.Models.rag;
+using SMMS.Domain.Models.school;
 
 namespace SMMS.Persistence.DbContextSite;
 
