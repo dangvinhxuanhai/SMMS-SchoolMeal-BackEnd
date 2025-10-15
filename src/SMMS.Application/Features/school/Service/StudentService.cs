@@ -8,7 +8,7 @@ using SMMS.Application.Features.Skeleton.Service;
 using SMMS.Domain.Models.school;
 using SMMS.Persistence.DbContextSite;
 
-namespace SMMS.Application.Features.IdentityGroup.Service;
+namespace SMMS.Application.Features.school.Service;
 public class StudentService : Service<Student>, IStudentService
 {
     public StudentService(EduMealContext dbContext) : base(dbContext)

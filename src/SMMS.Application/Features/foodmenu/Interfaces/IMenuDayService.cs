@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using SMMS.Application.Features.Skeleton.Interfaces;
 using SMMS.Domain.Models.foodmenu;
 
-namespace SMMS.Application.Features.Meal.Interface;
+namespace SMMS.Application.Features.foodmenu.Interfaces;
 public interface IMenuDayService : IService<MenuDay>
 {
 }

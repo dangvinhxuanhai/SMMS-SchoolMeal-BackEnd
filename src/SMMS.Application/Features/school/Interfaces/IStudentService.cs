@@ -7,7 +7,7 @@ using SMMS.Application.Features.Skeleton.Interfaces;
 using SMMS.Application.Features.Skeleton.Service;
 using SMMS.Domain.Models.school;
 
-namespace SMMS.Application.Features.IdentityGroup.Interface;
+namespace SMMS.Application.Features.school.Interfaces;
 internal interface IStudentService : IService<Student>
 {
 }

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using SMMS.Application.Features.Skeleton.Interfaces;
 using SMMS.Domain.Models.auth;
 
-namespace SMMS.Application.Features.IdentityGroup.Interface;
+namespace SMMS.Application.Features.auth.Interfaces;
 internal interface IUserService : IService<User>
 {
 }
