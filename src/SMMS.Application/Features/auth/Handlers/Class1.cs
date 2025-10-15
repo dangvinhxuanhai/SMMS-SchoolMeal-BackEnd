@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SMMS.Application.Features.InventoryGroup.Handlers;
+namespace SMMS.Application.Features.auth.Handlers;
 internal class Class1
 {
 }

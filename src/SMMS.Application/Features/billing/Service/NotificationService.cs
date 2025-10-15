@@ -8,7 +8,7 @@ using SMMS.Application.Features.Skeleton.Service;
 using SMMS.Domain.Models.billing;
 using SMMS.Persistence.DbContextSite;
 
-namespace SMMS.Application.Features.NotigicationGroup.Service;
+namespace SMMS.Application.Features.billing.Service;
 public class NotificationService : Service<Notification>, INotificationService
 {
     public NotificationService(EduMealContext dbContext) : base(dbContext)

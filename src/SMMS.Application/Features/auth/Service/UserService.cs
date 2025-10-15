@@ -8,7 +8,7 @@ using SMMS.Application.Features.Skeleton.Service;
 using SMMS.Domain.Models.auth;
 using SMMS.Persistence.DbContextSite;
 
-namespace SMMS.Application.Features.IdentityGroup.Service;
+namespace SMMS.Application.Features.auth.Service;
 public class UserService : Service<User>, IUserService
 {
     public UserService(EduMealContext dbContext) : base(dbContext)

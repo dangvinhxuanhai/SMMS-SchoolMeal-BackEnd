@@ -7,7 +7,7 @@ using SMMS.Application.Features.Skeleton.Interfaces;
 using SMMS.Application.Features.Skeleton.Service;
 using SMMS.Domain.Models.nutrition;
 
-namespace SMMS.Application.Features.IdentityGroup.Interface;
+namespace SMMS.Application.Features.nutrition.Interfaces;
 internal interface IStudentAllergenService : IService<StudentAllergen>
 {
 }
