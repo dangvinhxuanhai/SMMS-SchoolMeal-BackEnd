@@ -24,4 +24,15 @@
     <Folder Include="Features\Plan\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="CloudinaryDotNet" Version="1.20.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SMMS.Domain\SMMS.Domain.csproj" />
+    <ProjectReference Include="..\SMMS.Persistence\SMMS.Persistence.csproj" />
+  </ItemGroup>
+
 </Project>
