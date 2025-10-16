@@ -10,7 +10,12 @@
     <Folder Include="Models\" />
     <Folder Include="Migrations\" />
     <Folder Include="Configurations\" />
-    <Folder Include="Repositories\" />
+    <Folder Include="Repositories\fridge\" />
+    <Folder Include="Repositories\inventory\" />
+    <Folder Include="Repositories\logs\" />
+    <Folder Include="Repositories\purchasing\" />
+    <Folder Include="Repositories\rag\" />
+    <Folder Include="Service\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SMMS.Application\SMMS.Application.csproj" />
     <ProjectReference Include="..\SMMS.Domain\SMMS.Domain.csproj" />
   </ItemGroup>
 

@@ -7,19 +7,85 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Features\InventoryGroup\Commands\" />
-    <Folder Include="Features\InventoryGroup\DTOs\" />
-    <Folder Include="Features\InventoryGroup\Handlers\" />
-    <Folder Include="Features\InventoryGroup\Validators\" />
-    <Folder Include="Features\InventoryGroup\Queries\" />
-    <Folder Include="Features\PaymentGroup\" />
-    <Folder Include="Features\PlanGroup\" />
+    <Compile Remove="Features\PaymentGroup\**" />
+    <Compile Remove="Features\PlanGroup\**" />
+    <EmbeddedResource Remove="Features\PaymentGroup\**" />
+    <EmbeddedResource Remove="Features\PlanGroup\**" />
+    <None Remove="Features\PaymentGroup\**" />
+    <None Remove="Features\PlanGroup\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
+    <PackageReference Include="MediatR" Version="13.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SMMS.Domain\SMMS.Domain.csproj" />
     <ProjectReference Include="..\SMMS.Infrastructure\SMMS.Infrastructure.csproj" />
-    <ProjectReference Include="..\SMMS.Persistence\SMMS.Persistence.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Features\auth\Commands\" />
+    <Folder Include="Features\auth\DTOs\" />
+    <Folder Include="Features\auth\Handlers\" />
+    <Folder Include="Features\auth\Queries\" />
+    <Folder Include="Features\auth\Validators\" />
+    <Folder Include="Features\billing\Commands\" />
+    <Folder Include="Features\billing\DTOs\" />
+    <Folder Include="Features\billing\Handlers\" />
+    <Folder Include="Features\billing\Queries\" />
+    <Folder Include="Features\billing\Validators\" />
+    <Folder Include="Features\fridge\Commands\" />
+    <Folder Include="Features\fridge\DTOs\" />
+    <Folder Include="Features\fridge\Handlers\" />
+    <Folder Include="Features\fridge\Interfaces\" />
+    <Folder Include="Features\fridge\Queries\" />
+    <Folder Include="Features\fridge\Service\" />
+    <Folder Include="Features\fridge\Validators\" />
+    <Folder Include="Features\inventory\Commands\" />
+    <Folder Include="Features\inventory\DTOs\" />
+    <Folder Include="Features\inventory\Handlers\" />
+    <Folder Include="Features\inventory\Interfaces\" />
+    <Folder Include="Features\inventory\Queries\" />
+    <Folder Include="Features\inventory\Service\" />
+    <Folder Include="Features\inventory\Validators\" />
+    <Folder Include="Features\logs\Commands\" />
+    <Folder Include="Features\logs\DTOs\" />
+    <Folder Include="Features\logs\Handlers\" />
+    <Folder Include="Features\logs\Interfaces\" />
+    <Folder Include="Features\logs\Queries\" />
+    <Folder Include="Features\logs\Service\" />
+    <Folder Include="Features\logs\Validators\" />
+    <Folder Include="Features\nutrition\Commands\" />
+    <Folder Include="Features\nutrition\DTOs\" />
+    <Folder Include="Features\nutrition\Handlers\" />
+    <Folder Include="Features\nutrition\Queries\" />
+    <Folder Include="Features\nutrition\Validators\" />
+    <Folder Include="Features\purchasing\Commands\" />
+    <Folder Include="Features\purchasing\DTOs\" />
+    <Folder Include="Features\purchasing\Handlers\" />
+    <Folder Include="Features\purchasing\Interfaces\" />
+    <Folder Include="Features\purchasing\Queries\" />
+    <Folder Include="Features\purchasing\Service\" />
+    <Folder Include="Features\purchasing\Validators\" />
+    <Folder Include="Features\rag\Commands\" />
+    <Folder Include="Features\rag\DTOs\" />
+    <Folder Include="Features\rag\Handlers\" />
+    <Folder Include="Features\rag\Interfaces\" />
+    <Folder Include="Features\rag\Queries\" />
+    <Folder Include="Features\rag\Service\" />
+    <Folder Include="Features\rag\Validators\" />
+    <Folder Include="Features\school\Commands\" />
+    <Folder Include="Features\school\DTOs\" />
+    <Folder Include="Features\school\Handlers\" />
+    <Folder Include="Features\school\Queries\" />
+    <Folder Include="Features\school\Validators\" />
+    <Folder Include="Features\Skeleton\Commands\" />
+    <Folder Include="Features\Skeleton\DTOs\" />
+    <Folder Include="Features\Skeleton\Handlers\" />
+    <Folder Include="Features\Skeleton\Queries\" />
+    <Folder Include="Features\Skeleton\Validators\" />
   </ItemGroup>
 
 </Project>
