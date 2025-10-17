@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.auth.DTOs;
 using SMMS.Application.Features.auth.Interfaces;
@@ -8,6 +9,7 @@ namespace SMMS.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "Parent")]
     public class ParentProfileController : ControllerBase
     {
         private readonly IUserProfileService _userProfileService;
