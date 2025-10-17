@@ -18,16 +18,14 @@ namespace SMMS.WebAPI.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<bool>> CreateAttendance([FromBody] CreateAttendanceRequestDto request)
+        public async Task<ActionResult> CreateAttendance([FromBody] AttendanceRequestDto request)
         {
             try
             {
-                // TẠM THỜI: Hardcode userId để test - sau này sẽ thay bằng authentication thật
-                // Lấy parentId từ database seed (trong file seed data bạn cung cấp)
-                var notifiedByUserId = Guid.Parse("7FF718D2-57CB-402C-8BCE-7681E0C0568D"); // Thay bằng parentId thực tế
-
-                var result = await _attendanceService.CreateAttendanceAsync(request, notifiedByUserId);
-                return Ok(result);
+                // Tạm thời lấy parentId cứng để test
+                var parentId = Guid.Parse("3F75C8A8-F13B-44EA-B348-B50042547FAE"); // Parent thật của học sinh
+                var result = await _attendanceService.CreateAttendanceAsync(request, parentId);
+                return Ok(new { message = "Tạo đơn nghỉ thành công." });
             }
             catch (Exception ex)
             {
@@ -36,31 +34,17 @@ namespace SMMS.WebAPI.Controllers
         }
 
         [HttpGet("student/{studentId}")]
-        public async Task<ActionResult<AttendanceHistoryDto>> GetAttendanceByStudent(Guid studentId)
+        public async Task<ActionResult> GetByStudent(Guid studentId)
         {
-            try
-            {
-                var history = await _attendanceService.GetAttendanceHistoryByStudentAsync(studentId);
-                return Ok(history);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var records = await _attendanceService.GetAttendanceHistoryByStudentAsync(studentId);
+            return Ok(records);
         }
 
         [HttpGet("parent/{parentId}")]
-        public async Task<ActionResult<AttendanceHistoryDto>> GetAttendanceByParent(Guid parentId)
+        public async Task<ActionResult> GetByParent(Guid parentId)
         {
-            try
-            {
-                var history = await _attendanceService.GetAttendanceHistoryByParentAsync(parentId);
-                return Ok(history);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var records = await _attendanceService.GetAttendanceHistoryByParentAsync(parentId);
+            return Ok(records);
         }
     }
 }

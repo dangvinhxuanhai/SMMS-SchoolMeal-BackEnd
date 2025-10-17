@@ -3,51 +3,64 @@ using SMMS.Application.Features.school.DTOs;
 using SMMS.Application.Features.school.Interfaces;
 using SMMS.Domain.Models.school;
 using SMMS.Persistence.DbContextSite;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace SMMS.Infrastructure.Service
+namespace SMMS.Infrastructure.Services
 {
     public class AttendanceService : IAttendanceService
     {
-        private readonly EduMealContext _dbContext;
+        private readonly EduMealContext _context;
 
-        public AttendanceService(EduMealContext dbContext)
+        public AttendanceService(EduMealContext context)
         {
-            _dbContext = dbContext;
+            _context = context;
         }
 
-        public async Task<bool> CreateAttendanceAsync(CreateAttendanceRequestDto request, Guid notifiedByUserId)
+        public async Task<bool> CreateAttendanceAsync(AttendanceRequestDto request, Guid parentId)
         {
-            var student = await _dbContext.Students
+            var student = await _context.Students
                 .FirstOrDefaultAsync(s => s.StudentId == request.StudentId);
 
             if (student == null)
                 throw new Exception("Học sinh không tồn tại.");
 
-            // Sửa: So sánh DateOnly với DateOnly (không cần .Date)
-            var existingAttendance = await _dbContext.Attendances
-                .FirstOrDefaultAsync(a => a.StudentId == request.StudentId && a.AbsentDate == request.AbsentDate);
+            if (student.ParentId != parentId)
+                throw new Exception("Bạn không có quyền gửi đơn cho học sinh này.");
 
-            if (existingAttendance != null)
-                throw new Exception("Đã có đơn xin nghỉ cho ngày này.");
+            var days = Enumerable.Range(0, request.EndDate.DayNumber - request.StartDate.DayNumber + 1)
+                                 .Select(offset => request.StartDate.AddDays(offset));
 
-            var attendance = new Attendance
+            foreach (var day in days)
             {
-                StudentId = request.StudentId,
-                AbsentDate = request.AbsentDate, // Sửa: Gán trực tiếp DateOnly
-                Reason = request.Reason,
-                NotifiedBy = notifiedByUserId,
-                CreatedAt = DateTime.UtcNow
-            };
+                var exists = await _context.Attendances
+                    .AnyAsync(a => a.StudentId == request.StudentId && a.AbsentDate == day);
+                if (exists) continue;
 
-            await _dbContext.Attendances.AddAsync(attendance);
-            await _dbContext.SaveChangesAsync();
+                var attendance = new Attendance
+                {
+                    StudentId = request.StudentId,
+                    AbsentDate = day,
+                    Reason = request.Reason,
+                    NotifiedBy = parentId,
+                    CreatedAt = DateTime.UtcNow
+                };
 
-            return true;
+                _context.Attendances.Add(attendance);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return true; // ✅ trả về bool
         }
+
+
 
         public async Task<AttendanceHistoryDto> GetAttendanceHistoryByStudentAsync(Guid studentId)
         {
-            var records = await _dbContext.Attendances
+            var records = await _context.Attendances
                 .Where(a => a.StudentId == studentId)
                 .OrderByDescending(a => a.AbsentDate)
                 .Select(a => new AttendanceResponseDto
@@ -55,7 +68,7 @@ namespace SMMS.Infrastructure.Service
                     AttendanceId = a.AttendanceId,
                     StudentId = a.StudentId,
                     StudentName = a.Student.FullName,
-                    AbsentDate = a.AbsentDate, // Sửa: Gán trực tiếp DateOnly
+                    AbsentDate = a.AbsentDate,
                     Reason = a.Reason,
                     NotifiedBy = a.NotifiedByNavigation != null ? a.NotifiedByNavigation.FullName : null,
                     CreatedAt = a.CreatedAt
@@ -65,18 +78,19 @@ namespace SMMS.Infrastructure.Service
             return new AttendanceHistoryDto
             {
                 Records = records,
-                TotalCount = records.Count // Sửa: records.Count (không có dấu ngoặc)
+                TotalCount = records.Count
             };
         }
 
+
         public async Task<AttendanceHistoryDto> GetAttendanceHistoryByParentAsync(Guid parentId)
         {
-            var studentIds = await _dbContext.Students
+            var studentIds = await _context.Students
                 .Where(s => s.ParentId == parentId)
                 .Select(s => s.StudentId)
                 .ToListAsync();
 
-            var records = await _dbContext.Attendances
+            var records = await _context.Attendances
                 .Where(a => studentIds.Contains(a.StudentId))
                 .OrderByDescending(a => a.AbsentDate)
                 .Select(a => new AttendanceResponseDto
@@ -84,7 +98,7 @@ namespace SMMS.Infrastructure.Service
                     AttendanceId = a.AttendanceId,
                     StudentId = a.StudentId,
                     StudentName = a.Student.FullName,
-                    AbsentDate = a.AbsentDate, // Sửa: Gán trực tiếp DateOnly
+                    AbsentDate = a.AbsentDate,
                     Reason = a.Reason,
                     NotifiedBy = a.NotifiedByNavigation != null ? a.NotifiedByNavigation.FullName : null,
                     CreatedAt = a.CreatedAt
@@ -94,8 +108,9 @@ namespace SMMS.Infrastructure.Service
             return new AttendanceHistoryDto
             {
                 Records = records,
-                TotalCount = records.Count // Sửa: records.Count (không có dấu ngoặc)
+                TotalCount = records.Count
             };
         }
+
     }
 }

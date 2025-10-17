@@ -7,7 +7,7 @@ namespace SMMS.Application.Features.school.Interfaces
 {
     public interface IAttendanceService
     {
-        Task<bool> CreateAttendanceAsync(CreateAttendanceRequestDto request, Guid notifiedByUserId);
+        Task<bool> CreateAttendanceAsync(AttendanceRequestDto request, Guid parentId);
         Task<AttendanceHistoryDto> GetAttendanceHistoryByStudentAsync(Guid studentId);
         Task<AttendanceHistoryDto> GetAttendanceHistoryByParentAsync(Guid parentId); // Lấy lịch sử nghỉ của tất cả con của parent
     }
