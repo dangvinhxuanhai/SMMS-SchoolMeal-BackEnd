@@ -31,6 +31,7 @@
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.0.0" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
+    <PackageReference Include="MediatR" Version="13.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
@@ -48,6 +49,7 @@
   <ItemGroup>
     <ProjectReference Include="..\SMMS.Application\SMMS.Application.csproj" />
     <ProjectReference Include="..\SMMS.Domain\SMMS.Domain.csproj" />
+    <ProjectReference Include="..\SMMS.Infrastructure\SMMS.Infrastructure.csproj" />
     <ProjectReference Include="..\SMMS.Persistence\SMMS.Persistence.csproj" />
   </ItemGroup>
 

@@ -2,33 +2,46 @@ using FluentValidation;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Common.Validators;
+using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.foodmenu.Handlers;
 using SMMS.Application.Features.foodmenu.Interfaces;
+using SMMS.Application.Features.Identity.Interfaces;
+using SMMS.Application.Features.school.Interfaces;
+using SMMS.Infrastructure.Service;
+using SMMS.Infrastructure.Services;
 using SMMS.Persistence.DbContextSite;
 using SMMS.Persistence.Repositories.foodmenu;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(SMMS.Application.Features.foodmenu.Queries.GetWeekMenuQuery).Assembly));
-// FluentValidation: quét toàn bộ validators trong Application
+// MediatR
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(SMMS.Application.Features.foodmenu.Queries.GetWeekMenuQuery).Assembly));
+
+// FluentValidation
 builder.Services.AddValidatorsFromAssembly(typeof(WeeklyMenuHandler).Assembly);
-// Pipeline: chạy validation trước handler
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
-builder.Services.AddScoped<IWeeklyMenuRepository, WeeklyMenuRepository>();
+// DbContext
 builder.Services.AddDbContext<EduMealContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlConnection")));
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+
+// Dependency Injection registrations
+builder.Services.AddScoped<IWeeklyMenuRepository, WeeklyMenuRepository>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+builder.Services.AddScoped<IAttendanceService, AttendanceService>();
+
+// Swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Middleware pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -36,9 +49,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
