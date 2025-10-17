@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+pydantic>=2
+pandas
+numpy
+faiss-cpu
+sentence-transformers
+scikit-learn
+python-dotenv
+psycopg[binary]
+SQLAlchemy>=2
+pgvector
+networkx
+xgboost
+
