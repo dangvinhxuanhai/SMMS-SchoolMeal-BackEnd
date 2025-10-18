@@ -16,6 +16,7 @@ using SMMS.Persistence.DbContextSite;
 using SMMS.Persistence.Repositories.foodmenu;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 var builder = WebApplication.CreateBuilder(args);
 
 // =========================
@@ -46,6 +47,7 @@ builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
 builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IStudentHealthService, StudentHealthService>();
 builder.Services.AddScoped<IJwtService, JwtTokenService>();
 
 // =========================
@@ -105,10 +107,10 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
         ),
-        RoleClaimType = System.Security.Claims.ClaimTypes.Role // ✅ cần để hệ thống hiểu claim Role
+        NameClaimType = "UserId", // ✅ ánh xạ claim "UserId"
+        RoleClaimType = ClaimTypes.Role
     };
 });
-
 
 builder.Services.AddAuthorization();
 

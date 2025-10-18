@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.school.DTOs;
 using SMMS.Application.Features.school.Interfaces;
 using System;
-using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace SMMS.WebAPI.Controllers
@@ -19,21 +19,23 @@ namespace SMMS.WebAPI.Controllers
         {
             _attendanceService = attendanceService;
         }
+        private Guid GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim == null)
+            {
+                throw new UnauthorizedAccessException("Không tìm thấy ID người dùng trong token.");
+            }
 
-        // 🧾 Gửi đơn xin nghỉ học
+            return Guid.Parse(userIdClaim.Value);
+        }
         [HttpPost]
         public async Task<ActionResult> CreateAttendance([FromBody] AttendanceRequestDto request)
         {
             try
             {
-                // ✅ Lấy ParentId từ token
-                var userIdClaim = User.FindFirst("UserId");
-                if (userIdClaim == null)
-                    return Unauthorized(new { message = "Token không hợp lệ hoặc thiếu UserId." });
-
-                var parentId = Guid.Parse(userIdClaim.Value);
-
-                var result = await _attendanceService.CreateAttendanceAsync(request, parentId);
+                var parentId = GetCurrentUserId();
+                await _attendanceService.CreateAttendanceAsync(request, parentId);
                 return Ok(new { message = "Tạo đơn nghỉ thành công." });
             }
             catch (Exception ex)
@@ -42,7 +44,6 @@ namespace SMMS.WebAPI.Controllers
             }
         }
 
-        // 🧒 Lịch sử đơn nghỉ theo học sinh
         [HttpGet("student/{studentId}")]
         public async Task<ActionResult> GetByStudent(Guid studentId)
         {
@@ -50,17 +51,12 @@ namespace SMMS.WebAPI.Controllers
             return Ok(records);
         }
 
-        // 👨‍👩‍👧 Lịch sử đơn nghỉ của chính phụ huynh đăng nhập
         [HttpGet("my")]
         public async Task<ActionResult> GetMyAttendances()
         {
             try
             {
-                var userIdClaim = User.FindFirst("UserId");
-                if (userIdClaim == null)
-                    return Unauthorized(new { message = "Token không hợp lệ hoặc thiếu UserId." });
-
-                var parentId = Guid.Parse(userIdClaim.Value);
+                var parentId = GetCurrentUserId();
                 var records = await _attendanceService.GetAttendanceHistoryByParentAsync(parentId);
                 return Ok(records);
             }
