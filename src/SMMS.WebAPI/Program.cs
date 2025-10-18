@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Wardens.Interfaces;
-using SMMS.Application.Features.Wardens.Services;
+using SMMS.Persistence.Repositories.Wardens;
 using SMMS.Domain.Entities.school;
 using SMMS.Persistence.Configurations;
 using SMMS.Persistence.Dbcontext;
@@ -20,6 +20,8 @@ builder.Services.Configure<CloudinarySettings>(
 // Register Application Services
 builder.Services.AddScoped<IWardensService, WardensService>();
 builder.Services.AddScoped<ICloudStorageService, CloudStorageService>();
+builder.Services.AddScoped<IWardensFeedbackService, WardensFeedbackService>();
+
 
 builder.Services.AddCors(options =>
 {

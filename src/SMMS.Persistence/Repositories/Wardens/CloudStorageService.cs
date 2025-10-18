@@ -9,7 +9,8 @@ using Microsoft.Extensions.Options;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence.Configurations;
 
-namespace SMMS.Application.Features.Wardens.Services;
+
+namespace SMMS.Persistence.Repositories.Wardens;
 public class CloudStorageService : ICloudStorageService
 {
     private readonly Cloudinary _cloudinary;

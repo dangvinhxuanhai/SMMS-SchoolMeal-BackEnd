@@ -6,7 +6,8 @@ using SMMS.Application.Features.Wardens.DTOs;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence.Dbcontext;
 
-namespace SMMS.Application.Features.Wardens.Services;
+
+namespace SMMS.Persistence.Repositories.Wardens;
 
 public class WardensService : IWardensService
 {
