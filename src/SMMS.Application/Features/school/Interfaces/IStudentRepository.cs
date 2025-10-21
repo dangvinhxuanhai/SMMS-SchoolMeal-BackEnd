@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SMMS.Application.Features.Skeleton.Interfaces;
-using SMMS.Domain.Models.school;
+using SMMS.Domain.Entities.school;
 
 namespace SMMS.Application.Features.school.Interfaces;
 public interface IStudentRepository : IRepository<Student>

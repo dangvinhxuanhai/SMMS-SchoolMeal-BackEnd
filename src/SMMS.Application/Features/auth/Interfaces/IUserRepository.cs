@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SMMS.Application.Features.Skeleton.Interfaces;
-using SMMS.Domain.Models.auth;
+using SMMS.Domain.Entities.auth;
 
 namespace SMMS.Application.Features.auth.Interfaces;
 public interface IUserRepository : IRepository<User>

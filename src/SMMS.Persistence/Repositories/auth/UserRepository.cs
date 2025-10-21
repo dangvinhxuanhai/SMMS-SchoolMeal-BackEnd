@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SMMS.Application.Features.auth.Interfaces;
-using SMMS.Domain.Models.auth;
+using SMMS.Domain.Entities.auth;
 using SMMS.Persistence.DbContextSite;
 using SMMS.Persistence.Repositories.Skeleton;
 

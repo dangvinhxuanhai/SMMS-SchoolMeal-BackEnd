@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.auth;
+using SMMS.Domain.Entities.auth;
 
-namespace SMMS.Domain.Models.nutrition;
+namespace SMMS.Domain.Entities.nutrition;
 
 [PrimaryKey("IngredientId", "AltIngredientId")]
 [Table("IngredientAlternatives", Schema = "nutrition")]

@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace SMMS.Domain.Models.auth;
+namespace SMMS.Domain.Entities.auth;
 
 [Table("RefreshTokens", Schema = "auth")]
 [Index("Token", Name = "UQ__RefreshT__1EB4F8178C10FB02", IsUnique = true)]

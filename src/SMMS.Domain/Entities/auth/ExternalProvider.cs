@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace SMMS.Domain.Models.auth;
+namespace SMMS.Domain.Entities.auth;
 
 [Table("ExternalProviders", Schema = "auth")]
 [Index("ProviderName", Name = "UQ__External__7D057CE5C49A0E73", IsUnique = true)]

@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace SMMS.Domain.Models.foodmenu;
+namespace SMMS.Domain.Entities.foodmenu;
 
 [Table("DailyMeals", Schema = "foodmenu")]
 [Index("ScheduleMealId", "MealDate", "MealType", Name = "UX_DailyMeals", IsUnique = true)]

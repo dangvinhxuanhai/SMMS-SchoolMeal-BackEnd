@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.auth;
-using SMMS.Domain.Models.nutrition;
-using SMMS.Domain.Models.school;
+using SMMS.Domain.Entities.auth;
+using SMMS.Domain.Entities.nutrition;
+using SMMS.Domain.Entities.school;
 
-namespace SMMS.Domain.Models.inventory;
+namespace SMMS.Domain.Entities.inventory;
 
 [Table("InventoryItems", Schema = "inventory")]
 public partial class InventoryItem

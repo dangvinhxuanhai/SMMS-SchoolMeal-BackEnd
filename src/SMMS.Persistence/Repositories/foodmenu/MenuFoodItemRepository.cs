@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SMMS.Application.Features.foodmenu.Interfaces;
-using SMMS.Domain.Models.foodmenu;
+using SMMS.Domain.Entities.foodmenu;
 using SMMS.Persistence.DbContextSite;
 using SMMS.Persistence.Repositories.Skeleton;
 
