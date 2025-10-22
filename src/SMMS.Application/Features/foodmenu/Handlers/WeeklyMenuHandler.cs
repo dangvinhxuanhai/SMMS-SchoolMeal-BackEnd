@@ -11,7 +11,7 @@ using SMMS.Application.Features.foodmenu.Commands;
 using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Application.Features.foodmenu.Queries;
-using SMMS.Domain.Models.foodmenu;
+using SMMS.Domain.Entities.foodmenu;
 
 namespace SMMS.Application.Features.foodmenu.Handlers;
 public sealed class WeeklyMenuHandler :

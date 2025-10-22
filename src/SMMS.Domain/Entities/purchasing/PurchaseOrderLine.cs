@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.auth;
-using SMMS.Domain.Models.nutrition;
+using SMMS.Domain.Entities.auth;
+using SMMS.Domain.Entities.nutrition;
 
-namespace SMMS.Domain.Models.purchasing;
+namespace SMMS.Domain.Entities.purchasing;
 
 [Table("PurchaseOrderLines", Schema = "purchasing")]
 public partial class PurchaseOrderLine

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.auth;
-using SMMS.Domain.Models.school;
+using SMMS.Domain.Entities.auth;
+using SMMS.Domain.Entities.school;
 
-namespace SMMS.Domain.Models.foodmenu;
+namespace SMMS.Domain.Entities.foodmenu;
 
 [Table("ScheduleMeal", Schema = "foodmenu")]
 [Index("MenuId", Name = "IX_ScheduleMeal_Menu")]

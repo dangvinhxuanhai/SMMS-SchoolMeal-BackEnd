@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace SMMS.Domain.Models.auth;
+namespace SMMS.Domain.Entities.auth;
 
 [Table("LoginAttempts", Schema = "auth")]
 public partial class LoginAttempt

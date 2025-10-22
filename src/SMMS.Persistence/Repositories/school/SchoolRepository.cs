@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SMMS.Application.Features.school.Interfaces;
-using SMMS.Domain.Models.school;
+using SMMS.Domain.Entities.school;
 using SMMS.Persistence.DbContextSite;
 using SMMS.Persistence.Repositories.Skeleton;
 

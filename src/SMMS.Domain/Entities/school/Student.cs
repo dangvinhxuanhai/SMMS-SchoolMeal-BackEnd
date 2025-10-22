@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.auth;
-using SMMS.Domain.Models.billing;
-using SMMS.Domain.Models.nutrition;
+using SMMS.Domain.Entities.auth;
+using SMMS.Domain.Entities.billing;
+using SMMS.Domain.Entities.nutrition;
 
-namespace SMMS.Domain.Models.school;
+namespace SMMS.Domain.Entities.school;
 
 [Table("Students", Schema = "school")]
 public partial class Student

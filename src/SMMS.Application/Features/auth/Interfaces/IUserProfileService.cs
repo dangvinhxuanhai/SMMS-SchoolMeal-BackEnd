@@ -1,6 +1,6 @@
 using SMMS.Application.Features.auth.DTOs;
 using SMMS.Application.Features.Skeleton.Interfaces;
-using SMMS.Domain.Models.auth;
+using SMMS.Domain.Entities.auth;
 using System;
 using System.Threading.Tasks;
 

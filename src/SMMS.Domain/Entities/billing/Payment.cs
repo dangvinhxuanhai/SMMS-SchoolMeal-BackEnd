@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace SMMS.Domain.Models.billing;
+namespace SMMS.Domain.Entities.billing;
 
 [Table("Payments", Schema = "billing")]
 public partial class Payment

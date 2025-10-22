@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.auth;
+using SMMS.Domain.Entities.auth;
 
-namespace SMMS.Domain.Models.school;
+namespace SMMS.Domain.Entities.school;
 
 [Table("Tags", Schema = "school")]
 [Index("TagName", Name = "UQ__Tags__BDE0FD1DA2D253AE", IsUnique = true)]

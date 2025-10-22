@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.nutrition;
+using SMMS.Domain.Entities.nutrition;
 
-namespace SMMS.Domain.Models.purchasing;
+namespace SMMS.Domain.Entities.purchasing;
 
 [PrimaryKey("PlanId", "IngredientId")]
 [Table("PurchasePlanLines", Schema = "purchasing")]

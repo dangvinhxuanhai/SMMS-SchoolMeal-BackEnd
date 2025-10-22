@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace SMMS.Domain.Models.auth;
+namespace SMMS.Domain.Entities.auth;
 
 [Table("Roles", Schema = "auth")]
 [Index("RoleName", Name = "UQ__Roles__8A2B61609021742E", IsUnique = true)]

@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace SMMS.Domain.Models.school;
+namespace SMMS.Domain.Entities.school;
 
 [Table("Classes", Schema = "school")]
 [Index("TeacherId", Name = "UQ__Classes__EDF259655C9638AA", IsUnique = true)]

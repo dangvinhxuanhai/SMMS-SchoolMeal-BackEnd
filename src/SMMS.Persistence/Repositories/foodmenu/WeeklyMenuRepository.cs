@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 using SMMS.Application.Common.Exceptions;
 using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.foodmenu.Interfaces;
-using SMMS.Domain.Models.foodmenu;
+using SMMS.Domain.Entities.foodmenu;
 using SMMS.Persistence.DbContextSite;
 
 namespace SMMS.Persistence.Repositories.foodmenu;

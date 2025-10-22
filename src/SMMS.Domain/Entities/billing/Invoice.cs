@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.school;
+using SMMS.Domain.Entities.school;
 
-namespace SMMS.Domain.Models.billing;
+namespace SMMS.Domain.Entities.billing;
 
 [Table("Invoices", Schema = "billing")]
 public partial class Invoice

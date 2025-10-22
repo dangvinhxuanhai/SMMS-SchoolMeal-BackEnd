@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.foodmenu;
-using SMMS.Domain.Models.fridge;
+using SMMS.Domain.Entities.foodmenu;
+using SMMS.Domain.Entities.fridge;
 
-namespace SMMS.Domain.Models.school;
+namespace SMMS.Domain.Entities.school;
 
 [Table("AcademicYears", Schema = "school")]
 [Index("YearName", Name = "UQ__Academic__294C4DA9C2B87D92", IsUnique = true)]

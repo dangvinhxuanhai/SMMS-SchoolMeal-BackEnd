@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using SMMS.Application.Features.auth.Interfaces;
-using SMMS.Domain.Models.auth;
+using SMMS.Domain.Entities.auth;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;

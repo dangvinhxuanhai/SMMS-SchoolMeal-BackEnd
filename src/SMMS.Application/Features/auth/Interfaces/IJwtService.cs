@@ -1,4 +1,4 @@
-using SMMS.Domain.Models.auth;
+using SMMS.Domain.Entities.auth;
 using System;
 using System.Collections.Generic;
 using System.Security.Claims;

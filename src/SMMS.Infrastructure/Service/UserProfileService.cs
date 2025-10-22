@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.auth.DTOs;
 using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.Identity.Interfaces;
-using SMMS.Domain.Models.auth;
-using SMMS.Domain.Models.nutrition;
-using SMMS.Domain.Models.school;
+using SMMS.Domain.Entities.auth;
+using SMMS.Domain.Entities.nutrition;
+using SMMS.Domain.Entities.school;
 using SMMS.Persistence.DbContextSite;
 
 namespace SMMS.Infrastructure.Service

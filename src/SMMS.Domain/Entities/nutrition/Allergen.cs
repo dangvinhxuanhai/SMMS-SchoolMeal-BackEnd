@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.auth;
-using SMMS.Domain.Models.rag;
-using SMMS.Domain.Models.school;
+using SMMS.Domain.Entities.auth;
+using SMMS.Domain.Entities.rag;
+using SMMS.Domain.Entities.school;
 
-namespace SMMS.Domain.Models.nutrition;
+namespace SMMS.Domain.Entities.nutrition;
 
 [Table("Allergens", Schema = "nutrition")]
 [Index("AllergenName", Name = "UQ__Allergen__7D988619907EC52D", IsUnique = true)]

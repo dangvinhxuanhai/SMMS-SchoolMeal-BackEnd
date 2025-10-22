@@ -3,14 +3,14 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.auth;
-using SMMS.Domain.Models.fridge;
-using SMMS.Domain.Models.inventory;
-using SMMS.Domain.Models.purchasing;
-using SMMS.Domain.Models.rag;
-using SMMS.Domain.Models.school;
+using SMMS.Domain.Entities.auth;
+using SMMS.Domain.Entities.fridge;
+using SMMS.Domain.Entities.inventory;
+using SMMS.Domain.Entities.purchasing;
+using SMMS.Domain.Entities.rag;
+using SMMS.Domain.Entities.school;
 
-namespace SMMS.Domain.Models.nutrition;
+namespace SMMS.Domain.Entities.nutrition;
 
 [Table("Ingredients", Schema = "nutrition")]
 public partial class Ingredient

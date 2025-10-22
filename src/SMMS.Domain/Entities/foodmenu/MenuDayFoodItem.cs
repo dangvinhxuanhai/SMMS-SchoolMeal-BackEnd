@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.nutrition;
+using SMMS.Domain.Entities.nutrition;
 
-namespace SMMS.Domain.Models.foodmenu;
+namespace SMMS.Domain.Entities.foodmenu;
 
 [PrimaryKey("MenuDayId", "FoodId")]
 [Table("MenuDayFoodItems", Schema = "foodmenu")]

@@ -17,6 +17,8 @@ using SMMS.Persistence.Repositories.foodmenu;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
+using SMMS.Application.Features.billing.Interfaces;
+using SMMS.Infrastructure.Repositories;
 var builder = WebApplication.CreateBuilder(args);
 
 // =========================
@@ -49,7 +51,7 @@ builder.Services.AddScoped<IAttendanceService, AttendanceService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStudentHealthService, StudentHealthService>();
 builder.Services.AddScoped<IJwtService, JwtTokenService>();
-
+builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 // =========================
 // 5️⃣ Swagger
 // =========================

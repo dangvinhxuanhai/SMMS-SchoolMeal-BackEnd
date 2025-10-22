@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.auth;
+using SMMS.Domain.Entities.auth;
 
-namespace SMMS.Domain.Models.school;
+namespace SMMS.Domain.Entities.school;
 
 [Table("Teachers", Schema = "school")]
 [Index("EmployeeCode", Name = "UQ__Teachers__1F642548EB34401D", IsUnique = true)]

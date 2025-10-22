@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace SMMS.Domain.Models.inventory;
+namespace SMMS.Domain.Entities.inventory;
 
 [Table("InventoryTransactions", Schema = "inventory")]
 public partial class InventoryTransaction

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Models.auth;
+using SMMS.Domain.Entities.auth;
 
-namespace SMMS.Domain.Models.foodmenu;
+namespace SMMS.Domain.Entities.foodmenu;
 
 [Table("Feedbacks", Schema = "foodmenu")]
 public partial class Feedback

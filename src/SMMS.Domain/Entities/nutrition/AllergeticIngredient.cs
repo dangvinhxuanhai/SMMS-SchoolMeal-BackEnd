@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 
-namespace SMMS.Domain.Models.nutrition;
+namespace SMMS.Domain.Entities.nutrition;
 
 [PrimaryKey("IngredientId", "AllergenId")]
 [Table("AllergeticIngredients", Schema = "nutrition")]
