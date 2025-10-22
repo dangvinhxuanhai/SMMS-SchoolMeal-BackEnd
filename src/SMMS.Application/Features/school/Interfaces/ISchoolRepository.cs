@@ -1,12 +1,15 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SMMS.Application.Features.Skeleton.Interfaces;
+using SMMS.Application.Features.school.DTOs;
 using SMMS.Domain.Entities.school;
 
-namespace SMMS.Application.Features.school.Interfaces;
-public interface ISchoolRepository : IRepository<School>
+namespace SMMS.Application.Features.school.Interfaces
 {
+    public interface ISchoolRepository
+    {
+        IQueryable<School> GetAllSchools();
+        Task<List<School>> GetAllAsync();
+        Task<School?> GetByIdAsync(Guid id);
+        Task AddAsync(School school);
+        Task UpdateAsync(School school);
+        Task DeleteAsync(Guid id);
+    }
 }

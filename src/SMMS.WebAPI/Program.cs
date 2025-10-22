@@ -19,6 +19,10 @@ using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Infrastructure.Repositories;
+using SMMS.Persistence.Repositories.school;
+using Microsoft.AspNetCore.OData;
+using SMMS.WebAPI.Configurations;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // =========================
@@ -40,7 +44,17 @@ builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBeh
 // =========================
 builder.Services.AddDbContext<EduMealContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlConnection")));
-
+// ✅ Add OData with advanced query options
+builder.Services.AddControllers()
+    .AddOData(opt => opt
+        .Select()
+        .Filter()
+        .OrderBy()
+        .Expand()
+        .Count()
+        .SetMaxTop(100)
+        .AddRouteComponents("odata", ODataConfig.GetEdmModel())
+    );
 // =========================
 // 4️⃣ Dependency Injection (Services)
 // =========================
@@ -52,6 +66,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IStudentHealthService, StudentHealthService>();
 builder.Services.AddScoped<IJwtService, JwtTokenService>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+builder.Services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>();
+builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
 // =========================
 // 5️⃣ Swagger
 // =========================
@@ -124,6 +140,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+//var password = "@1";
+//var hashed = PasswordHasher.HashPassword(password);
+
+//Console.ForegroundColor = ConsoleColor.Green;
+//Console.WriteLine("=====================================");
+//Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
+//Console.WriteLine(hashed);
+//Console.WriteLine("=====================================");
+//Console.ResetColor();
 
 // ✅ Thứ tự rất quan trọng:
 app.UseAuthentication();

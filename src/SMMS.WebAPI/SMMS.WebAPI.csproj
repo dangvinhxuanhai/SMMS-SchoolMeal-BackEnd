@@ -33,6 +33,7 @@
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
     <PackageReference Include="MediatR" Version="13.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.20" />
+    <PackageReference Include="Microsoft.AspNetCore.OData" Version="8.3.1" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
@@ -40,7 +41,6 @@
   <ItemGroup>
     <Folder Include="Controllers\Modules\KitchenStaff\" />
     <Folder Include="Controllers\Modules\Wardens\" />
-    <Folder Include="Controllers\Modules\Admin\" />
     <Folder Include="Controllers\Modules\Manager\" />
     <Folder Include="Middlewares\" />
     <Folder Include="Extensions\" />
