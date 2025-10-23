@@ -1,0 +1,14 @@
+{
+  "built_at": "2025-10-23 16:09:30",
+  "index_type": "flat",
+  "index_out": "index/recipes.index",
+  "recipes_csv": "data/recipes.csv",
+  "rows": 16,
+  "dim": 384,
+  "embedding": {
+    "provider": "sbert",
+    "model": "paraphrase-multilingual-MiniLM-L12-v2"
+  },
+  "ivf": null,
+  "hnsw": null
+}

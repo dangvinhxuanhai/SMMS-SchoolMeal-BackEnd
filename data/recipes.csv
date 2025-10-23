@@ -1,0 +1,17 @@
+RecipeId,Name,Description,Calories,Protein,Fat,Carbs,Allergens,Ingredients,Equipment,DishType,Cuisine,Season,Cost
+1,Salad ức gà,"Salad ức gà luộc với rau củ tươi.",320,30,8,25,[],"[""ức gà"",""xà lách"",""cà chua"",""dưa chuột"",""dầu ô liu""]","[""dao"",""thớt"",""bát""]",Main,vietnamese,summer,25000
+2,Gà hấp gừng,"Gà hấp với gừng và hành lá, vị thanh, ít dầu.",350,32,10,20,[],"[""gà"",""gừng"",""hành lá"",""muối""]","[""nồi hấp"",""bếp""]",Main,vietnamese,all,30000
+3,Gà xào lạc,"Gà xào với lạc và ớt chuông; vị bùi; cần tránh đậu phộng.",450,28,20,35,"[""đậu phộng""]","[""gà"",""lạc"",""ớt chuông"",""hành tây"",""tỏi""]","[""chảo"",""bếp""]",Main,vietnamese,all,35000
+4,Cá hồi nướng chanh,"Cá hồi nướng sốt chanh bơ; giàu omega-3.",520,34,28,18,"[""cá""]","[""cá hồi"",""chanh"",""bơ"",""tỏi"",""mùi tây""]","[""lò nướng"",""khay nướng""]",Main,western,autumn,90000
+5,Bò xào ớt chuông,"Thịt bò thăn xào nhanh, đậm vị, giàu protein.",480,36,18,30,[],"[""thịt bò"",""ớt chuông"",""hành tây"",""tỏi"",""xì dầu""]","[""chảo"",""bếp""]",Main,vietnamese,all,80000
+6,Đậu phụ sốt cà,"Đậu phụ om sốt cà chua, hợp ăn chay.",360,22,14,32,"[""đậu nành""]","[""đậu phụ"",""cà chua"",""hành"",""tỏi"",""dầu""]","[""nồi"",""bếp""]",Main,vietnamese,all,20000
+7,Mì Ý sốt bò bằm,"Spaghetti sốt bò bằm cà chua; no lâu.",610,27,20,78,"[""gluten""]","[""mì spaghetti"",""thịt bò"",""cà chua"",""hành tây"",""tỏi""]","[""nồi"",""bếp""]",Main,western,all,60000
+8,Tôm hấp sả,"Tôm hấp sả gừng; ngọt tự nhiên; ít béo.",290,26,6,10,"[""tôm""]","[""tôm"",""sả"",""gừng"",""muối""]","[""nồi hấp"",""bếp""]",Main,vietnamese,summer,70000
+9,Cơm gà Hội An,"Cơm nghệ với gà xé; dưa leo; rau thơm.",520,24,14,78,[],"[""gạo"",""gà"",""nghệ"",""dưa leo"",""rau thơm""]","[""nồi cơm"",""bếp""]",Main,vietnamese,all,40000
+10,Bún chả,"Bún thịt nướng kèm rau sống và nước chấm.",580,30,20,70,"[""gluten""]","[""bún"",""thịt heo"",""rau sống"",""nước mắm"",""đường""]","[""bếp"",""vỉ nướng""]",Main,vietnamese,spring,45000
+11,Salad dưa chuột,"Món salad nhẹ; chua ngọt; làm nhanh.",120,3,4,18,[],"[""dưa chuột"",""giấm"",""đường"",""muối""]","[""dao"",""thớt"",""bát""]",Side,western,summer,8000
+12,Khoai tây nghiền,"Khoai tây nghiền bơ sữa; béo ngậy.",220,5,9,32,"[""sữa""]","[""khoai tây"",""bơ"",""sữa"",""muối""]","[""nồi"",""dụng cụ nghiền""]",Side,western,winter,18000
+13,Canh rau cải,"Canh thanh mát; ít calo; hợp kèm món chính đạm.",90,4,2,12,[],"[""rau cải"",""nước"",""hành"",""muối""]","[""nồi"",""bếp""]",Side,vietnamese,all,6000
+14,Bánh mì bơ tỏi,"Bánh mì nướng bơ tỏi; thơm; hợp món Âu.",260,6,12,30,"[""gluten"",""sữa""]","[""bánh mì"",""bơ"",""tỏi"",""mùi tây""]","[""lò nướng""]",Side,western,all,12000
+15,Nộm gà xé,"Nộm gà xé bắp cải; chua cay nhẹ; ít béo.",300,25,10,24,[],"[""gà xé"",""bắp cải"",""cà rốt"",""rau răm"",""lạc""]","[""dao"",""thớt"",""bát""]",Main,vietnamese,summer,28000
+16,Bún riêu chay,"Bún riêu từ đậu phụ và cà chua; thanh đạm.",420,20,12,60,"[""gluten"",""đậu nành""]","[""bún"",""đậu phụ"",""cà chua"",""dứa"",""hành""]","[""nồi"",""bếp""]",Main,vietnamese,all,30000
