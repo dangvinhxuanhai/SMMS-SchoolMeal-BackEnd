@@ -19,7 +19,7 @@ router = APIRouter(prefix="/menu", tags=["menu"])
 # ----------------------------
 # NẠP TÀI NGUYÊN 1 LẦN
 # ----------------------------
-DF = pd.read_csv(DATA_CSV)                 # CSV đã chuẩn hoá cột
+DF = pd.read_csv(DATA_CSV)                 # CSV đã chuẩn hoá cột (them cho)
 EMB = Embedder(EMBED_MODEL)                # SentenceTransformer / OpenAI Embeddings
 RET = FaissRetriever(INDEX_PATH, DF)       # FAISS + metadata (có thể có emb_pos)
 KG  = KitchenGraph(GRAPH_PATH)             # Graph gpickle
