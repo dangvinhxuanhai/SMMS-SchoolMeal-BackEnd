@@ -8,15 +8,20 @@ using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.school;
 using System.Globalization;
 using ExcelDataReader;
+using Microsoft.Extensions.Logging;
 namespace SMMS.Application.Features.Manager.Handlers;
 
 public class ManagerParentService : IManagerParentService
 {
     private readonly IManagerAccountRepository _repo;
+    private readonly ILogger<ManagerParentService> _logger;
 
-    public ManagerParentService(IManagerAccountRepository repo)
+    public ManagerParentService(
+        IManagerAccountRepository repo,
+        ILogger<ManagerParentService> logger)
     {
         _repo = repo;
+        _logger = logger;
     }
     // 🔍 Tìm kiếm phụ huynh theo tên, email, SĐT hoặc tên con
     public async Task<List<ParentAccountDto>> SearchAsync(Guid schoolId, string keyword)
@@ -333,140 +338,114 @@ public class ManagerParentService : IManagerParentService
     }
     public async Task<List<AccountDto>> ImportFromExcelAsync(Guid schoolId, IFormFile file, string createdBy)
     {
+        var result = new List<AccountDto>();
+
         if (file == null || file.Length == 0)
-            throw new ArgumentException("File Excel không hợp lệ hoặc trống.");
+            throw new InvalidOperationException("Không có file được tải lên.");
 
-        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        using var workbook = new XLWorkbook(stream);
+        var sheet = workbook.Worksheet("Danh sách phụ huynh");
 
-        var resultList = new List<AccountDto>();
+        if (sheet == null)
+            throw new InvalidOperationException("Không tìm thấy sheet 'Danh sách phụ huynh' trong file Excel.");
 
-        using (var stream = file.OpenReadStream())
-        using (var reader = ExcelReaderFactory.CreateReader(stream))
+        var role = await _repo.Roles.FirstOrDefaultAsync(r => r.RoleName.ToLower() == "parent");
+        if (role == null)
+            throw new InvalidOperationException("Không tìm thấy vai trò 'Parent'.");
+
+        int row = 2;
+        while (!string.IsNullOrWhiteSpace(sheet.Cell(row, 1).GetString()))
         {
-            var dataSet = reader.AsDataSet();
-            var table = dataSet.Tables[0];
-
-            // ✅ Giả định dòng đầu tiên là tiêu đề
-            for (int i = 1; i < table.Rows.Count; i++)
+            try
             {
-                try
+                var fullNameParent = sheet.Cell(row, 1).GetString()?.Trim();
+                var email = sheet.Cell(row, 2).GetString()?.Trim().ToLower();
+                var phone = sheet.Cell(row, 3).GetString()?.Trim();
+                var password = sheet.Cell(row, 4).GetString()?.Trim();
+                var genderParent = sheet.Cell(row, 5).GetString()?.Trim();
+                var dobParent = sheet.Cell(row, 6).GetString()?.Trim();
+                var relationName = sheet.Cell(row, 7).GetString()?.Trim();
+
+                var fullNameChild = sheet.Cell(row, 8).GetString()?.Trim();
+                var genderChild = sheet.Cell(row, 9).GetString()?.Trim();
+                var dobChild = sheet.Cell(row, 10).GetString()?.Trim();
+                var classIdStr = sheet.Cell(row, 11).GetString()?.Trim();
+
+                if (string.IsNullOrWhiteSpace(fullNameParent) || string.IsNullOrWhiteSpace(phone))
+                    throw new InvalidOperationException($"Thiếu thông tin bắt buộc tại dòng {row}: FullName_Parent hoặc Phone.");
+
+                var exists = await _repo.Users.AnyAsync(u => u.Email == email || u.Phone == phone);
+                if (exists)
+                    throw new InvalidOperationException($"Email hoặc số điện thoại đã tồn tại: {email ?? phone}");
+
+                var parent = new User
                 {
-                    // 🟢 Đọc dữ liệu
-                    string fullNameParent = table.Rows[i][0]?.ToString()?.Trim() ?? "";
-                    string email = table.Rows[i][1]?.ToString()?.Trim();
-                    string phoneRaw = table.Rows[i][2]?.ToString()?.Trim();
-                    string phone = phoneRaw?.Replace(" ", "").Replace("+", "");
+                    UserId = Guid.NewGuid(),
+                    FullName = fullNameParent,
+                    Email = email,
+                    Phone = phone,
+                    PasswordHash = password,
+                    RoleId = role.RoleId,
+                    SchoolId = schoolId,
+                    LanguagePref = "vi",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _repo.AddAsync(parent);
 
-                    // Excel đôi khi lưu số điện thoại dạng 9E+08 (double)
-                    if (double.TryParse(phoneRaw, out var parsedNumber))
-                        phone = parsedNumber.ToString("0");
-
-                    string password = table.Rows[i][3]?.ToString()?.Trim() ?? "123456";
-                    string genderParent = table.Rows[i][4]?.ToString()?.Trim();
-                    string dobParentStr = table.Rows[i][5]?.ToString()?.Trim();
-                    string relationName = table.Rows[i][6]?.ToString()?.Trim() ?? "Phụ huynh";
-                    string fullNameChild = table.Rows[i][7]?.ToString()?.Trim();
-                    string genderChild = table.Rows[i][8]?.ToString()?.Trim();
-                    string dobChildStr = table.Rows[i][9]?.ToString()?.Trim();
-                    string classIdStr = table.Rows[i][10]?.ToString()?.Trim();
-
-                    if (string.IsNullOrWhiteSpace(fullNameParent) || string.IsNullOrWhiteSpace(phone))
-                        continue;
-
-                    Guid.TryParse(classIdStr, out Guid classId);
-
-                    // 🔍 Kiểm tra trùng
-                    var exists = await _repo.Users.AnyAsync(u => u.Email == email || u.Phone == phone);
-                    if (exists) continue;
-
-                    // 🧩 Lấy role Parent
-                    var role = await _repo.Roles.FirstOrDefaultAsync(r => r.RoleName.ToLower() == "parent");
-                    if (role == null)
-                        throw new InvalidOperationException("Không tìm thấy vai trò 'Parent'.");
-
-                    // 📅 Parse ngày sinh phụ huynh
-                    DateOnly? dobParent = null;
-                    if (!string.IsNullOrWhiteSpace(dobParentStr))
+                if (!string.IsNullOrWhiteSpace(fullNameChild))
+                {
+                    var student = new Student
                     {
-                        if (DateTime.TryParseExact(dobParentStr, new[] { "dd/MM/yyyy", "MM/dd/yyyy" },
-                            CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedParent))
-                            dobParent = DateOnly.FromDateTime(parsedParent);
-                    }
-
-                    // ✅ Tạo phụ huynh
-                    var parent = new User
-                    {
-                        UserId = Guid.NewGuid(),
-                        FullName = fullNameParent,
-                        Email = email?.ToLower(),
-                        Phone = phone,
-                        PasswordHash = password,
-                        RoleId = role.RoleId,
+                        StudentId = Guid.NewGuid(),
+                        FullName = fullNameChild,
+                        Gender = genderChild,
+                        DateOfBirth = !string.IsNullOrWhiteSpace(dobChild)
+                            ? DateOnly.ParseExact(dobChild, "dd/MM/yyyy", CultureInfo.InvariantCulture)
+                            : null,
                         SchoolId = schoolId,
-                        LanguagePref = genderParent,
-                        DateOfBirth = dobParent, // ✅ NGÀY SINH PHỤ HUYNH
+                        ParentId = parent.UserId,
+                        RelationName = relationName ?? "Phụ huynh",
                         IsActive = true,
                         CreatedAt = DateTime.UtcNow
                     };
-                    await _repo.AddAsync(parent);
+                    await _repo.AddStudentAsync(student);
 
-                    // 👶 Nếu có con
-                    if (!string.IsNullOrWhiteSpace(fullNameChild))
+                    if (Guid.TryParse(classIdStr, out Guid classId))
                     {
-                        DateOnly? dobChild = null;
-                        if (!string.IsNullOrWhiteSpace(dobChildStr))
+                        var studentClass = new StudentClass
                         {
-                            if (DateTime.TryParseExact(dobChildStr, new[] { "dd/MM/yyyy", "MM/dd/yyyy" },
-                                CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedChild))
-                                dobChild = DateOnly.FromDateTime(parsedChild);
-                        }
-
-                        var student = new Student
-                        {
-                            StudentId = Guid.NewGuid(),
-                            FullName = fullNameChild,
-                            Gender = genderChild,
-                            DateOfBirth = dobChild,
-                            SchoolId = schoolId,
-                            ParentId = parent.UserId,
-                            RelationName = relationName,
-                            IsActive = true,
-                            CreatedAt = DateTime.UtcNow
+                            StudentId = student.StudentId,
+                            ClassId = classId,
+                            JoinedDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                            RegistStatus = true
                         };
-                        await _repo.AddStudentAsync(student);
-
-                        if (classId != Guid.Empty)
-                        {
-                            var studentClass = new StudentClass
-                            {
-                                StudentId = student.StudentId,
-                                ClassId = classId,
-                                JoinedDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                                RegistStatus = true
-                            };
-                            await _repo.AddStudentClassAsync(studentClass);
-                        }
+                        await _repo.AddStudentClassAsync(studentClass);
                     }
+                }
 
-                    resultList.Add(new AccountDto
-                    {
-                        UserId = parent.UserId,
-                        FullName = parent.FullName,
-                        Email = parent.Email,
-                        Phone = parent.Phone,
-                        Role = "Parent",
-                        IsActive = parent.IsActive,
-                        CreatedAt = parent.CreatedAt
-                    });
-                }
-                catch (Exception ex)
+                result.Add(new AccountDto
                 {
-                    Console.WriteLine($"⚠️ Lỗi dòng {i + 1}: {ex.Message}");
-                }
+                    UserId = parent.UserId,
+                    FullName = parent.FullName,
+                    Email = parent.Email ?? string.Empty,
+                    Phone = parent.Phone,
+                    Role = "Parent",
+                    IsActive = parent.IsActive,
+                    CreatedAt = parent.CreatedAt
+                });
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Lỗi tại dòng {row}: {ex.Message}");
+            }
+
+            row++;
         }
 
-        return resultList;
+        return result;
     }
 
     public async Task<byte[]> GetExcelTemplateAsync()
@@ -476,29 +455,33 @@ public class ManagerParentService : IManagerParentService
             // 🟢 Sheet chính: Danh sách phụ huynh
             var sheet = workbook.Worksheets.Add("Danh sách phụ huynh");
 
-            // 🧾 Tiêu đề cột (đầy đủ thông tin)
-            sheet.Cell(1, 1).Value = "FullName_Parent (Họ và tên phụ huynh)";
-            sheet.Cell(1, 2).Value = "Email";
-            sheet.Cell(1, 3).Value = "Phone";
-            sheet.Cell(1, 4).Value = "Password";
-            sheet.Cell(1, 5).Value = "Gender_Parent (M/F)";
-            sheet.Cell(1, 6).Value = "DateOfBirth_Parent (dd/MM/yyyy)";
-            sheet.Cell(1, 7).Value = "RelationName (Cha/Mẹ/Giám hộ)";
-            sheet.Cell(1, 8).Value = "FullName_Child (Họ và tên con)";
-            sheet.Cell(1, 9).Value = "Gender_Child (M/F)";
-            sheet.Cell(1, 10).Value = "DateOfBirth_Child (dd/MM/yyyy)";
-            sheet.Cell(1, 11).Value = "ClassId (ID lớp học)";
+            // 🧾 Tiêu đề cột (thông tin cần nhập)
+            var headers = new[]
+            {
+            "FullName_Parent (Họ và tên phụ huynh)",
+            "Email",
+            "Phone",
+            "Password",
+            "Gender_Parent (M/F)",
+            "DateOfBirth_Parent (dd/MM/yyyy)",
+            "RelationName (Cha/Mẹ/Giám hộ)",
+            "FullName_Child (Họ và tên con)",
+            "Gender_Child (M/F)",
+            "DateOfBirth_Child (dd/MM/yyyy)",
+            "ClassId (ID lớp học)"
+        };
+
+            for (int i = 0; i < headers.Length; i++)
+                sheet.Cell(1, i + 1).Value = headers[i];
 
             // 💅 Định dạng tiêu đề
-            var header = sheet.Range("A1:K1");
-            header.Style.Font.Bold = true;
-            header.Style.Fill.BackgroundColor = XLColor.LightGray;
-            header.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            var headerRange = sheet.Range(1, 1, 1, headers.Length);
+            headerRange.Style.Font.Bold = true;
+            headerRange.Style.Fill.BackgroundColor = XLColor.LightGray;
+            headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            headerRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
-            // 📐 Căn chỉnh & tự động giãn cột
-            sheet.Columns().AdjustToContents();
-
-            // 🧩 Dòng ví dụ minh họa
+            // 📊 Dòng minh họa ví dụ
             sheet.Cell(2, 1).Value = "Nguyễn Văn A";
             sheet.Cell(2, 2).Value = "a@gmail.com";
             sheet.Cell(2, 3).Value = "0901234567";
@@ -511,18 +494,25 @@ public class ManagerParentService : IManagerParentService
             sheet.Cell(2, 10).Value = "15/09/2015";
             sheet.Cell(2, 11).Value = "GUID của lớp học";
 
-            // 🟣 Sheet 2: Hướng dẫn
-            var guide = workbook.Worksheets.Add("Hướng dẫn");
+            // 📐 Tự động căn chỉnh độ rộng
+            sheet.Columns().AdjustToContents();
+            sheet.Rows().AdjustToContents();
 
-            guide.Cell(1, 1).Value = "👉 HƯỚNG DẪN NHẬP FILE EXCEL";
-            guide.Cell(2, 1).Value = "- Vui lòng không thay đổi tiêu đề cột ở sheet 'Danh sách phụ huynh'";
-            guide.Cell(3, 1).Value = "- Cột 'RelationName': nhập Cha, Mẹ hoặc Giám hộ";
-            guide.Cell(4, 1).Value = "- Cột 'Gender_Parent' và 'Gender_Child': chỉ nhập Nam hoặc Nữ";
-            guide.Cell(5, 1).Value = "- Cột 'DateOfBirth_*': định dạng ngày/tháng/năm (dd/MM/yyyy)";
-            guide.Cell(6, 1).Value = "- Cột 'ClassId': sao chép ID lớp học tương ứng trong hệ thống";
+            // 🟣 Sheet 2: Hướng dẫn nhập liệu
+            var guide = workbook.Worksheets.Add("Hướng dẫn");
+            var row = 1;
+
+            guide.Cell(row++, 1).Value = "👉 HƯỚNG DẪN NHẬP FILE EXCEL";
+            guide.Cell(row++, 1).Value = "- Không thay đổi tiêu đề cột ở sheet 'Danh sách phụ huynh'.";
+            guide.Cell(row++, 1).Value = "- Cột 'RelationName': nhập Cha, Mẹ hoặc Giám hộ.";
+            guide.Cell(row++, 1).Value = "- Cột 'Gender_Parent' và 'Gender_Child': chỉ nhập M hoặc F (Male/Female).";
+            guide.Cell(row++, 1).Value = "- Cột 'DateOfBirth_*': định dạng dd/MM/yyyy (ngày/tháng/năm).";
+            guide.Cell(row++, 1).Value = "- Cột 'ClassId': nhập GUID lớp học tương ứng trong hệ thống.";
 
             guide.Columns().AdjustToContents();
+            guide.Rows().AdjustToContents();
 
+            // 💾 Xuất file Excel ra dạng byte[]
             using (var stream = new MemoryStream())
             {
                 workbook.SaveAs(stream);
@@ -530,5 +520,6 @@ public class ManagerParentService : IManagerParentService
             }
         }
     }
+
 
 }
