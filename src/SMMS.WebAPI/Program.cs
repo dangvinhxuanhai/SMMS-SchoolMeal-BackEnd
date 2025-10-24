@@ -4,6 +4,9 @@ using SMMS.Persistence.Repositories.Wardens;
 using SMMS.Domain.Entities.school;
 using SMMS.Persistence.Configurations;
 using SMMS.Persistence.Dbcontext;
+using SMMS.Application.Features.Manager.Interfaces;
+using SMMS.Application.Features.Manager.Handlers;
+using SMMS.Persistence.Repositories.Manager;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +24,11 @@ builder.Services.Configure<CloudinarySettings>(
 builder.Services.AddScoped<IWardensService, WardensService>();
 builder.Services.AddScoped<ICloudStorageService, CloudStorageService>();
 builder.Services.AddScoped<IWardensFeedbackService, WardensFeedbackService>();
-
+builder.Services.AddScoped<IManagerService, ManagerService>();
+builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
+builder.Services.AddScoped<IManagerAccountRepository, ManagerAccountRepository>();
+builder.Services.AddScoped<IManagerAccountService, ManagerAccountService>();
+builder.Services.AddScoped<IManagerParentService, ManagerParentService>();
 
 builder.Services.AddCors(options =>
 {
