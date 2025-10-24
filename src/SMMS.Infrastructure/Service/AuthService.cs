@@ -23,21 +23,23 @@ namespace SMMS.Infrastructure.Service
             _configuration = configuration;
         }
 
-        // ✅ Đăng nhập bằng số điện thoại và mật khẩu
+        // ✅ Đăng nhập bằng SĐT hoặc Email
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
         {
+            // Tìm người dùng theo số điện thoại hoặc email
             var user = await _dbContext.Users
                 .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Phone == request.Phone);
+                .FirstOrDefaultAsync(u =>
+                    u.Phone == request.PhoneOrEmail || u.Email == request.PhoneOrEmail);
 
             if (user == null)
-                throw new Exception("Số điện thoại không tồn tại.");
+                throw new Exception("Tài khoản không tồn tại.");
 
             // ✅ Kiểm tra mật khẩu
             if (!PasswordHasher.VerifyPassword(request.Password, user.PasswordHash))
                 throw new Exception("Mật khẩu không đúng.");
 
-            // ✅ Kiểm tra xem có đang dùng mật khẩu tạm không (@1)
+            // ✅ Kiểm tra xem có đang dùng mật khẩu tạm không
             bool isUsingTempPassword = PasswordHasher.VerifyPassword("@1", user.PasswordHash);
 
             if (isUsingTempPassword)
@@ -61,6 +63,7 @@ namespace SMMS.Infrastructure.Service
                     UserId = user.UserId,
                     FullName = user.FullName,
                     Phone = user.Phone,
+                    Email = user.Email,
                     Role = user.Role.RoleName,
                     SchoolId = user.SchoolId
                 }
@@ -106,6 +109,7 @@ namespace SMMS.Infrastructure.Service
                     UserId = storedRefreshToken.User.UserId,
                     FullName = storedRefreshToken.User.FullName,
                     Phone = storedRefreshToken.User.Phone,
+                    Email = storedRefreshToken.User.Email,
                     Role = storedRefreshToken.User.Role.RoleName,
                     SchoolId = storedRefreshToken.User.SchoolId
                 }
@@ -127,10 +131,12 @@ namespace SMMS.Infrastructure.Service
             return true;
         }
 
-        // ✅ Reset mật khẩu lần đầu (sau khi dùng mật khẩu tạm)
-        public async Task ResetFirstPasswordAsync(string phone, string currentPassword, string newPassword)
+        // ✅ Reset mật khẩu lần đầu (khi đang dùng mật khẩu tạm)
+        public async Task ResetFirstPasswordAsync(string phoneOrEmail, string currentPassword, string newPassword)
         {
-            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Phone == phone);
+            var user = await _dbContext.Users
+                .FirstOrDefaultAsync(u => u.Phone == phoneOrEmail || u.Email == phoneOrEmail);
+
             if (user == null)
                 throw new Exception("Không tìm thấy tài khoản.");
 

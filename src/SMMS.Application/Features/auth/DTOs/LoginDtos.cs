@@ -4,7 +4,7 @@ namespace SMMS.Application.Features.auth.DTOs
 {
     public class LoginRequestDto
     {
-        public string Phone { get; set; }
+        public string PhoneOrEmail { get; set; }
         public string Password { get; set; }
     }
 

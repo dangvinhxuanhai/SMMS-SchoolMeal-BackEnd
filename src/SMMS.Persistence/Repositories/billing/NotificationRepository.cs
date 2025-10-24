@@ -1,17 +1,37 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SMMS.Application.Features.billing.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Domain.Entities.billing;
 using SMMS.Persistence.DbContextSite;
-using SMMS.Persistence.Repositories.Skeleton;
 
-namespace SMMS.Persistence.Repositories.billing;
-public class NotificationService : Repository<Notification>, INotificationRepository
+namespace SMMS.Infrastructure.Repositories
 {
-    public NotificationService(EduMealContext dbContext) : base(dbContext)
+    public class NotificationRepository : INotificationRepository
     {
+        private readonly EduMealContext _context;
+
+        public NotificationRepository(EduMealContext context)
+        {
+            _context = context;
+        }
+
+        public IQueryable<Notification> GetAllNotifications()
+        {
+            return _context.Notifications
+                .Include(n => n.NotificationRecipients)
+                .AsQueryable();
+        }
+
+        public async Task<Notification?> GetByIdAsync(long id)
+        {
+            return await _context.Notifications
+                .Include(n => n.NotificationRecipients)
+                .FirstOrDefaultAsync(n => n.NotificationId == id);
+        }
+
+        public async Task AddNotificationAsync(Notification notification)
+        {
+            await _context.Notifications.AddAsync(notification);
+            await _context.SaveChangesAsync();
+        }
     }
 }

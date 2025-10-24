@@ -1,12 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using SMMS.Application.Features.Skeleton.Interfaces;
 using SMMS.Domain.Entities.billing;
 
-namespace SMMS.Application.Features.billing.Interfaces;
-public interface INotificationRepository : IRepository<Notification>
+namespace SMMS.Application.Features.notification.Interfaces
 {
+    public interface INotificationRepository
+    {
+        IQueryable<Notification> GetAllNotifications();
+        Task AddNotificationAsync(Notification notification);
+        Task<Notification?> GetByIdAsync(long id);
+    }
 }

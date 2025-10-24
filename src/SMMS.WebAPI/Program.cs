@@ -22,6 +22,7 @@ using SMMS.Infrastructure.Repositories;
 using SMMS.Persistence.Repositories.school;
 using Microsoft.AspNetCore.OData;
 using SMMS.WebAPI.Configurations;
+using SMMS.Application.Features.notification.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,6 +69,7 @@ builder.Services.AddScoped<IJwtService, JwtTokenService>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>();
 builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 // =========================
 // 5️⃣ Swagger
 // =========================
