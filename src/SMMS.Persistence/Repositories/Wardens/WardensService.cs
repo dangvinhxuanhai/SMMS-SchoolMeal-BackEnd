@@ -412,22 +412,22 @@ public class WardensService : IWardensService
     {
         // 1️⃣ Lấy dữ liệu mới nhất theo học sinh
         var healthData = await (
-            from sc in _context.StudentClasses
-            join s in _context.Students on sc.StudentId equals s.StudentId
-            join h in _context.StudentHealthRecords on s.StudentId equals h.StudentId into healthJoin
-            from health in healthJoin
-                .OrderByDescending(x => x.RecordAt)
-                .Take(1)
-                .DefaultIfEmpty()
-            where sc.ClassId == classId
-            select new
-            {
-                s.FullName,
-                HeightCm = health.HeightCm,
-                WeightKg = health.WeightKg,
-                health.RecordAt
-            })
-            .ToListAsync();
+         from sc in _context.StudentClasses
+         join s in _context.Students on sc.StudentId equals s.StudentId
+         join h in _context.StudentHealthRecords on s.StudentId equals h.StudentId into healthJoin
+         from health in healthJoin
+             .OrderByDescending(x => x.RecordAt)
+             .Take(1)
+             .DefaultIfEmpty()
+         where sc.ClassId == classId
+         select new
+         {
+             s.FullName,
+             HeightCm = health != null ? health.HeightCm : null,
+             WeightKg = health != null ? health.WeightKg : null,
+             RecordAt = (DateOnly?)health.RecordAt // ✅ ép kiểu sang nullable
+         })
+         .ToListAsync();
 
         // 2️⃣ Xử lý dữ liệu BMI & trạng thái
         var records = healthData.Select(x =>
@@ -456,7 +456,9 @@ public class WardensService : IWardensService
                 Weight = x.WeightKg != null ? $"{x.WeightKg} kg" : "-",
                 Bmi = bmi > 0 ? bmi.ToString("0.0") : "-",
                 Status = status,
-                RecordDate = x.RecordAt.ToString("dd/MM/yyyy")
+                RecordDate = x.RecordAt != null
+                ? x.RecordAt.Value.ToString("dd/MM/yyyy")
+                    : "-"
             };
         }).ToList();
 

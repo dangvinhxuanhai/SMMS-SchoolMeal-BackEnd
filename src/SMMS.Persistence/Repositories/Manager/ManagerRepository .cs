@@ -24,9 +24,9 @@ public class ManagerRepository : IManagerRepository
     // 🔸 Thống kê số lượng theo trường học
     public async Task<int> GetTeacherCountAsync(Guid schoolId)
         => await _context.Teachers
+            .Include(t => t.TeacherNavigation) // liên kết sang User
             .AsNoTracking()
-            .CountAsync(t => t.TeacherId == schoolId);
-
+            .CountAsync(t => t.TeacherNavigation.SchoolId == schoolId);
     public async Task<int> GetStudentCountAsync(Guid schoolId)
         => await _context.Students
             .AsNoTracking()

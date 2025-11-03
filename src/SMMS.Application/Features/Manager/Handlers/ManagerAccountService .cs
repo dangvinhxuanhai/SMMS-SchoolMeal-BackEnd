@@ -74,7 +74,7 @@ public class ManagerAccountService : IManagerAccountService
     public async Task<List<AccountDto>> GetAllAsync(Guid schoolId)
     {
         // Danh sách các vai trò staff cần lấy
-        var staffRoles = new[] { "kitchenstaff", "warden" };
+        var staffRoles = new[] { "kitchenstaff", "warden","teacher" };
 
         return await _repo.Users
             .Include(u => u.Role)
@@ -94,7 +94,6 @@ public class ManagerAccountService : IManagerAccountService
             .ToListAsync();
     }
 
-    // 🟡 Tạo tài khoản mới
     public async Task<AccountDto> CreateAsync(CreateAccountRequest request)
     {
         // 🔹 Kiểm tra trùng email hoặc số điện thoại
@@ -109,13 +108,14 @@ public class ManagerAccountService : IManagerAccountService
         if (role == null)
             throw new InvalidOperationException("Không tìm thấy vai trò hợp lệ.");
 
+        // 🔹 Tạo user cơ bản
         var user = new User
         {
             UserId = Guid.NewGuid(),
             FullName = request.FullName.Trim(),
             Email = request.Email?.Trim().ToLower(),
             Phone = request.Phone.Trim(),
-            PasswordHash = request.Password, // TODO: Mã hóa sau
+            PasswordHash = request.Password, // TODO: mã hóa
             RoleId = role.RoleId,
             LanguagePref = "vi",
             SchoolId = request.SchoolId,
@@ -125,6 +125,21 @@ public class ManagerAccountService : IManagerAccountService
         };
 
         await _repo.AddAsync(user);
+
+        // 🟡 Nếu là teacher hoặc warden → thêm vào bảng Teachers
+        if (role.RoleName.Equals("teacher", StringComparison.OrdinalIgnoreCase) ||
+         role.RoleName.Equals("warden", StringComparison.OrdinalIgnoreCase))
+        {
+            var teacher = new Teacher
+            {
+                TeacherId = user.UserId,
+                EmployeeCode = "EMP-" + DateTime.UtcNow.Ticks.ToString()[^6..], // tạo mã nhân viên tạm
+                HiredDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                IsActive = true
+            };
+
+            await _repo.AddTeacherAsync(teacher);
+        }
 
         return new AccountDto
         {

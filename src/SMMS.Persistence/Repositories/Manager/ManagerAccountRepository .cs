@@ -73,4 +73,9 @@ public class ManagerAccountRepository : IManagerAccountRepository
         _context.StudentClasses.Remove(studentClass);
         await _context.SaveChangesAsync();
     }
+    public async Task AddTeacherAsync(Teacher teacher)
+    {
+        _context.Teachers.Add(teacher);
+        await _context.SaveChangesAsync();
+    }
 }

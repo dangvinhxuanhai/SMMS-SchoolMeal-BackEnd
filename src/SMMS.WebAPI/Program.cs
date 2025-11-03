@@ -29,6 +29,8 @@ builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
 builder.Services.AddScoped<IManagerAccountRepository, ManagerAccountRepository>();
 builder.Services.AddScoped<IManagerAccountService, ManagerAccountService>();
 builder.Services.AddScoped<IManagerParentService, ManagerParentService>();
+builder.Services.AddScoped<IManagerClassRepository, ManagerClassRepository>();
+builder.Services.AddScoped<IManagerClassService, ManagerClassService>();
 
 builder.Services.AddCors(options =>
 {

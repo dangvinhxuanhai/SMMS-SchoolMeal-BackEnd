@@ -21,4 +21,6 @@ public interface IManagerAccountRepository
     Task UpdateStudentAsync(Student student);
     Task DeleteStudentAsync(Student student);
     Task DeleteStudentClassAsync(StudentClass studentClass);
+    Task AddTeacherAsync(Teacher teacher);
+
 }

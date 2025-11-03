@@ -2,8 +2,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.Wardens.DTOs;
 using SMMS.Application.Features.Wardens.Interfaces;
-
-namespace SMMS.WebAPI.Controllers;
+namespace SMMS.WebAPI.Controllers.Modules.Wardens;
 
 [Route("api/[controller]")]
 [ApiController]

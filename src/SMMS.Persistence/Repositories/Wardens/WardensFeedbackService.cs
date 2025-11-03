@@ -127,7 +127,7 @@ public class WardensFeedbackService : IWardensFeedbackService
         var feedback = new Feedback
         {
             SenderId = request.SenderId,
-            TargetType = "Kitchen",                 // 🔹 Cố định, không còn kiểm tra
+            TargetType = "KitchenStaff",                 // 🔹 Cố định, không còn kiểm tra
             TargetRef = request.TargetRef,          // Có thể null, hoặc ghi chú tên học sinh
             Content = request.Content.Trim(),
             DailyMealId = request.DailyMealId,
