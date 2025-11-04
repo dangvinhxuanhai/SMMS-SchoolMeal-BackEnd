@@ -48,5 +48,21 @@ public class ManagerClassController : ControllerBase
         if (!success) return NotFound();
         return Ok(new { message = "Đã xóa lớp học thành công." });
     }
+
+    [HttpGet("teachers/assignment-status")]
+    public async Task<IActionResult> GetTeacherAssignmentStatus([FromQuery] Guid schoolId)
+    {
+        try
+        {
+            var result = await _service.GetTeacherAssignmentStatusAsync(schoolId);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi khi lấy danh sách giáo viên: {ex.Message}" });
+        }
+    }
+
+
 }
 

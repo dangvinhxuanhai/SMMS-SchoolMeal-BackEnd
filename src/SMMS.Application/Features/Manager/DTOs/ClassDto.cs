@@ -12,6 +12,7 @@ public class ClassDto
     public Guid SchoolId { get; set; }
     public int YearId { get; set; }
     public Guid? TeacherId { get; set; }
+    public string? TeacherName { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
 }

@@ -12,4 +12,6 @@ public interface IManagerClassService
     Task<ClassDto> CreateAsync(CreateClassRequest request);
     Task<ClassDto?> UpdateAsync(Guid classId, UpdateClassRequest request);
     Task<bool> DeleteAsync(Guid classId);
+    Task<object> GetTeacherAssignmentStatusAsync(Guid schoolId);
+
 }

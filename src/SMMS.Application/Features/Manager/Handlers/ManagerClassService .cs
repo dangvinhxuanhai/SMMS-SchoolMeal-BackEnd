@@ -21,6 +21,8 @@ public class ManagerClassService : IManagerClassService
     public async Task<List<ClassDto>> GetAllAsync(Guid schoolId)
     {
         return await _repo.Classes
+            .Include(c => c.Teacher) // 🔹 Eager load Teacher
+            .ThenInclude(t => t.TeacherNavigation)
             .Where(c => c.SchoolId == schoolId)
             .OrderByDescending(c => c.CreatedAt)
             .Select(c => new ClassDto
@@ -30,11 +32,51 @@ public class ManagerClassService : IManagerClassService
                 SchoolId = c.SchoolId,
                 YearId = c.YearId,
                 TeacherId = c.TeacherId,
+                TeacherName = c.Teacher != null
+                    ? c.Teacher.TeacherNavigation.FullName
+                    : "(Chưa phân công)",
                 IsActive = c.IsActive,
                 CreatedAt = c.CreatedAt
             })
             .ToListAsync();
     }
+    public async Task<object> GetTeacherAssignmentStatusAsync(Guid schoolId)
+    {
+        // 🟢 Lấy toàn bộ giáo viên
+        var allTeachers = await _repo.Teachers
+            .Include(t => t.TeacherNavigation)
+            .Where(t => t.TeacherNavigation.SchoolId==schoolId)
+            .Select(t => new
+            {
+                t.TeacherId,
+                FullName = t.TeacherNavigation.FullName
+            })
+            .ToListAsync();
+
+        // 🟡 Lấy danh sách giáo viên đã được phân lớp
+        var assignedTeachers = await _repo.Classes
+            .Where(c => c.TeacherId != null)
+            .Select(c => c.TeacherId!.Value)
+            .ToListAsync();
+
+        // 🟣 Phân loại
+        var teachersWithClass = allTeachers
+            .Where(t => assignedTeachers.Contains(t.TeacherId))
+            .ToList();
+
+        var teachersWithoutClass = allTeachers
+            .Where(t => !assignedTeachers.Contains(t.TeacherId))
+            .ToList();
+
+        // 🔹 Trả kết quả
+        return new
+        {
+            TeachersWithClass = teachersWithClass,
+            TeachersWithoutClass = teachersWithoutClass
+        };
+    }
+
+
 
     // 🟡 Create
     public async Task<ClassDto> CreateAsync(CreateClassRequest request)
