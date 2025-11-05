@@ -62,7 +62,7 @@ namespace SMMS.Application.Features.Manager.Handlers
                     Status = o.PurchaseOrderStatus,
                     Note = o.Note,
                     TotalAmount = o.PurchaseOrderLines.Sum(l =>
-                        (decimal?)l.QuantityGram * (l.UnitPrice ?? 0)) ?? 0
+                        (decimal?)l.QuantityGram/1000 * (l.UnitPrice ?? 0)) ?? 0
                 })
                 .ToListAsync();
         }
@@ -73,10 +73,10 @@ namespace SMMS.Application.Features.Manager.Handlers
                 .Where(l => l.OrderId == orderId)
                 .Select(l => new PurchaseOrderLineDto
                 {
-                    LinesId = l.LinesId,
+                    LineId = l.LinesId,
                     OrderId = l.OrderId,
                     IngredientId = l.IngredientId,
-                    QuantityGram = l.QuantityGram,
+                    QuantityGram = l.QuantityGram/1000,
                     UnitPrice = l.UnitPrice,
                     BatchNo = l.BatchNo,
                     Origin = l.Origin,

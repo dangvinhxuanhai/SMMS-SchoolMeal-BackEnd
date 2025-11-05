@@ -31,7 +31,8 @@ builder.Services.AddScoped<IManagerAccountService, ManagerAccountService>();
 builder.Services.AddScoped<IManagerParentService, ManagerParentService>();
 builder.Services.AddScoped<IManagerClassRepository, ManagerClassRepository>();
 builder.Services.AddScoped<IManagerClassService, ManagerClassService>();
-
+builder.Services.AddScoped<IManagerFinanceRepository, ManagerFinanceRepository>();
+builder.Services.AddScoped<IManagerFinanceService, ManagerFinanceService>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>

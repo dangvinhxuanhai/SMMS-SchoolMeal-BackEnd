@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace SMMS.Application.Features.Manager.DTOs;
 public class PurchaseOrderLineDto
-{
-    public int LinesId { get; set; }          // Mã dòng đơn hàng
+{            
+    public int LineId { get; set; }          // Mã dòng đơn hàng
     public int  OrderId { get; set; }          // Mã đơn hàng cha
     public int IngredientId { get; set; }    // Mã nguyên liệu (có thể null)
     public decimal QuantityGram { get; set; }  // Số lượng (gram)
