@@ -131,4 +131,33 @@ public class ManagerFinanceController : ControllerBase
             return StatusCode(500, new { message = $"Lỗi khi lấy chi tiết đơn hàng: {ex.Message}" });
         }
     }
+    // 🟡 7️⃣ Xuất báo cáo tài chính thang/năm
+    [HttpGet("export")]
+    public async Task<IActionResult> ExportFinanceReport([FromQuery] Guid schoolId, [FromQuery] int month, [FromQuery] int year, [FromQuery] bool isYearly = false)
+    {
+        try
+        {
+            var fileBytes = await _service.ExportFinanceReportAsync(schoolId, month, year, isYearly);
+            string fileName = isYearly
+                ? $"BaoCaoTaiChinh_Nam_{year}.xlsx"
+                : $"BaoCaoTaiChinh_Thang_{month}_{year}.xlsx";
+
+            return File(fileBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi khi xuất báo cáo: {ex.Message}" });
+        }
+    }
+    [HttpGet("export-purchase")]
+    public async Task<IActionResult> ExportPurchase(Guid schoolId, int month, int year, bool isYearly = false)
+    {
+        var file = await _service.ExportPurchaseReportAsync(schoolId, month, year, isYearly);
+        var fileName = $"BaoCaoChiPhiDiCho_{(isYearly ? $"Nam_{year}" : $"Thang_{month}_{year}")}.xlsx";
+        return File(file,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName);
+    }
+
+
 }

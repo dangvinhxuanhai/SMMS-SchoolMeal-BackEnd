@@ -25,4 +25,7 @@ public interface IManagerFinanceService
 
     // 🟡 7️⃣ Lọc hóa đơn theo trạng thái thanh toán
     Task<List<InvoiceDto>> FilterInvoicesByStatusAsync(Guid schoolId, string status);
+    Task<byte[]> ExportFinanceReportAsync(Guid schoolId, int month, int year, bool isYearly = false);
+    Task<byte[]> ExportPurchaseReportAsync(Guid schoolId, int month, int year, bool isYearly = false);
+
 }

@@ -15,7 +15,8 @@ public class PurchaseOrderLineDto
     public string? BatchNo { get; set; }       // Mã lô hàng
     public string? Origin { get; set; }        // Nguồn gốc / xuất xứ
     public DateOnly? ExpiryDate { get; set; }  // Ngày hết hạn
-
+    public string IngredientName { get; set; } = string.Empty;
+    public string IngredientType { get; set; } = string.Empty;
     // 🔹 Thuộc tính tính toán (tự động)
     public decimal TotalPrice => (decimal)(QuantityGram * (UnitPrice ?? 0));
 }

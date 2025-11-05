@@ -77,7 +77,6 @@ public class PurchaseOrderDetailDto
     public string SupplierName { get; set; } = string.Empty;
     public string PurchaseOrderStatus { get; set; } = string.Empty;
     public string? Note { get; set; }
-
+    public decimal TotalAmount { get; set; } // ✅ Tổng tiền
     public List<PurchaseOrderLineDto> Lines { get; set; } = new();
 }
-
