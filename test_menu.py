@@ -17,6 +17,20 @@ payload = {
   "top_n_side": 5
 }
 
+# payload = {
+#   "query": "low-fat chicken salad",
+#   "main_ingredients": ["chicken", "lettuce"],
+#   "side_ingredients": ["cucumber", "tomato"],
+#   "avoid_allergens": ["peanut"],
+#   "available_equipment": [],
+#   "diners_count": 20,
+#   "group_allergy_rates": {"peanut": 0.15},
+#   "max_cal_main": 500,
+#   "max_cal_side": 250,
+#   "top_n_main": 5,
+#   "top_n_side": 3
+# }
+
 
 resp = requests.post(URL, json=payload, timeout=60)
 print("STATUS:", resp.status_code)

@@ -1,23 +1,53 @@
 # -*- coding: utf-8 -*-
-"""
-Sinh log giả để bootstrapping huấn luyện ranker.
-Mỗi dòng logs/decisions.jsonl:
-{
-  "context": {...},
-  "candidates": [{"RecipeId": "..."}],
-  "chosen": {"main": [...], "side": [...]}
-}
-Bạn có thể thay bằng log thực tế của hệ thống sau này.
-"""
-import os, json, argparse, random, math
+# evaluate_ranker.py (tên gợi ý)
+# Mục đích:
+# - Đánh giá chất lượng model rerank (ranker.pkl) dựa trên log quyết định thực tế.
+# - Input:
+#     + recipes_with_text.csv: metadata + features cơ bản cho recipe.
+#     + logs/decisions.jsonl: log các phiên gợi ý:
+#           {
+#             "context": {...},
+#             "candidates": {
+#                 "main": [ { "RecipeId": ... }, ... ],
+#                 "side": [ ... ]
+#             },
+#             "chosen": {
+#                 "main": [list RecipeId mà người dùng/chuyên gia đã chọn],
+#                 "side": [...]
+#             }
+#           }
+#     + model: file ranker.pkl đã train.
+# - Cách làm:
+#     1. Với mỗi phiên + mỗi nhóm (main/side):
+#         - Lấy danh sách candidates.
+#         - Tính features cho từng candidate.
+#         - Cho model predict score, sort giảm dần.
+#         - Đo xem các món "chosen" có xuất hiện trong top@K không.
+#     2. Tính Recall@K và nDCG@K (binary relevance).
+# - Output:
+#     - In ra số phiên và trung bình Recall@K, nDCG@K để xem ranker hiệu quả tới đâu.
+
+import os, json, argparse, math
 import numpy as np
 import pandas as pd
+import joblib
+
 
 def parse_list(x):
-    if x is None or (isinstance(x, float) and math.isnan(x)): return []
-    if isinstance(x, list): return [str(i).strip() for i in x if str(i).strip()]
+    """
+    Chuẩn hoá field list tương tự các file khác:
+    - None / NaN           -> []
+    - list                 -> strip phần tử
+    - JSON list hợp lệ     -> parse
+    - "a,b,c"              -> tách theo dấu phẩy
+    """
+    if x is None or (isinstance(x, float) and math.isnan(x)):
+        return []
+    if isinstance(x, list):
+        return [str(i).strip() for i in x if str(i).strip()]
     s = str(x).strip()
-    if not s: return []
+    if not s:
+        return []
     try:
         j = json.loads(s)
         if isinstance(j, list):
@@ -26,87 +56,198 @@ def parse_list(x):
         pass
     return [p.strip() for p in s.split(",") if p.strip()]
 
+
+def build_features_for(df_rows: pd.DataFrame, ctx: dict) -> pd.DataFrame:
+    """
+    Build lại bộ features đơn giản cho các ứng viên trong 1 phiên log,
+    dựa trên context (max_cal, main_ingredients, avoid_allergens, available_equipment, ...).
+
+    Lưu ý:
+    - Đây là phiên bản tối giản để phục vụ evaluate.
+    - Feature names phải khớp với lúc train model (faiss_sim, cov_main, risk, cal_pen, equip_ok).
+    """
+
+    def cov(recipe_ings, target):
+        # Độ phủ nguyên liệu: % target ingredient xuất hiện trong recipe
+        a = set([i.lower() for i in (recipe_ings or [])])
+        b = set([i.lower() for i in (target or [])])
+        return len(a & b) / (len(b) or 1)
+
+    def risk(algs, avoid):
+        # Rủi ro dị ứng nhị phân: 1 nếu recipe có allergen cần tránh, ngược lại 0
+        a = set([i.lower() for i in (algs or [])])
+        b = set([i.lower() for i in (avoid or [])])
+        return 1.0 if a & b else 0.0
+
+    rows = []
+    max_cal = float(ctx.get("max_cal", 600))
+
+    for r in df_rows.itertuples():
+        cvr = cov(getattr(r, "Ingredients", []), ctx.get("main_ingredients", []))
+
+        # cal_pen: độ lệch calo so với max_cal, chuẩn hoá theo max_cal
+        cal_pen = abs(float(getattr(r, "Calories", 0.0)) - max_cal) / max(max_cal, 1)
+
+        rsk = risk(getattr(r, "Allergens", []), ctx.get("avoid_allergens", []))
+
+        # equip_ok: 1 nếu mọi thiết bị cần đều có trong available_equipment, ngược lại 0
+        feas = (
+            1.0
+            if set(getattr(r, "Equipment", []) or []).issubset(
+                set(ctx.get("available_equipment", []) or [])
+            )
+            else 0.0
+        )
+
+        rows.append(
+            {
+                "RecipeId": r.RecipeId,
+                "faiss_sim": float(getattr(r, "faiss_sim", 0.0)),  # similarity từ FAISS
+                "cov_main": float(cvr),
+                "risk": float(rsk),
+                "cal_pen": float(cal_pen),
+                "equip_ok": float(feas),
+            }
+        )
+
+    return pd.DataFrame(rows)
+
+
+def recall_at_k(truth: set, ranked_ids: list, k=5) -> float:
+    """
+    Recall@K dạng "hit-rate":
+    - 1.0 nếu có ÍT NHẤT MỘT RecipeId trong truth xuất hiện trong top K.
+    - 0.0 nếu không có cái nào.
+    (Ở đây logs chosen có thể chứa 1+ món đúng.)
+    """
+    return 1.0 if len(truth & set(ranked_ids[:k])) > 0 else 0.0
+
+
+def ndcg_at_k(truth: set, ranked_ids: list, k=5) -> float:
+    """
+    nDCG@K với binary relevance (1 nếu id ∈ truth, ngược lại 0).
+
+    Cách đơn giản:
+    - DCG = sum( rel_i / log2(i+1) ) với i là vị trí trong ranking (1-based).
+    - IDCG: vì chỉ cần có 1 món đúng là đủ, ideal là món đúng ở vị trí 1 => IDCG = 1.
+    => nDCG = DCG / 1 = DCG.
+
+    Ý nghĩa:
+    - 1.0: món đúng nằm top 1.
+    - ~0.63: món đúng nằm vị trí 2.
+    - Giảm dần nếu đúng ở vị trí sâu hơn.
+    """
+    dcg = 0.0
+    for i, rid in enumerate(ranked_ids[:k], start=1):
+        rel = 1.0 if rid in truth else 0.0
+        if rel > 0:
+            dcg += rel / np.log2(i + 1)
+
+    idcg = 1.0  # với giả định chỉ cần 1 đúng là đủ (ideal ở rank 1)
+    return dcg / idcg
+
+
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--recipes_csv", default="data/recipes_with_text.csv")
-    ap.add_argument("--out_logs", default="logs/decisions.jsonl")
-    ap.add_argument("--sessions", type=int, default=100)
-    ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument(
+        "--recipes_csv",
+        default="data/recipes_with_text.csv",
+        help="CSV chứa recipes + faiss_sim + metadata",
+    )
+    ap.add_argument(
+        "--logs_jsonl",
+        default="logs/decisions.jsonl",
+        help="File logs quyết định (jsonl) dùng để evaluate",
+    )
+    ap.add_argument(
+        "--model",
+        default="app/models/ranker.pkl",
+        help="Đường dẫn model ranker.pkl",
+    )
+    ap.add_argument(
+        "--k",
+        type=int,
+        default=5,
+        help="Top K dùng cho Recall@K và nDCG@K",
+    )
     args = ap.parse_args()
 
-    os.makedirs(os.path.dirname(args.out_logs), exist_ok=True)
-    random.seed(args.seed); np.random.seed(args.seed)
+    # Load model ranker đã train
+    model = joblib.load(args.model)
 
+    # Load recipes
     df = pd.read_csv(args.recipes_csv)
-    if "RecipeId" not in df.columns: df["RecipeId"] = df.index.astype(str)
-    for col in ["Ingredients","Allergens","Equipment"]:
-        if col in df.columns: df[col] = df[col].apply(parse_list)
-        else: df[col] = [[] for _ in range(len(df))]
+
+    # Đảm bảo có RecipeId
+    if "RecipeId" not in df.columns:
+        df["RecipeId"] = df.index.astype(str)
+
+    # Chuẩn hóa list-like cols
+    for col in ["Ingredients", "Allergens", "Equipment"]:
+        if col in df.columns:
+            df[col] = df[col].apply(parse_list)
+        else:
+            df[col] = [[] for _ in range(len(df))]
+
+    # Default DishType nếu thiếu (không critical cho evaluate simple này)
     if "DishType" not in df.columns:
-        df["DishType"] = ["Main"]*len(df)
+        df["DishType"] = ["Main"] * len(df)
 
-    mains = df[df["DishType"].str.lower().eq("main")]
-    sides = df[df["DishType"].str.lower().eq("side")]
+    # Map RecipeId -> row để truy cập nhanh ứng viên
+    rec_map = df.set_index("RecipeId")
 
-    with open(args.out_logs, "w", encoding="utf-8") as f:
-        for s in range(args.sessions):
-            # random context
-            main_ings = random.sample(sum((parse_list(x) for x in df["Ingredients"]), []), k=min(3, len(df))) if len(df)>0 else []
-            side_ings = random.sample(main_ings, k=min(2, len(main_ings))) if main_ings else []
-            avoid_algs = random.sample(sum((parse_list(x) for x in df["Allergens"]), []), k=min(1, 3)) if random.random()<0.5 else []
-            max_cal_main = random.choice([400,500,600,700])
-            max_cal_side = random.choice([250,300,350,400])
-            diners = random.choice([50, 80, 120, 200])
+    recs, ndcgs, n = [], [], 0  # lưu các giá trị Recall@K, nDCG@K cho từng case
 
-            ctx = {
-                "main_ingredients": main_ings,
-                "side_ingredients": side_ings,
-                "avoid_allergens": avoid_algs,
-                "max_cal_main": max_cal_main,
-                "max_cal_side": max_cal_side,
-                "diners_count": diners
-            }
+    # Đọc logs theo từng dòng (một session/tình huống)
+    with open(args.logs_jsonl, "r", encoding="utf-8") as f:
+        for line in f:
+            obj = json.loads(line)
 
-            # chọn ứng viên giả định (ở thực tế sẽ là FAISS top-k)
-            cands_main = mains.sample(min(80, len(mains)), random_state=random.randint(0,1_000_000))
-            cands_side = sides.sample(min(80, len(sides)), random_state=random.randint(0,1_000_000)) if len(sides)>0 else pd.DataFrame(columns=mains.columns)
+            # Evaluate riêng cho 2 nhánh main / side
+            for part in ["main", "side"]:
+                cand_ids = [c["RecipeId"] for c in obj["candidates"][part]]
+                if not cand_ids:
+                    continue
 
-            def cov(recipe_ings, target):
-                a=set([i.lower() for i in recipe_ings]); b=set([i.lower() for i in target])
-                return len(a&b)/(len(b) or 1)
-            def risk(algs, avoid):
-                a=set([i.lower() for i in algs]); b=set([i.lower() for i in avoid])
-                return 1.0 if a & b else 0.0
+                # Ground truth: set các RecipeId mà người dùng / chuyên gia đã chọn
+                chosen = set(obj["chosen"][part])
 
-            def score_rows(rows, target_ings, max_cal):
-                sc=[]
-                for r in rows.itertuples():
-                    cvr = cov(getattr(r,"Ingredients",[]), target_ings)
-                    cal = abs(float(getattr(r,"Calories",0.0)) - max_cal)/max(max_cal,1)
-                    rsk = risk(getattr(r,"Allergens",[]), avoid_algs)
-                    s = 1.2*cvr - 0.8*cal - 1.5*rsk + random.uniform(-0.05,0.05)
-                    sc.append((r.RecipeId, s))
-                sc.sort(key=lambda x:x[1], reverse=True)
-                return [rid for rid,_ in sc]
+                # Context: thông tin query, max_cal_main/side, allergen, equip,...
+                ctx = obj["context"]
+                # Map max_cal chung cho hàm build_features_for
+                ctx["max_cal"] = ctx.get(
+                    "max_cal_main" if part == "main" else "max_cal_side",
+                    600,
+                )
 
-            id_main_rank = score_rows(cands_main, main_ings, max_cal_main)
-            id_side_rank = score_rows(cands_side, side_ings, max_cal_side) if len(cands_side)>0 else []
+                # Lấy các dòng recipe tương ứng candidates
+                cand_df = rec_map.loc[cand_ids].reset_index()
 
-            chosen = {
-                "main": id_main_rank[:5],
-                "side": id_side_rank[:5]
-            }
+                # Build features (phải khớp với lúc train ranker)
+                feat = build_features_for(cand_df, ctx)
+                cols = model.feature_name_  # Đảm bảo đúng thứ tự feature như khi train
 
-            # lưu log đơn giản
-            line = {
-                "context": ctx,
-                "candidates": {"main": [ {"RecipeId": rid} for rid in id_main_rank[:50] ],
-                               "side": [ {"RecipeId": rid} for rid in id_side_rank[:50] ]},
-                "chosen": chosen
-            }
-            f.write(json.dumps(line, ensure_ascii=False) + "\n")
+                # Predict score cho từng candidate
+                scores = model.predict(feat[cols])
 
-    print(f"[simulate_logging] Wrote {args.sessions} sessions -> {args.out_logs}")
+                # Lấy thứ tự sort giảm dần theo scores
+                order = np.argsort(-scores)
+                ranked = [cand_ids[i] for i in order]
+
+                # Tính metric cho case này
+                recs.append(recall_at_k(chosen, ranked, k=args.k))
+                ndcgs.append(ndcg_at_k(chosen, ranked, k=args.k))
+                n += 1
+
+    # In kết quả trung bình
+    print(
+        f"[evaluate] sessions: {n}, "
+        f"Recall@{args.k}={np.mean(recs):.3f}, "
+        f"nDCG@{args.k}={np.mean(ndcgs):.3f}"
+    )
+
 
 if __name__ == "__main__":
+    # Chạy:
+    #   python evaluate_ranker.py --model app/models/ranker.pkl --k 5
     main()
