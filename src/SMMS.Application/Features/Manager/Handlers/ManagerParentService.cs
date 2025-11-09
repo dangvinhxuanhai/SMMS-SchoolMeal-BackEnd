@@ -461,7 +461,7 @@ public class ManagerParentService : IManagerParentService
             "FullName_Parent (Họ và tên phụ huynh)",
             "Email",
             "Phone",
-            "Password",
+            "Password(Nên để mặc định @1)",
             "Gender_Parent (M/F)",
             "DateOfBirth_Parent (dd/MM/yyyy)",
             "RelationName (Cha/Mẹ/Giám hộ)",
@@ -485,7 +485,7 @@ public class ManagerParentService : IManagerParentService
             sheet.Cell(2, 1).Value = "Nguyễn Văn A";
             sheet.Cell(2, 2).Value = "a@gmail.com";
             sheet.Cell(2, 3).Value = "0901234567";
-            sheet.Cell(2, 4).Value = "123456";
+            sheet.Cell(2, 4).Value = "@1";
             sheet.Cell(2, 5).Value = "M";
             sheet.Cell(2, 6).Value = "01/01/1980";
             sheet.Cell(2, 7).Value = "Cha";
