@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace SMMS.Application.Features.auth.Interfaces
 {
-    public interface IAuthService
+    public interface IAuthRepository
     {
         Task<LoginResponseDto> LoginAsync(LoginRequestDto request);
         Task<LoginResponseDto> RefreshTokenAsync(string refreshToken);

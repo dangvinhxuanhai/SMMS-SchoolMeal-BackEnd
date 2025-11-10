@@ -8,7 +8,7 @@ using SMMS.Domain.Entities.school;
 using SMMS.Persistence.DbContextSite;
 using SMMS.Persistence.Repositories.Skeleton;
 
-namespace SMMS.Persistence.Repositories.school;
+namespace SMMS.Persistence.Repositories.schools;
 public class StudentService : Repository<Student>, IStudentRepository
 {
     public StudentService(EduMealContext dbContext) : base(dbContext)

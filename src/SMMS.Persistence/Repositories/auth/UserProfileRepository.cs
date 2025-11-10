@@ -6,14 +6,14 @@ using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.school;
 using SMMS.Persistence.DbContextSite;
-
-namespace SMMS.Infrastructure.Service
+using  SMMS.Persistence.Repositories.Skeleton;
+namespace SMMS.Persistence.Repositories.auth
 {
-    public class UserProfileService : Service<User>, IUserProfileService
+    public class UserProfileRepository : Repository<User>, IUserProfileRepository
     {
         private readonly IFileStorageService _fileStorageService;
 
-        public UserProfileService(
+        public UserProfileRepository(
             EduMealContext dbContext,
             IFileStorageService fileStorageService)
             : base(dbContext)

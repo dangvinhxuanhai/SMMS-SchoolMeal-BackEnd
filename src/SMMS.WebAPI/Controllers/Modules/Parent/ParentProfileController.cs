@@ -13,9 +13,9 @@ namespace SMMS.WebAPI.Controllers
     [Authorize(Roles = "Parent")] // chỉ cho phép role Parent
     public class ParentProfileController : ControllerBase
     {
-        private readonly IUserProfileService _userProfileService;
+        private readonly IUserProfileRepository _userProfileService;
 
-        public ParentProfileController(IUserProfileService userProfileService)
+        public ParentProfileController(IUserProfileRepository userProfileService)
         {
             _userProfileService = userProfileService;
         }

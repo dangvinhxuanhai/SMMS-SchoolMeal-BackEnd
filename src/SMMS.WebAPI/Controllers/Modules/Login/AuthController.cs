@@ -6,9 +6,9 @@ using SMMS.Application.Features.auth.Interfaces;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly IAuthService _authService;
+    private readonly IAuthRepository _authService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthRepository authService)
     {
         _authService = authService;
     }

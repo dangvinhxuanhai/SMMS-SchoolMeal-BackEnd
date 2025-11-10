@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace SMMS.Application.Features.school.Interfaces
 {
-    public interface IAttendanceService
+    public interface IAttendanceRepository
     {
         Task<bool> CreateAttendanceAsync(AttendanceRequestDto request, Guid parentId);
         Task<AttendanceHistoryDto> GetAttendanceHistoryByStudentAsync(Guid studentId);

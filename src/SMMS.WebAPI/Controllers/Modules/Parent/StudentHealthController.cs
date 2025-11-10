@@ -12,9 +12,9 @@ namespace SMMS.WebAPI.Controllers
     [Route("api/[controller]")]
     public class StudentHealthController : ControllerBase
     {
-        private readonly IStudentHealthService _studentHealthService;
+        private readonly IStudentHealthRepository _studentHealthService;
 
-        public StudentHealthController(IStudentHealthService studentHealthService)
+        public StudentHealthController(IStudentHealthRepository studentHealthService)
         {
             _studentHealthService = studentHealthService;
         }

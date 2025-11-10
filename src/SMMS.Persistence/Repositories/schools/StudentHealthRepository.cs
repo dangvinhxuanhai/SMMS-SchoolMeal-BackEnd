@@ -3,13 +3,13 @@ using SMMS.Application.Features.school.DTOs;
 using SMMS.Application.Features.school.Interfaces;
 using SMMS.Persistence.DbContextSite;
 
-namespace SMMS.Infrastructure.Service
+namespace SMMS.Persistence.Repositories.Schools
 {
-    public class StudentHealthService : IStudentHealthService
+    public class StudentHealthRepository : IStudentHealthRepository
     {
         private readonly EduMealContext _dbContext;
 
-        public StudentHealthService(EduMealContext dbContext)
+        public StudentHealthRepository(EduMealContext dbContext)
         {
             _dbContext = dbContext;
         }

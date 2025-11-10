@@ -1,7 +1,9 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.school.Commands;
 using SMMS.Application.Features.school.DTOs;
-using SMMS.Application.Features.school.Interfaces;
+using SMMS.Application.Features.school.Queries;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -13,29 +15,31 @@ namespace SMMS.WebAPI.Controllers
     [Authorize(Roles = "Parent")]
     public class AttendanceController : ControllerBase
     {
-        private readonly IAttendanceService _attendanceService;
+        private readonly IMediator _mediator;
 
-        public AttendanceController(IAttendanceService attendanceService)
+        public AttendanceController(IMediator mediator)
         {
-            _attendanceService = attendanceService;
+            _mediator = mediator;
         }
+
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
-            {
                 throw new UnauthorizedAccessException("Không tìm thấy ID người dùng trong token.");
-            }
 
             return Guid.Parse(userIdClaim.Value);
         }
+
         [HttpPost]
-        public async Task<ActionResult> CreateAttendance([FromBody] AttendanceRequestDto request)
+        public async Task<IActionResult> CreateAttendance([FromBody] AttendanceRequestDto request)
         {
             try
             {
                 var parentId = GetCurrentUserId();
-                await _attendanceService.CreateAttendanceAsync(request, parentId);
+                var command = new CreateAttendanceCommand(request, parentId);
+                await _mediator.Send(command);
+
                 return Ok(new { message = "Tạo đơn nghỉ thành công." });
             }
             catch (Exception ex)
@@ -45,20 +49,22 @@ namespace SMMS.WebAPI.Controllers
         }
 
         [HttpGet("student/{studentId}")]
-        public async Task<ActionResult> GetByStudent(Guid studentId)
+        public async Task<IActionResult> GetByStudent(Guid studentId)
         {
-            var records = await _attendanceService.GetAttendanceHistoryByStudentAsync(studentId);
-            return Ok(records);
+            var query = new GetAttendanceByStudentQuery(studentId);
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpGet("my")]
-        public async Task<ActionResult> GetMyAttendances()
+        public async Task<IActionResult> GetMyAttendances()
         {
             try
             {
                 var parentId = GetCurrentUserId();
-                var records = await _attendanceService.GetAttendanceHistoryByParentAsync(parentId);
-                return Ok(records);
+                var query = new GetAttendanceByParentQuery(parentId);
+                var result = await _mediator.Send(query);
+                return Ok(result);
             }
             catch (Exception ex)
             {

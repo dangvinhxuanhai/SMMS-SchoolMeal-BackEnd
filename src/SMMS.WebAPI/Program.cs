@@ -13,16 +13,20 @@ using SMMS.Infrastructure.Security;
 using SMMS.Infrastructure.Service;
 using SMMS.Infrastructure.Services;
 using SMMS.Persistence.DbContextSite;
-using SMMS.Persistence.Repositories.foodmenu;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Infrastructure.Repositories;
-using SMMS.Persistence.Repositories.school;
+using SMMS.Persistence.Repositories.schools;
 using Microsoft.AspNetCore.OData;
 using SMMS.WebAPI.Configurations;
 using SMMS.Application.Features.notification.Interfaces;
+using SMMS.Infrastructure.Repositories.Implementations;
+using SMMS.Persistence.Repositories.foodmenu;
+using SMMS.Persistence.Repositories.Schools;
+using SMMS.Persistence.Repositories.auth;
+using SMMS.Application.Features.school.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,15 +65,18 @@ builder.Services.AddControllers()
 // =========================
 builder.Services.AddScoped<IWeeklyMenuRepository, WeeklyMenuRepository>();
 builder.Services.AddScoped<IFileStorageService, FileStorageService>();
-builder.Services.AddScoped<IUserProfileService, UserProfileService>();
-builder.Services.AddScoped<IAttendanceService, AttendanceService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IStudentHealthService, StudentHealthService>();
+builder.Services.AddScoped<IUserProfileRepository, UserProfileRepository>();
+builder.Services.AddScoped<IAttendanceRepository, AttendanceRepository>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IStudentHealthRepository, StudentHealthRepository>();
 builder.Services.AddScoped<IJwtService, JwtTokenService>();
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 builder.Services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>();
 builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IReportRepository, ReportRepository>();
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(AttendanceCommandHandler).Assembly));
 // =========================
 // 5️⃣ Swagger
 // =========================

@@ -69,8 +69,8 @@ public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
             {
                 return new WeekMenuDto(
                     schedule.SchoolId,
-                    (short)schedule.WeekNo,
-                    (short)schedule.YearNo,
+                    schedule.WeekNo,
+                    schedule.YearNo,
                     schedule.WeekStart.ToDateTime(TimeOnly.MinValue),
                     schedule.WeekEnd.ToDateTime(TimeOnly.MinValue),
                     schedule.Status,
@@ -155,8 +155,8 @@ public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
 
             return new WeekMenuDto(
                 schedule.SchoolId,
-                (short)schedule.WeekNo,
-                (short)schedule.YearNo,
+                schedule.WeekNo,
+                schedule.YearNo,
                 schedule.WeekStart.ToDateTime(TimeOnly.MinValue),
                 schedule.WeekEnd.ToDateTime(TimeOnly.MinValue),
                 schedule.Status,

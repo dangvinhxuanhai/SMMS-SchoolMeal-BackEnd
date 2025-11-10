@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace SMMS.Application.Features.auth.Interfaces
 {
-    public interface IUserProfileService : IService<User>
+    public interface IUserProfileRepository : IRepository<User>
     {
         Task<UserProfileResponseDto> GetUserProfileAsync(Guid userId);
         Task<bool> UpdateUserProfileAsync(Guid userId, UpdateUserProfileDto dto);

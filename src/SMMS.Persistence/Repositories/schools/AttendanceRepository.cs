@@ -8,13 +8,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace SMMS.Infrastructure.Services
+namespace SMMS.Persistence.Repositories.schools
 {
-    public class AttendanceService : IAttendanceService
+    public class AttendanceRepository : IAttendanceRepository
     {
         private readonly EduMealContext _context;
 
-        public AttendanceService(EduMealContext context)
+        public AttendanceRepository(EduMealContext context)
         {
             _context = context;
         }

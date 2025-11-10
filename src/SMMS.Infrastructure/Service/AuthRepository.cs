@@ -10,13 +10,13 @@ using System.Threading.Tasks;
 
 namespace SMMS.Infrastructure.Service
 {
-    public class AuthService : IAuthService
+    public class AuthRepository : IAuthRepository
     {
         private readonly EduMealContext _dbContext;
         private readonly IJwtService _jwtService;
         private readonly IConfiguration _configuration;
 
-        public AuthService(EduMealContext dbContext, IJwtService jwtService, IConfiguration configuration)
+        public AuthRepository(EduMealContext dbContext, IJwtService jwtService, IConfiguration configuration)
         {
             _dbContext = dbContext;
             _jwtService = jwtService;
@@ -34,8 +34,10 @@ namespace SMMS.Infrastructure.Service
 
             if (user == null)
                 throw new Exception("Tài khoản không tồn tại.");
-
-            // ✅ Kiểm tra mật khẩu
+            // Kiểm tra tài khoản có bị Ban không 
+            if (!user.IsActive)
+                throw new Exception("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+            // Kiểm tra mật khẩu
             if (!PasswordHasher.VerifyPassword(request.Password, user.PasswordHash))
                 throw new Exception("Mật khẩu không đúng.");
 

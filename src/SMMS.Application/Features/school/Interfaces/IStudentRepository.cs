@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using SMMS.Application.Features.Skeleton.Interfaces;
 using SMMS.Domain.Entities.school;
 
-namespace SMMS.Application.Features.school.Interfaces;
-public interface IStudentRepository : IRepository<Student>
+namespace SMMS.Application.Features.school.Interfaces
 {
+    public interface IStudentRepository : IRepository<Student>
+    {
+    }
 }

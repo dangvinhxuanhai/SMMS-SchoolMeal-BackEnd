@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.school.Interfaces;
-using SMMS.Domain.Entities.school;
 using SMMS.Persistence.DbContextSite;
+using SMMS.Domain.Entities.school;
 
-namespace SMMS.Persistence.Repositories.school
+namespace SMMS.Persistence.Repositories.schools
 {
     public class SchoolRepository : ISchoolRepository
     {
