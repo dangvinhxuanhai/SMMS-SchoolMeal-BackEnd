@@ -25,11 +25,22 @@ namespace SMMS.Infrastructure.Repositories
         {
             return await _context.Notifications
                 .Include(n => n.NotificationRecipients)
+                .ThenInclude(r => r.User)
                 .FirstOrDefaultAsync(n => n.NotificationId == id);
         }
 
         public async Task AddNotificationAsync(Notification notification)
         {
+            var users = await _context.Users.ToListAsync();
+            foreach (var user in users)
+            {
+                notification.NotificationRecipients.Add(new NotificationRecipient
+                {
+                    UserId = user.UserId,
+                    IsRead = false
+                });
+            }
+
             await _context.Notifications.AddAsync(notification);
             await _context.SaveChangesAsync();
         }

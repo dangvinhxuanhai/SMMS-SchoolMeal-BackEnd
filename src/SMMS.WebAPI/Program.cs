@@ -27,6 +27,7 @@ using SMMS.Persistence.Repositories.foodmenu;
 using SMMS.Persistence.Repositories.Schools;
 using SMMS.Persistence.Repositories.auth;
 using SMMS.Application.Features.school.Handlers;
+using SMMS.Application.Features.billing.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -77,6 +78,8 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(AttendanceCommandHandler).Assembly));
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(NotificationHandler).Assembly));
 // =========================
 // 5️⃣ Swagger
 // =========================

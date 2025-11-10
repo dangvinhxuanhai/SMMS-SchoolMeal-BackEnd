@@ -1,9 +1,12 @@
 using System.Security.Claims;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
+using SMMS.Application.Features.billing.Commands;
 using SMMS.Application.Features.billing.DTOs;
+using SMMS.Application.Features.billing.Queries;
 using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.billing;
@@ -11,123 +14,53 @@ using SMMS.Persistence.DbContextSite;
 
 namespace SMMS.API.Controllers
 {
-    [Route("api/[controller]")]
-    [ApiController]
     [Authorize(Roles = "Admin")]
+    [ApiController]
+    [Route("api/[controller]")]
     public class NotificationsController : ControllerBase
     {
-        private readonly INotificationRepository _notificationRepo;
-        private readonly EduMealContext _context;
+        private readonly IMediator _mediator;
 
-        public NotificationsController(INotificationRepository notificationRepo, EduMealContext context)
+        public NotificationsController(IMediator mediator)
         {
-            _notificationRepo = notificationRepo;
-            _context = context;
+            _mediator = mediator;
         }
 
-        /// <summary>
-        /// ✅ Tạo thông báo bảo trì (gửi cho toàn bộ người dùng)
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateNotificationDto dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userIdClaim))
-                return Unauthorized("Không tìm thấy thông tin admin đang đăng nhập.");
+            var adminId = GetCurrentUserId();
+            var result = await _mediator.Send(new CreateNotificationCommand(dto, adminId));
 
-            var adminId = Guid.Parse(userIdClaim);
-
-            // ✅ Kiểm tra giá trị SendType hợp lệ
-            var validSendTypes = new[] { "Recurring", "Scheduled", "Immediate" };
-            var sendType = dto.SendType;
-
-            if (string.IsNullOrWhiteSpace(sendType) || !validSendTypes.Contains(sendType))
-            {
-                sendType = "Immediate"; // fallback mặc định
-            }
-
-            var notification = new Notification
-            {
-                Title = dto.Title,
-                Content = dto.Content,
-                AttachmentUrl = dto.AttachmentUrl,
-                SenderId = adminId,
-                SendType = sendType,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            var allUsers = await _context.Users.ToListAsync();
-            foreach (var user in allUsers)
-            {
-                notification.NotificationRecipients.Add(new NotificationRecipient
-                {
-                    UserId = user.UserId,
-                    IsRead = false
-                });
-            }
-
-            await _notificationRepo.AddNotificationAsync(notification);
-
-            return Ok(new
-            {
-                message = $"Notification ({sendType}) sent to {allUsers.Count} users."
-            });
+            return Ok(new { message = result });
         }
 
-
-        /// <summary>
-        /// ✅ Xem lịch sử thông báo bảo trì (có tổng số người đã đọc)
-        /// </summary>
-        [EnableQuery]
         [HttpGet("history")]
-        public IActionResult GetHistory()
+        public async Task<IActionResult> GetHistory()
         {
-            var notifications = _notificationRepo.GetAllNotifications()
-                .Select(n => new NotificationDto
-                {
-                    NotificationId = n.NotificationId,
-                    Title = n.Title,
-                    Content = n.Content,
-                    AttachmentUrl = n.AttachmentUrl,
-                    SendType = n.SendType,
-                    CreatedAt = n.CreatedAt,
-                    TotalRecipients = n.NotificationRecipients.Count(),
-                    TotalRead = n.NotificationRecipients.Count(r => r.IsRead)
-                })
-                .OrderByDescending(n => n.CreatedAt);
-
+            var notifications = await _mediator.Send(new GetNotificationHistoryQuery());
             return Ok(notifications);
         }
 
-        /// <summary>
-        /// ✅ Xem chi tiết thông báo (ai đã đọc)
-        /// </summary>
-        [HttpGet("{id}")]
+        [HttpGet("{id:long}")]
         public async Task<IActionResult> GetById(long id)
         {
-            var notification = await _notificationRepo.GetByIdAsync(id);
+            var notification = await _mediator.Send(new GetNotificationByIdQuery(id));
             if (notification == null)
-                return NotFound();
+                return NotFound(new { message = "Không tìm thấy thông báo." });
 
-            var detail = new
-            {
-                notification.NotificationId,
-                notification.Title,
-                notification.Content,
-                notification.CreatedAt,
-                Recipients = notification.NotificationRecipients.Select(r => new
-                {
-                    r.UserId,
-                    UserEmail = r.User.Email,
-                    r.IsRead,
-                    r.ReadAt
-                })
-            };
+            return Ok(notification);
+        }
 
-            return Ok(detail);
+        private Guid GetCurrentUserId()
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(idClaim, out var adminId))
+                throw new UnauthorizedAccessException("Token không hợp lệ.");
+            return adminId;
         }
     }
 }

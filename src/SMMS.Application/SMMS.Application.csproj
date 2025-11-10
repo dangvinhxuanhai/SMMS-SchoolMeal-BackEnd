@@ -10,8 +10,6 @@
     <Folder Include="Common\Behaviors\" />
     <Folder Include="Common\Exceptions\" />
     <Folder Include="Common\Validators\" />
-    <Folder Include="Features\billing\Commands\" />
-    <Folder Include="Features\billing\Handlers\" />
     <Folder Include="Features\Inventory\Commands\" />
     <Folder Include="Features\Inventory\DTOs\" />
     <Folder Include="Features\Inventory\Interfaces\" />

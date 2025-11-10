@@ -1,49 +1,51 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.billing.Interfaces;
+using SMMS.Application.Features.billing.Queries;
 using System.Security.Claims;
 
 namespace SMMS.WebAPI.Controllers.Modules.Parent
 {
-    [Authorize]
+    [Authorize(Roles = "Parent")]
     [ApiController]
     [Route("api/[controller]")]
     public class InvoiceController : ControllerBase
     {
-        private readonly IInvoiceRepository _invoiceRepository;
+        private readonly IMediator _mediator;
 
-        public InvoiceController(IInvoiceRepository invoiceRepository)
+        public InvoiceController(IMediator mediator)
         {
-            _invoiceRepository = invoiceRepository;
+            _mediator = mediator;
         }
 
-        // ✅ API xem danh sách hóa đơn của các con
+        // ✅ API: Danh sách hóa đơn của phụ huynh
         [HttpGet("my-invoices")]
         public async Task<IActionResult> GetInvoices()
         {
             var parentId = GetCurrentUserId();
-            var invoices = await _invoiceRepository.GetInvoicesByParentAsync(parentId);
+            var invoices = await _mediator.Send(new GetInvoicesByParentQuery(parentId));
 
-            if (!invoices.Any())
-                return NotFound("Không có hóa đơn nào.");
+            if (invoices == null || !invoices.Any())
+                return NotFound(new { message = "Không có hóa đơn nào." });
 
             return Ok(invoices);
         }
 
-        // ✅ API xem chi tiết hóa đơn (1 con)
+        // ✅ API: Chi tiết hóa đơn
         [HttpGet("{invoiceId:long}")]
         public async Task<IActionResult> GetInvoiceDetail(long invoiceId)
         {
             var parentId = GetCurrentUserId();
-            var invoice = await _invoiceRepository.GetInvoiceDetailAsync(invoiceId, parentId);
+            var invoice = await _mediator.Send(new GetInvoiceDetailQuery(invoiceId, parentId));
 
             if (invoice == null)
-                return NotFound("Không tìm thấy hóa đơn hoặc bạn không có quyền truy cập.");
+                return NotFound(new { message = "Không tìm thấy hóa đơn hoặc bạn không có quyền truy cập." });
 
             return Ok(invoice);
         }
 
-        // ✅ Lấy ParentId từ JWT token
+        // ✅ Helper: Lấy ParentId từ JWT token
         private Guid GetCurrentUserId()
         {
             var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
