@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SMMS.Application.Features.school.Interfaces;
+using MediatR;
+using SMMS.Application.Features.school.Queries;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -12,11 +13,11 @@ namespace SMMS.WebAPI.Controllers
     [Route("api/[controller]")]
     public class StudentHealthController : ControllerBase
     {
-        private readonly IStudentHealthRepository _studentHealthService;
+        private readonly IMediator _mediator;
 
-        public StudentHealthController(IStudentHealthRepository studentHealthService)
+        public StudentHealthController(IMediator mediator)
         {
-            _studentHealthService = studentHealthService;
+            _mediator = mediator;
         }
 
         // ✅ API 1: BMI hiện tại
@@ -24,7 +25,8 @@ namespace SMMS.WebAPI.Controllers
         public async Task<IActionResult> GetCurrentBMI(Guid studentId)
         {
             var parentId = GetCurrentUserId();
-            var result = await _studentHealthService.GetCurrentBMIAsync(studentId, parentId);
+
+            var result = await _mediator.Send(new GetCurrentBMIQuery(studentId, parentId));
 
             if (result == null)
                 return NotFound(new { message = "Chưa có dữ liệu sức khỏe." });
@@ -37,7 +39,9 @@ namespace SMMS.WebAPI.Controllers
         public async Task<IActionResult> GetBMIHistory(Guid studentId, [FromQuery] string? year = null)
         {
             var parentId = GetCurrentUserId();
-            var result = await _studentHealthService.GetBMIByYearsAsync(studentId, parentId, year);
+
+            var result = await _mediator.Send(new GetBMIHistoryQuery(studentId, parentId, year));
+
             return Ok(result);
         }
 

@@ -24,15 +24,39 @@ namespace SMMS.Persistence.Repositories.schools
             var totalSchools = await _context.Schools.CountAsync();
             var totalStudents = await _context.Students.CountAsync();
 
-            // Doanh thu tháng này & tháng trước
+            const decimal SchoolMonthlyFee = 1200000m;
+
             var now = DateTime.UtcNow;
             var currentMonth = now.Month;
+            var currentYear = now.Year;
             var previousMonth = now.AddMonths(-1).Month;
+            var previousYear = now.AddMonths(-1).Year;
+
+            // Số trường đăng ký trong tháng này
+            var schoolsThisMonth = await _context.Schools
+                .CountAsync(s => s.CreatedAt.Month == currentMonth && s.CreatedAt.Year == currentYear);
+
+            // Số trường đăng ký trong tháng trước
+            var schoolsLastMonth = await _context.Schools
+                .CountAsync(s => s.CreatedAt.Month == previousMonth && s.CreatedAt.Year == previousYear);
+
+            // Tính doanh thu
+            var currentMonthRevenue = schoolsThisMonth * SchoolMonthlyFee;
+            var previousMonthRevenue = schoolsLastMonth * SchoolMonthlyFee;
+
+            // Tính tăng trưởng (%)
+            decimal revenueGrowth = 0;
+            if (previousMonthRevenue > 0)
+            {
+                revenueGrowth = ((currentMonthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100;
+            }
 
             return new DashboardOverviewDto
             {
                 TotalSchools = totalSchools,
-                TotalStudents = totalStudents
+                TotalStudents = totalStudents,
+                CurrentMonthRevenue = currentMonthRevenue,
+                PreviousMonthRevenue = previousMonthRevenue,
             };
         }
     }

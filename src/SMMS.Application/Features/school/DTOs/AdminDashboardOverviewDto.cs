@@ -10,13 +10,14 @@ namespace SMMS.Application.Features.school.DTOs
         {
             public int TotalSchools { get; set; }
             public int TotalStudents { get; set; }
-            public decimal TotalRevenue { get; set; }
+            public decimal CurrentMonthRevenue { get; set; }
 
             public decimal SchoolGrowth { get; set; }
             public decimal StudentGrowth { get; set; }
             public decimal RevenueGrowth { get; set; }
+            public decimal PreviousMonthRevenue { get; set; }
 
-            public List<RecentActivityDto> RecentActivities { get; set; } = new();
+        public List<RecentActivityDto> RecentActivities { get; set; } = new();
         }
 
         public class RecentActivityDto
