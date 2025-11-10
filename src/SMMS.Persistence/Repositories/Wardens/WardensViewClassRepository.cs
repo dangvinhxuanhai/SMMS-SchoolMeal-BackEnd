@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using SMMS.Persistence.Repositories.Wardens.Interfaces;
+using SMMS.Application.Features.Wardens.Interfaces;
 
 namespace SMMS.Persistence.Repositories.Wardens
 {

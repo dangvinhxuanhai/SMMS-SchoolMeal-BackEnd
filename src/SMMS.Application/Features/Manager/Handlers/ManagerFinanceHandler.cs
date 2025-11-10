@@ -3,33 +3,50 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+namespace SMMS.Application.Features.Manager.Handlers;
 using ClosedXML.Excel;
+
+using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Manager.Interfaces;
+using SMMS.Application.Features.Manager.Queries;
 
-namespace SMMS.Application.Features.Manager.Handlers;
-public class ManagerFinanceService : IManagerFinanceService
+public class ManagerFinanceHandler :
+    IRequestHandler<SearchInvoicesQuery, List<InvoiceDto>>,
+    IRequestHandler<FilterInvoicesByStatusQuery, List<InvoiceDto>>,
+    IRequestHandler<GetFinanceSummaryQuery, FinanceSummaryDto>,
+    IRequestHandler<GetInvoicesQuery, List<InvoiceDto>>,
+    IRequestHandler<GetInvoiceDetailQuery, InvoiceDetailDto?>,
+    IRequestHandler<GetPurchaseOrdersByMonthQuery, List<PurchaseOrderDto>>,
+    IRequestHandler<GetPurchaseOrderDetailQuery, PurchaseOrderDetailDto?>,
+    IRequestHandler<ExportFinanceReportQuery, byte[]>,
+    IRequestHandler<ExportPurchaseReportQuery, byte[]>
 {
     private readonly IManagerFinanceRepository _repo;
 
-    public ManagerFinanceService(IManagerFinanceRepository repo)
+    public ManagerFinanceHandler(IManagerFinanceRepository repo)
     {
         _repo = repo;
     }
-    // 🟢 6️⃣ Tìm kiếm hóa đơn theo từ khóa (học sinh, lớp, mã hóa đơn)
-    public async Task<List<InvoiceDto>> SearchInvoicesAsync(Guid schoolId, string? keyword)
+
+    #region 1️⃣ SearchInvoicesAsync
+
+    public async Task<List<InvoiceDto>> Handle(
+        SearchInvoicesQuery request,
+        CancellationToken cancellationToken)
     {
         var query = _repo.Invoices
             .Include(i => i.Student)
-            .ThenInclude(s => s.StudentClasses)
-            .ThenInclude(sc => sc.Class)
-            .Where(i => i.Student.StudentClasses.Any(sc => sc.Class.SchoolId == schoolId))
+                .ThenInclude(s => s.StudentClasses)
+                .ThenInclude(sc => sc.Class)
+            .Where(i => i.Student.StudentClasses.Any(sc => sc.Class.SchoolId == request.SchoolId))
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(keyword))
+        if (!string.IsNullOrWhiteSpace(request.Keyword))
         {
-            keyword = keyword.ToLower().Trim();
+            var keyword = request.Keyword.ToLower().Trim();
 
             query = query.Where(i =>
                 i.Student.FullName.ToLower().Contains(keyword) ||
@@ -39,7 +56,7 @@ public class ManagerFinanceService : IManagerFinanceService
 
         var invoices = await query
             .OrderByDescending(i => i.DateFrom)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return invoices.Select(inv => new InvoiceDto
         {
@@ -55,25 +72,31 @@ public class ManagerFinanceService : IManagerFinanceService
             Status = inv.Status
         }).ToList();
     }
-    // 🟡 7️⃣ Lọc hóa đơn theo trạng thái thanh toán
-    public async Task<List<InvoiceDto>> FilterInvoicesByStatusAsync(Guid schoolId, string status)
+
+    #endregion
+
+    #region 2️⃣ FilterInvoicesByStatusAsync
+
+    public async Task<List<InvoiceDto>> Handle(
+        FilterInvoicesByStatusQuery request,
+        CancellationToken cancellationToken)
     {
         var query = _repo.Invoices
             .Include(i => i.Student)
-            .ThenInclude(s => s.StudentClasses)
-            .ThenInclude(sc => sc.Class)
-            .Where(i => i.Student.StudentClasses.Any(sc => sc.Class.SchoolId == schoolId))
+                .ThenInclude(s => s.StudentClasses)
+                .ThenInclude(sc => sc.Class)
+            .Where(i => i.Student.StudentClasses.Any(sc => sc.Class.SchoolId == request.SchoolId))
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(status))
+        if (!string.IsNullOrWhiteSpace(request.Status))
         {
-            status = status.ToLower().Trim();
+            var status = request.Status.ToLower().Trim();
             query = query.Where(i => i.Status.ToLower() == status);
         }
 
         var invoices = await query
             .OrderByDescending(i => i.DateFrom)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return invoices.Select(inv => new InvoiceDto
         {
@@ -90,35 +113,43 @@ public class ManagerFinanceService : IManagerFinanceService
         }).ToList();
     }
 
-    public async Task<FinanceSummaryDto> GetFinanceSummaryAsync(Guid schoolId, int month, int year)
+    #endregion
+
+    #region 3️⃣ GetFinanceSummaryAsync
+
+    public async Task<FinanceSummaryDto> Handle(
+        GetFinanceSummaryQuery request,
+        CancellationToken cancellationToken)
     {
-        // 🧾 1️⃣ Lấy hóa đơn & thanh toán trong tháng
-        var invoices = await _repo.Invoices
+        var (schoolId, month, year) = (request.SchoolId, request.Month, request.Year);
+
+        // 1️⃣ Lấy hóa đơn & thanh toán trong tháng (theo MonthNo)
+        var invoiceIds = await _repo.Invoices
             .Where(inv => inv.MonthNo == month)
             .Select(inv => inv.InvoiceId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var payments = await _repo.Payments
-            .Where(p => invoices.Contains(p.InvoiceId))
-            .ToListAsync();
+            .Where(p => invoiceIds.Contains(p.InvoiceId))
+            .ToListAsync(cancellationToken);
 
         decimal totalInvoices = payments.Sum(p => p.ExpectedAmount);
         decimal totalPaid = payments.Sum(p => p.PaidAmount);
         decimal totalUnpaid = totalInvoices - totalPaid;
 
-        // 🛒 2️⃣ Lấy chi phí đi chợ
+        // 2️⃣ Lấy chi phí đi chợ
         var purchases = await (
-          from po in _repo.PurchaseOrders
-          join pol in _repo.PurchaseOrderLines on po.OrderId equals pol.OrderId
-          where po.SchoolId == schoolId
-                && po.OrderDate.Month == month
-                && po.OrderDate.Year == year
-          select new
-          {
-              po.SupplierName,
-              Amount = (pol.UnitPrice ?? 0m) * (pol.QuantityGram / 1000m)
-          }
-      ).ToListAsync();
+            from po in _repo.PurchaseOrders
+            join pol in _repo.PurchaseOrderLines on po.OrderId equals pol.OrderId
+            where po.SchoolId == schoolId
+                  && po.OrderDate.Month == month
+                  && po.OrderDate.Year == year
+            select new
+            {
+                po.SupplierName,
+                Amount = (pol.UnitPrice ?? 0m) * (pol.QuantityGram / 1000m)
+            }
+        ).ToListAsync(cancellationToken);
 
         decimal totalPurchaseCost = purchases.Sum(p => p.Amount);
 
@@ -131,8 +162,6 @@ public class ManagerFinanceService : IManagerFinanceService
             })
             .ToList();
 
-
-        // 📊 3️⃣ Trả về DTO tổng hợp
         return new FinanceSummaryDto
         {
             SchoolId = schoolId,
@@ -145,11 +174,16 @@ public class ManagerFinanceService : IManagerFinanceService
             SupplierBreakdown = supplierBreakdown
         };
     }
-    // 🟡 Danh sách hóa đơn
-    // 🟡 2️⃣ Danh sách hóa đơn của trường
-    public async Task<List<InvoiceDto>> GetInvoicesAsync(Guid schoolId)
+
+    #endregion
+
+    #region 4️⃣ GetInvoicesAsync
+
+    public async Task<List<InvoiceDto>> Handle(
+        GetInvoicesQuery request,
+        CancellationToken cancellationToken)
     {
-        var invoices = await _repo.GetInvoicesBySchoolAsync(schoolId);
+        var invoices = await _repo.GetInvoicesBySchoolAsync(request.SchoolId);
 
         return invoices.Select(inv => new InvoiceDto
         {
@@ -166,10 +200,15 @@ public class ManagerFinanceService : IManagerFinanceService
         }).ToList();
     }
 
-    // 🟠 3️⃣ Chi tiết hóa đơn (gồm thông tin học sinh và thanh toán)
-    public async Task<InvoiceDetailDto?> GetInvoiceDetailAsync(long invoiceId)
+    #endregion
+
+    #region 5️⃣ GetInvoiceDetailAsync
+
+    public async Task<InvoiceDetailDto?> Handle(
+        GetInvoiceDetailQuery request,
+        CancellationToken cancellationToken)
     {
-        var inv = await _repo.GetInvoiceDetailAsync(invoiceId);
+        var inv = await _repo.GetInvoiceDetailAsync(request.InvoiceId);
         if (inv == null) return null;
 
         return new InvoiceDetailDto
@@ -195,15 +234,20 @@ public class ManagerFinanceService : IManagerFinanceService
         };
     }
 
-    // 🔵 4️⃣ Danh sách đơn hàng trong tháng
-    public async Task<List<PurchaseOrderDto>> GetPurchaseOrdersByMonthAsync(Guid schoolId, int month, int year)
+    #endregion
+
+    #region 6️⃣ GetPurchaseOrdersByMonthAsync
+
+    public async Task<List<PurchaseOrderDto>> Handle(
+        GetPurchaseOrdersByMonthQuery request,
+        CancellationToken cancellationToken)
     {
         var orders = await _repo.PurchaseOrders
             .Include(po => po.PurchaseOrderLines)
-            .Where(po => po.SchoolId == schoolId &&
-                         po.OrderDate.Month == month &&
-                         po.OrderDate.Year == year)
-            .ToListAsync();
+            .Where(po => po.SchoolId == request.SchoolId &&
+                         po.OrderDate.Month == request.Month &&
+                         po.OrderDate.Year == request.Year)
+            .ToListAsync(cancellationToken);
 
         return orders.Select(po => new PurchaseOrderDto
         {
@@ -218,18 +262,22 @@ public class ManagerFinanceService : IManagerFinanceService
         }).ToList();
     }
 
-    // 🔴 5️⃣ Chi tiết đơn hàng (kèm nguyên liệu)
-    public async Task<PurchaseOrderDetailDto?> GetPurchaseOrderDetailAsync(int orderId)
+    #endregion
+
+    #region 7️⃣ GetPurchaseOrderDetailAsync
+
+    public async Task<PurchaseOrderDetailDto?> Handle(
+        GetPurchaseOrderDetailQuery request,
+        CancellationToken cancellationToken)
     {
         var order = await _repo.PurchaseOrders
             .Include(po => po.PurchaseOrderLines)
-                .ThenInclude(line => line.Ingredient) // ✅ Include để lấy tên nguyên liệu
-            .FirstOrDefaultAsync(po => po.OrderId == orderId);
+                .ThenInclude(line => line.Ingredient)
+            .FirstOrDefaultAsync(po => po.OrderId == request.OrderId, cancellationToken);
 
         if (order == null)
             return null;
 
-        // 🧮 Tổng tiền đơn hàng
         decimal totalAmount = order.PurchaseOrderLines.Sum(line =>
             (line.QuantityGram / 1000m) * (line.UnitPrice ?? 0m));
 
@@ -241,16 +289,16 @@ public class ManagerFinanceService : IManagerFinanceService
             SupplierName = order.SupplierName,
             PurchaseOrderStatus = order.PurchaseOrderStatus,
             Note = order.Note,
-            TotalAmount = totalAmount, // ✅ thêm tổng tiền đơn hàng
+            TotalAmount = totalAmount,
             Lines = order.PurchaseOrderLines.Select(line => new PurchaseOrderLineDto
             {
                 LineId = line.LinesId,
                 OrderId = line.OrderId,
-                IngredientName = line.Ingredient?.IngredientName ?? "(Không rõ)", // ✅ tên nguyên liệu
-                IngredientType = line.Ingredient?.IngredientType ?? "(Không rõ)",  // ✅ loại nguyên liệu (nếu cần)
-                QuantityGram = line.QuantityGram / 1000m, // ✅ chuyển sang kg
+                IngredientName = line.Ingredient?.IngredientName ?? "(Không rõ)",
+                IngredientType = line.Ingredient?.IngredientType ?? "(Không rõ)",
+                QuantityGram = line.QuantityGram / 1000m,
                 UnitPrice = line.UnitPrice ?? 0m,
-                IngredientId= line.IngredientId,
+                IngredientId = line.IngredientId,
                 Origin = line.Origin,
                 ExpiryDate = line.ExpiryDate,
                 BatchNo = line.BatchNo
@@ -258,28 +306,36 @@ public class ManagerFinanceService : IManagerFinanceService
         };
     }
 
-    public async Task<byte[]> ExportFinanceReportAsync(Guid schoolId, int month, int year, bool isYearly = false)
+    #endregion
+
+    #region 8️⃣ ExportFinanceReportAsync
+
+    public async Task<byte[]> Handle(
+        ExportFinanceReportQuery request,
+        CancellationToken cancellationToken)
     {
-        // 🧾 Lấy dữ liệu hóa đơn & thanh toán
+        var (schoolId, month, year, isYearly) =
+            (request.SchoolId, request.Month, request.Year, request.IsYearly);
+
         var invoices = await _repo.Invoices
             .Include(i => i.Student)
                 .ThenInclude(s => s.StudentClasses)
                 .ThenInclude(sc => sc.Class)
             .Include(i => i.Payments)
             .Where(i => i.Student.StudentClasses.Any(sc => sc.Class.SchoolId == schoolId))
-            .Where(i => isYearly ? i.DateFrom.Year == year : i.MonthNo == month && i.DateFrom.Year == year)
-            .ToListAsync();
+            .Where(i => isYearly
+                ? i.DateFrom.Year == year
+                : i.MonthNo == month && i.DateFrom.Year == year)
+            .ToListAsync(cancellationToken);
 
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Báo cáo tài chính");
 
-        // --- Header ---
         ws.Cell(1, 1).Value = "BÁO CÁO TÀI CHÍNH";
         ws.Cell(2, 1).Value = $"Thời gian: {(isYearly ? $"Năm {year}" : $"Tháng {month}/{year}")}";
         ws.Range("A1:G1").Merge().Style.Font.SetBold().Font.FontSize = 16;
         ws.Range("A2:G2").Merge().Style.Font.Italic = true;
 
-        // --- Dòng tiêu đề ---
         ws.Cell(4, 1).Value = "Mã Hóa Đơn";
         ws.Cell(4, 2).Value = "Học Sinh";
         ws.Cell(4, 3).Value = "Lớp";
@@ -291,7 +347,6 @@ public class ManagerFinanceService : IManagerFinanceService
         ws.Range("A4:G4").Style.Font.Bold = true;
         ws.Range("A4:G4").Style.Fill.BackgroundColor = XLColor.LightGray;
 
-        // --- Dữ liệu ---
         int row = 5;
         decimal totalExpected = 0, totalPaid = 0;
 
@@ -316,7 +371,6 @@ public class ManagerFinanceService : IManagerFinanceService
             row++;
         }
 
-        // --- Tổng cộng ---
         ws.Cell(row + 1, 4).Value = "Tổng cộng:";
         ws.Cell(row + 1, 5).Value = totalExpected;
         ws.Cell(row + 1, 6).Value = totalPaid;
@@ -324,34 +378,39 @@ public class ManagerFinanceService : IManagerFinanceService
         ws.Range($"A4:G{row}").Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
         ws.Columns().AdjustToContents();
 
-        // --- Xuất file ---
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         return stream.ToArray();
     }
 
-    public async Task<byte[]> ExportPurchaseReportAsync(Guid schoolId, int month, int year, bool isYearly = false)
+    #endregion
+
+    #region 9️⃣ ExportPurchaseReportAsync
+
+    public async Task<byte[]> Handle(
+        ExportPurchaseReportQuery request,
+        CancellationToken cancellationToken)
     {
-        // 🛒 Lấy danh sách đơn hàng + chi tiết nguyên liệu + thông tin nguyên liệu
+        var (schoolId, month, year, isYearly) =
+            (request.SchoolId, request.Month, request.Year, request.IsYearly);
+
         var purchaseOrders = await _repo.PurchaseOrders
             .Include(po => po.PurchaseOrderLines)
-                .ThenInclude(line => line.Ingredient) // ✅ Include Ingredient để lấy tên
+                .ThenInclude(line => line.Ingredient)
             .Where(po => po.SchoolId == schoolId &&
                          (isYearly
                             ? po.OrderDate.Year == year
                             : po.OrderDate.Month == month && po.OrderDate.Year == year))
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Chi phí đi chợ");
 
-        // --- Header ---
         ws.Cell(1, 1).Value = "BÁO CÁO CHI PHÍ ĐI CHỢ";
         ws.Cell(2, 1).Value = $"Thời gian: {(isYearly ? $"Năm {year}" : $"Tháng {month}/{year}")}";
         ws.Range("A1:H1").Merge().Style.Font.SetBold().Font.FontSize = 16;
         ws.Range("A2:H2").Merge().Style.Font.Italic = true;
 
-        // --- Dòng tiêu đề ---
         ws.Cell(4, 1).Value = "Ngày Mua";
         ws.Cell(4, 2).Value = "Nhà Cung Cấp";
         ws.Cell(4, 3).Value = "Ghi Chú";
@@ -366,12 +425,10 @@ public class ManagerFinanceService : IManagerFinanceService
 
         foreach (var po in purchaseOrders)
         {
-            // 🧾 Tổng tiền đơn hàng
             decimal total = po.PurchaseOrderLines.Sum(line =>
                 (line.QuantityGram / 1000m) * (line.UnitPrice ?? 0m));
             grandTotal += total;
 
-            // --- Dòng đơn hàng ---
             ws.Cell(row, 1).Value = po.OrderDate.ToString("dd/MM/yyyy");
             ws.Cell(row, 2).Value = po.SupplierName;
             ws.Cell(row, 3).Value = po.Note;
@@ -380,7 +437,6 @@ public class ManagerFinanceService : IManagerFinanceService
             ws.Range($"A{row}:E{row}").Style.Font.SetBold();
             row++;
 
-            // --- Header chi tiết ---
             ws.Cell(row, 2).Value = "Nguyên liệu";
             ws.Cell(row, 3).Value = "Số lượng (kg)";
             ws.Cell(row, 4).Value = "Đơn giá (VNĐ/kg)";
@@ -406,10 +462,9 @@ public class ManagerFinanceService : IManagerFinanceService
                 row++;
             }
 
-            row++; // dòng trống ngăn cách đơn hàng
+            row++;
         }
 
-        // --- Tổng cộng ---
         ws.Cell(row + 1, 3).Value = "Tổng cộng:";
         ws.Cell(row + 1, 4).Value = grandTotal;
         ws.Cell(row + 1, 4).Style.Font.SetBold().Font.FontSize = 12;
@@ -417,14 +472,10 @@ public class ManagerFinanceService : IManagerFinanceService
         ws.Range($"A4:G{row}").Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
         ws.Columns().AdjustToContents();
 
-        // --- Xuất file ---
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         return stream.ToArray();
     }
 
-
-
-
+    #endregion
 }
-

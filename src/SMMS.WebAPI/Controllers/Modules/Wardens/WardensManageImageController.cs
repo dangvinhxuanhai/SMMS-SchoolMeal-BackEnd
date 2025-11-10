@@ -1,8 +1,11 @@
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SMMS.Application.Features.Wardens.Commands;
 using SMMS.Application.Features.Wardens.DTOs;
 using SMMS.Application.Features.Wardens.Interfaces;
+using SMMS.Application.Features.Wardens.Queries;
 using SMMS.Domain.Entities.school;
 using SMMS.Persistence.Dbcontext;
 
@@ -12,13 +15,15 @@ namespace SMMS.WebAPI.Controllers.Modules.Wardens;
 public class WardensManageImageController : ControllerBase
 {
     private readonly EduMealContext _context;
-    private readonly ICloudStorageService _cloudService;
+    private readonly IMediator _mediator;
 
-    public WardensManageImageController(EduMealContext context, ICloudStorageService cloudService)
+    public WardensManageImageController(EduMealContext context, IMediator mediator)
     {
         _context = context;
-        _cloudService = cloudService;
+        _mediator = mediator;
     }
+
+    // 🟢 Upload ảnh học sinh
     [HttpPost("upload-student-image")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadStudentImage([FromForm] UploadStudentImageRequest request)
@@ -29,11 +34,14 @@ public class WardensManageImageController : ControllerBase
         try
         {
             // 🔹 Kiểm tra tồn tại học sinh & người upload
-            var studentExists = await _context.Students.AnyAsync(s => s.StudentId == request.StudentId);
-            var uploaderExists = await _context.Users.AnyAsync(u => u.UserId == request.UploaderId);
+            var studentExists = await _context.Students
+                .AnyAsync(s => s.StudentId == request.StudentId);
+            var uploaderExists = await _context.Users
+                .AnyAsync(u => u.UserId == request.UploaderId);
 
             if (!studentExists)
                 return BadRequest(new { message = "Không tìm thấy học sinh trong hệ thống." });
+
             if (!uploaderExists)
                 return BadRequest(new { message = "Người tải lên không tồn tại trong hệ thống." });
 
@@ -43,8 +51,11 @@ public class WardensManageImageController : ControllerBase
             if (!allowedExtensions.Contains(ext))
                 return BadRequest(new { message = "Chỉ hỗ trợ các định dạng: .jpg, .jpeg, .png, .gif, .webp" });
 
-            // 1️⃣ Upload ảnh lên Cloudinary (tự động chia folder theo trường/năm/lớp)
-            var uploadResult = await _cloudService.UploadImageAsync(request.File, request.StudentId);
+            // 1️⃣ Gửi command upload ảnh (tự xử lý Cloudinary + folder)
+            var uploadResult = await _mediator.Send(
+                new UploadStudentImageCommand(request)
+            );
+
             if (string.IsNullOrWhiteSpace(uploadResult.Url))
                 return StatusCode(500, new { message = "Upload ảnh thất bại." });
 
@@ -87,51 +98,48 @@ public class WardensManageImageController : ControllerBase
         }
     }
 
-
-[HttpGet("class/{classId}/images")]
-public async Task<IActionResult> GetImagesByClass(Guid classId)
-{
-    if (classId == Guid.Empty)
-        return BadRequest(new { message = "Thiếu mã lớp (classId)." });
-
-    try
+    // 🟡 Lấy ảnh theo lớp (Cloudinary)
+    [HttpGet("class/{classId:guid}/images")]
+    public async Task<IActionResult> GetImagesByClass(Guid classId)
     {
-        var images = await _cloudService.GetImagesByClassAsync(classId);
+        if (classId == Guid.Empty)
+            return BadRequest(new { message = "Thiếu mã lớp (classId)." });
 
-        if (images == null || !images.Any())
+        try
+        {
+            var images = await _mediator.Send(new GetImagesByClassQuery(classId));
+
+            if (images == null || !images.Any())
+                return Ok(new
+                {
+                    message = "Không có ảnh nào trong lớp này.",
+                    count = 0,
+                    data = new List<object>()
+                });
+
             return Ok(new
             {
-                message = "Không có ảnh nào trong lớp này.",
-                count = 0,
-                data = new List<object>()
+                message = "Lấy danh sách ảnh thành công.",
+                count = images.Count,
+                data = images.Select(x => new
+                {
+                    url = x.Url,
+                    publicId = x.PublicId,
+                    createdAt = x.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                })
             });
-
-        return Ok(new
+        }
+        catch (InvalidOperationException invEx)
         {
-            message = "Lấy danh sách ảnh thành công.",
-            count = images.Count,
-            data = images.Select(x => new
-            {
-                url = x.Url,
-                publicId = x.PublicId,
-                createdAt = x.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
-            })
-        });
+            return NotFound(new { message = invEx.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi khi lấy ảnh lớp: {ex.Message}" });
+        }
     }
-    catch (InvalidOperationException invEx)
-    {
-        // Lỗi khi không tìm thấy lớp
-        return NotFound(new { message = invEx.Message });
-    }
-    catch (Exception ex)
-    {
-        // Lỗi không mong muốn
-        return StatusCode(500, new { message = $"Lỗi khi lấy ảnh lớp: {ex.Message}" });
-    }
-}
 
-
-    // 🟣 API 3: Lấy ảnh của một học sinh cụ thể
+    // 🟣 Lấy ảnh của một học sinh (từ DB metadata)
     [HttpGet("student/{studentId:guid}")]
     public async Task<IActionResult> GetStudentImages(Guid studentId)
     {
@@ -160,22 +168,27 @@ public async Task<IActionResult> GetImagesByClass(Guid classId)
             data = images
         });
     }
-    // 🗑️ API 4: Xóa ảnh theo ImageId (xóa cả Cloudinary và DB)
+
+    // 🗑️ Xóa ảnh theo ImageId (xóa Cloudinary + DB)
     [HttpDelete("{imageId:guid}")]
     public async Task<IActionResult> DeleteImage(Guid imageId)
     {
         try
         {
-            var image = await _context.StudentImages.FirstOrDefaultAsync(i => i.ImageId == imageId);
+            var image = await _context.StudentImages
+                .FirstOrDefaultAsync(i => i.ImageId == imageId);
+
             if (image == null)
                 return NotFound(new { message = "Không tìm thấy ảnh trong hệ thống." });
 
             string? publicId = null;
+
             try
             {
                 var uri = new Uri(image.ImageUrl);
                 var parts = uri.AbsolutePath.Split('/');
                 var uploadIndex = Array.IndexOf(parts, "upload");
+
                 if (uploadIndex >= 0 && uploadIndex + 2 < parts.Length)
                 {
                     publicId = string.Join('/', parts.Skip(uploadIndex + 2))
@@ -190,10 +203,12 @@ public async Task<IActionResult> GetImagesByClass(Guid classId)
             if (string.IsNullOrEmpty(publicId))
                 return BadRequest(new { message = "Không thể xác định publicId từ URL Cloudinary." });
 
-            var deleted = await _cloudService.DeleteImageAsync(publicId);
+            // 🔻 Gửi command xóa ảnh trên Cloudinary
+            var deleted = await _mediator.Send(new DeleteImageCommand(publicId));
             if (!deleted)
                 return StatusCode(500, new { message = $"Không thể xóa ảnh khỏi Cloudinary (publicId={publicId})." });
 
+            // 🔻 Xóa metadata trong DB
             _context.StudentImages.Remove(image);
             await _context.SaveChangesAsync();
 
@@ -204,6 +219,4 @@ public async Task<IActionResult> GetImagesByClass(Guid classId)
             return StatusCode(500, new { message = $"Lỗi khi xóa ảnh: {ex.Message}" });
         }
     }
-
-
 }

@@ -43,7 +43,41 @@ public class ManagerAccountRepository : IManagerAccountRepository
 
     public async Task DeleteAsync(User user)
     {
+        // 1. Tìm teacher gắn với user này
+        var teacher = await _context.Teachers
+            .Include(t => t.TeacherNavigation)
+            .FirstOrDefaultAsync(t => t.TeacherNavigation.UserId == user.UserId);
+        // 👆 chỗ này bạn sửa lại cho đúng:
+        //   t.TeacherNavigation.Id == user.Id
+        // hoặc t.TeacherNavigation.UserId == user.UserId
+        // tuỳ theo model của bạn
+
+        if (teacher != null)
+        {
+            // 2. Lấy tất cả Class đang dùng Teacher này
+            var classesOfTeacher = await _context.Classes
+                .Where(c => c.TeacherId == teacher.TeacherId)
+                .ToListAsync();
+
+            // 3. Gỡ teacher khỏi các lớp (không xoá lớp)
+            foreach (var cls in classesOfTeacher)
+            {
+                cls.TeacherId = null;   // 👈 giữ lớp, chỉ bỏ giáo viên
+            }
+
+            // 4. Cập nhật lại các Class
+            if (classesOfTeacher.Count > 0)
+            {
+                _context.Classes.UpdateRange(classesOfTeacher);
+            }
+
+            // 5. Xoá Teacher
+            _context.Teachers.Remove(teacher);
+        }
+
+        // 6. Cuối cùng xoá User
         _context.Users.Remove(user);
+
         await _context.SaveChangesAsync();
     }
     public async Task AddStudentAsync(Student student)

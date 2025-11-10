@@ -12,6 +12,4 @@ public interface IManagerService
     Task<List<RecentPurchaseDto>> GetRecentPurchasesAsync(Guid schoolId, int take = 8);
     Task<RevenueSeriesDto> GetRevenueAsync(Guid schoolId, DateTime from, DateTime to, string granularity = "daily");
     Task<List<PurchaseOrderLineDto>> GetPurchaseOrderDetailsAsync(int orderId);
-
-
 }

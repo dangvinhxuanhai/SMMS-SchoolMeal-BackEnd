@@ -1,36 +1,30 @@
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.Manager.Commands;
 using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Manager.Handlers;
 using SMMS.Application.Features.Manager.Interfaces;
+using SMMS.Application.Features.Manager.Queries;
 
 namespace SMMS.WebAPI.Controllers.Modules.Manager;
 [Route("api/[controller]")]
 [ApiController]
 public class ManagerStaffController : ControllerBase
 {
-    private readonly IManagerAccountService _accountService;
+    private readonly IMediator _mediator;
 
-    public ManagerStaffController(IManagerAccountService accountService)
+    public ManagerStaffController(IMediator mediator)
     {
-        _accountService = accountService;
+        _mediator = mediator;
     }
 
+    // 🔍 Search account
     [HttpGet("search")]
     public async Task<IActionResult> SearchAccounts(Guid schoolId, [FromQuery] string keyword)
     {
-        var result = await _accountService.SearchAccountsAsync(schoolId, keyword);
-        return Ok(new
-        {
-            count = result.Count,
-            data = result
-        });
-    }
-    // 🟢 GET: Lấy danh sách tài khoản theo vai trò
-    [HttpGet("staff")]
-    public async Task<IActionResult> GetAllStaff(Guid schoolId)
-    {
-        var result = await _accountService.GetAllAsync(schoolId);
+        var result = await _mediator.Send(new SearchAccountsQuery(schoolId, keyword));
+
         return Ok(new
         {
             count = result.Count,
@@ -38,14 +32,28 @@ public class ManagerStaffController : ControllerBase
         });
     }
 
-    /// filletr by role
+    // 🟢 GET: Lấy danh sách tài khoản staff (teacher + warden + kitchenStaff)
+    [HttpGet("staff")]
+    public async Task<IActionResult> GetAllStaff(Guid schoolId)
+    {
+        var result = await _mediator.Send(new GetAllStaffQuery(schoolId));
+
+        return Ok(new
+        {
+            count = result.Count,
+            data = result
+        });
+    }
+
+    /// 🧪 Filter by role
     [HttpGet("filter-by-role")]
     public async Task<IActionResult> FilterByRole(Guid schoolId, [FromQuery] string role)
     {
         if (string.IsNullOrWhiteSpace(role))
             return BadRequest(new { message = "Role không được để trống." });
 
-        var result = await _accountService.FilterByRoleAsync(schoolId, role);
+        var result = await _mediator.Send(new FilterByRoleQuery(schoolId, role));
+
         return Ok(new
         {
             count = result.Count,
@@ -62,7 +70,8 @@ public class ManagerStaffController : ControllerBase
 
         try
         {
-            var account = await _accountService.CreateAsync(request);
+            var account = await _mediator.Send(new CreateAccountCommand(request));
+
             return Ok(new
             {
                 message = "Tạo tài khoản thành công!",
@@ -71,6 +80,7 @@ public class ManagerStaffController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
+            // ví dụ: email/phone trùng, role không hợp lệ,...
             return Conflict(new { message = ex.Message });
         }
         catch (Exception ex)
@@ -83,7 +93,8 @@ public class ManagerStaffController : ControllerBase
     [HttpPut("{userId:guid}")]
     public async Task<IActionResult> UpdateAccount(Guid userId, [FromBody] UpdateAccountRequest request)
     {
-        var updated = await _accountService.UpdateAsync(userId, request);
+        var updated = await _mediator.Send(new UpdateAccountCommand(userId, request));
+
         if (updated == null)
             return NotFound(new { message = "Không tìm thấy tài khoản để cập nhật." });
 
@@ -95,21 +106,26 @@ public class ManagerStaffController : ControllerBase
     }
 
     // 🔵 PATCH: Đổi trạng thái kích hoạt
-    //[HttpPatch("{userId:guid}/status")]
-    //public async Task<IActionResult> ChangeStatus(Guid userId, [FromQuery] bool isActive)
-    //{
-    //    var result = await _accountService.ChangeStatusAsync(userId, isActive);
-    //    if (!result)
-    //        return NotFound(new { message = "Không tìm thấy tài khoản." });
+    [HttpPatch("{userId:guid}/status")]
+    public async Task<IActionResult> ChangeStatus(Guid userId, [FromQuery] bool isActive)
+    {
+        var result = await _mediator.Send(new ChangeStatusCommand(userId, isActive));
 
-    //    return Ok(new { message = $"Đã {(isActive ? "kích hoạt" : "vô hiệu hóa")} tài khoản." });
-    //}
+        if (!result)
+            return NotFound(new { message = "Không tìm thấy tài khoản." });
+
+        return Ok(new
+        {
+            message = $"Đã {(isActive ? "kích hoạt" : "vô hiệu hóa")} tài khoản."
+        });
+    }
 
     // 🔴 DELETE: Xóa tài khoản
     [HttpDelete("{userId:guid}")]
     public async Task<IActionResult> DeleteAccount(Guid userId)
     {
-        var deleted = await _accountService.DeleteAsync(userId);
+        var deleted = await _mediator.Send(new DeleteAccountCommand(userId));
+
         if (!deleted)
             return NotFound(new { message = "Không tìm thấy tài khoản để xóa." });
 

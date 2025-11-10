@@ -3,27 +3,40 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SMMS.Application.Features.Manager.DTOs;
+using MediatR;
+using SMMS.Application.Features.Manager.Commands;
 using SMMS.Application.Features.Manager.Interfaces;
+using SMMS.Application.Features.Manager.Queries;
 using SMMS.Domain.Entities.school;
 using Microsoft.EntityFrameworkCore;
+using SMMS.Application.Features.Manager.DTOs;
+
 namespace SMMS.Application.Features.Manager.Handlers;
-public class ManagerClassService : IManagerClassService
+public class ManagerClassHandler :
+    IRequestHandler<GetAllClassesQuery, List<ClassDto>>,
+    IRequestHandler<GetTeacherAssignmentStatusQuery, object>,
+    IRequestHandler<CreateClassCommand, ClassDto>,
+    IRequestHandler<UpdateClassCommand, ClassDto?>,
+    IRequestHandler<DeleteClassCommand, bool>
 {
     private readonly IManagerClassRepository _repo;
 
-    public ManagerClassService(IManagerClassRepository repo)
+    public ManagerClassHandler(IManagerClassRepository repo)
     {
         _repo = repo;
     }
 
+    #region QUERY HANDLERS
+
     // 🟢 Get all classes by school
-    public async Task<List<ClassDto>> GetAllAsync(Guid schoolId)
+    public async Task<List<ClassDto>> Handle(
+        GetAllClassesQuery request,
+        CancellationToken cancellationToken)
     {
         return await _repo.Classes
-            .Include(c => c.Teacher) // 🔹 Eager load Teacher
+            .Include(c => c.Teacher)
             .ThenInclude(t => t.TeacherNavigation)
-            .Where(c => c.SchoolId == schoolId)
+            .Where(c => c.SchoolId == request.SchoolId)
             .OrderByDescending(c => c.CreatedAt)
             .Select(c => new ClassDto
             {
@@ -38,26 +51,30 @@ public class ManagerClassService : IManagerClassService
                 IsActive = c.IsActive,
                 CreatedAt = c.CreatedAt
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
-    public async Task<object> GetTeacherAssignmentStatusAsync(Guid schoolId)
+
+    // 🟣 Lấy trạng thái phân công giáo viên
+    public async Task<object> Handle(
+        GetTeacherAssignmentStatusQuery request,
+        CancellationToken cancellationToken)
     {
-        // 🟢 Lấy toàn bộ giáo viên
+        // 🟢 Lấy toàn bộ giáo viên trong school
         var allTeachers = await _repo.Teachers
             .Include(t => t.TeacherNavigation)
-            .Where(t => t.TeacherNavigation.SchoolId==schoolId)
+            .Where(t => t.TeacherNavigation.SchoolId == request.SchoolId)
             .Select(t => new
             {
                 t.TeacherId,
                 FullName = t.TeacherNavigation.FullName
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         // 🟡 Lấy danh sách giáo viên đã được phân lớp
         var assignedTeachers = await _repo.Classes
             .Where(c => c.TeacherId != null)
             .Select(c => c.TeacherId!.Value)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         // 🟣 Phân loại
         var teachersWithClass = allTeachers
@@ -68,7 +85,7 @@ public class ManagerClassService : IManagerClassService
             .Where(t => !assignedTeachers.Contains(t.TeacherId))
             .ToList();
 
-        // 🔹 Trả kết quả
+        // 🔹 Trả kết quả (giữ object + anonymous type giống service cũ)
         return new
         {
             TeachersWithClass = teachersWithClass,
@@ -76,15 +93,23 @@ public class ManagerClassService : IManagerClassService
         };
     }
 
+    #endregion
 
+    #region COMMAND HANDLERS
 
     // 🟡 Create
-    public async Task<ClassDto> CreateAsync(CreateClassRequest request)
+    public async Task<ClassDto> Handle(
+        CreateClassCommand command,
+        CancellationToken cancellationToken)
     {
+        var request = command.Request;
+
         // 🔹 Kiểm tra trùng giáo viên
         if (request.TeacherId.HasValue)
         {
-            bool teacherAssigned = await _repo.Classes.AnyAsync(c => c.TeacherId == request.TeacherId);
+            bool teacherAssigned = await _repo.Classes
+                .AnyAsync(c => c.TeacherId == request.TeacherId, cancellationToken);
+
             if (teacherAssigned)
                 throw new InvalidOperationException("Giáo viên này đã được gán cho một lớp khác.");
         }
@@ -98,6 +123,7 @@ public class ManagerClassService : IManagerClassService
             TeacherId = request.TeacherId,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
+            // logic cũ của bạn, giữ nguyên
             UpdatedBy = request.CreatedBy.HasValue ? (int?)0 : null
         };
 
@@ -114,10 +140,14 @@ public class ManagerClassService : IManagerClassService
             CreatedAt = newClass.CreatedAt
         };
     }
+
     // 🟠 Update
-    public async Task<ClassDto?> UpdateAsync(Guid classId, UpdateClassRequest request)
+    public async Task<ClassDto?> Handle(
+        UpdateClassCommand command,
+        CancellationToken cancellationToken)
     {
-        var entity = await _repo.GetByIdAsync(classId);
+        var request = command.Request;
+        var entity = await _repo.GetByIdAsync(command.ClassId);
         if (entity == null) return null;
 
         if (!string.IsNullOrWhiteSpace(request.ClassName))
@@ -147,13 +177,17 @@ public class ManagerClassService : IManagerClassService
     }
 
     // 🔴 Delete
-    public async Task<bool> DeleteAsync(Guid classId)
+    public async Task<bool> Handle(
+        DeleteClassCommand command,
+        CancellationToken cancellationToken)
     {
-        var entity = await _repo.GetByIdAsync(classId);
+        var entity = await _repo.GetByIdAsync(command.ClassId);
         if (entity == null)
             return false;
 
         await _repo.DeleteAsync(entity);
         return true;
     }
+
+    #endregion
 }

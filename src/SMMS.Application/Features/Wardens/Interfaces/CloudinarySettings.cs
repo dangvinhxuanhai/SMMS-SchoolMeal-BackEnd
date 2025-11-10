@@ -4,7 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SMMS.Persistence.Configurations;
+
+namespace SMMS.Application.Features.Wardens.Interfaces;
 public class CloudinarySettings
 {
     public string CloudName { get; set; } = string.Empty;

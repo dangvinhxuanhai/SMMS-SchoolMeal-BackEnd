@@ -20,3 +20,15 @@ public class UploadStudentImageRequest
 
     public string? Caption { get; set; }
 }
+public class CloudImageDto
+{
+    public string Url { get; set; } = string.Empty;
+    public string PublicId { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
+public class UploadImageResultDto
+{
+    public string Url { get; set; } = string.Empty;
+    public string PublicId { get; set; } = string.Empty;
+}

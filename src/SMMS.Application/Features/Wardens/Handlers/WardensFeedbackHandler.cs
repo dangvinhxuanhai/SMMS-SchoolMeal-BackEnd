@@ -3,42 +3,50 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
+
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using SMMS.Application.Features.Wardens.Commands;
 using SMMS.Application.Features.Wardens.DTOs;
 using SMMS.Application.Features.Wardens.Interfaces;
+using SMMS.Application.Features.Wardens.Queries;
 using SMMS.Domain.Entities.foodmenu;
-using SMMS.Persistence.Dbcontext;
-using Microsoft.EntityFrameworkCore;
 
-
-namespace SMMS.Persistence.Repositories.Wardens;
-
-public class WardensFeedbackService : IWardensFeedbackService
+namespace SMMS.Application.Features.Wardens.Handlers;
+public class WardensFeedbackHandler :
+    IRequestHandler<GetWardenFeedbacksQuery, IEnumerable<FeedbackDto>>,
+    IRequestHandler<CreateWardenFeedbackCommand, FeedbackDto>
 {
-    private readonly EduMealContext _context;
+    private readonly IWardensFeedbackRepository _repo;
 
-    public WardensFeedbackService(EduMealContext context)
+    public WardensFeedbackHandler(IWardensFeedbackRepository repo)
     {
-        _context = context;
+        _repo = repo;
     }
 
     // 🟢 Lấy danh sách feedback của giám thị
-    public async Task<IEnumerable<FeedbackDto>> GetFeedbacksByWardenAsync(Guid wardenId)
+    public async Task<IEnumerable<FeedbackDto>> Handle(
+        GetWardenFeedbacksQuery request,
+        CancellationToken cancellationToken)
     {
-        // Lấy thông tin giám thị (Sender)
-        var sender = await _context.Users
+        var wardenId = request.WardenId;
+
+        // Lấy tên giám thị
+        var sender = await _repo.Users
             .Where(u => u.UserId == wardenId)
             .Select(u => u.FullName)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (sender == null)
             throw new ArgumentException("Không tìm thấy giám thị trong hệ thống.");
 
-        // Lấy lớp hiện tại mà giám thị đang phụ trách
+        // Lớp hiện tại giám thị phụ trách (năm học mới nhất)
         var currentClass = await (
-            from c in _context.Classes
-            join t in _context.Teachers on c.TeacherId equals t.TeacherId
-            join u in _context.Users on t.TeacherId equals u.UserId
-            join y in _context.AcademicYears on c.YearId equals y.YearId
+            from c in _repo.Classes
+            join t in _repo.Teachers on c.TeacherId equals t.TeacherId
+            join u in _repo.Users on t.TeacherId equals u.UserId
+            join y in _repo.AcademicYears on c.YearId equals y.YearId
             where t.TeacherId == wardenId
             orderby y.BoardingEndDate descending
             select new
@@ -48,19 +56,18 @@ public class WardensFeedbackService : IWardensFeedbackService
                 y.BoardingStartDate,
                 y.BoardingEndDate
             }
-        ).FirstOrDefaultAsync();
+        ).FirstOrDefaultAsync(cancellationToken);
 
         string className = currentClass?.ClassName ?? "Không xác định";
         string teacherName = currentClass?.TeacherName ?? "N/A";
 
-        // Lấy danh sách feedback
-        var feedbacks = await _context.Feedbacks
+        // Feedbacks của giám thị
+        var feedbacks = await _repo.Feedbacks
             .Where(f => f.SenderId == wardenId)
             .OrderByDescending(f => f.CreatedAt)
             .Select(f => new FeedbackDto
             {
                 FeedbackId = f.FeedbackId,
-                // Ghép tiêu đề: [ClassName] + [TeacherName] + [Date]
                 Title = $"{className} - {teacherName} - {f.CreatedAt:dd/MM/yyyy}",
                 SenderName = sender,
                 Content = f.Content,
@@ -69,33 +76,36 @@ public class WardensFeedbackService : IWardensFeedbackService
                 CreatedAt = f.CreatedAt,
                 DailyMealId = f.DailyMealId
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return feedbacks;
     }
 
-
-    // 🟡 Tạo mới feedback gửi tới kitchen staff
-    public async Task<FeedbackDto> CreateFeedbackAsync(CreateFeedbackRequest request)
+    // 🟡 Tạo mới feedback
+    public async Task<FeedbackDto> Handle(
+        CreateWardenFeedbackCommand command,
+        CancellationToken cancellationToken)
     {
+        var request = command.Request;
+
         if (string.IsNullOrWhiteSpace(request.Content))
             throw new ArgumentException("Nội dung phản hồi không được để trống.");
 
-        // 🔹 Kiểm tra người gửi (giám thị)
-        var sender = await _context.Users
+        // Kiểm tra giám thị
+        var sender = await _repo.Users
             .Where(u => u.UserId == request.SenderId)
             .Select(u => new { u.UserId, u.FullName })
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (sender == null)
             throw new ArgumentException("Giám thị không tồn tại trong hệ thống.");
 
-        // 🔹 Xác định lớp mà giám thị đang phụ trách (theo năm học mới nhất)
+        // Lớp mà giám thị đang phụ trách (năm học mới nhất)
         var currentClass = await (
-            from c in _context.Classes
-            join t in _context.Teachers on c.TeacherId equals t.TeacherId
-            join u in _context.Users on t.TeacherId equals u.UserId
-            join y in _context.AcademicYears on c.YearId equals y.YearId
+            from c in _repo.Classes
+            join t in _repo.Teachers on c.TeacherId equals t.TeacherId
+            join u in _repo.Users on t.TeacherId equals u.UserId
+            join y in _repo.AcademicYears on c.YearId equals y.YearId
             where t.TeacherId == request.SenderId
             orderby y.BoardingEndDate descending
             select new
@@ -105,39 +115,39 @@ public class WardensFeedbackService : IWardensFeedbackService
                 y.BoardingStartDate,
                 y.BoardingEndDate
             }
-            ).FirstOrDefaultAsync();
+        ).FirstOrDefaultAsync(cancellationToken);
 
         string className = currentClass?.ClassName ?? "Không xác định";
         string teacherName = currentClass?.TeacherName ?? sender.FullName;
         string dateNow = DateTime.UtcNow.ToString("dd/MM/yyyy");
 
-        // 🔹 Sinh tiêu đề tự động
+        // Sinh tiêu đề
         string title = $"{className} - {teacherName} - {dateNow}";
 
-        // 🔹 Xác nhận bữa ăn nếu có
+        // Xác nhận daily meal (nếu có)
         if (request.DailyMealId.HasValue)
         {
-            bool mealExists = await _context.DailyMeals
-                .AnyAsync(m => m.DailyMealId == request.DailyMealId);
+            bool mealExists = await _repo.DailyMeals
+                .AnyAsync(m => m.DailyMealId == request.DailyMealId, cancellationToken);
+
             if (!mealExists)
                 throw new ArgumentException("Không tìm thấy bữa ăn để phản hồi.");
         }
 
-        // 🟩 Tạo bản ghi feedback
+        // Tạo feedback
         var feedback = new Feedback
         {
             SenderId = request.SenderId,
-            TargetType = "KitchenStaff",                 // 🔹 Cố định, không còn kiểm tra
-            TargetRef = request.TargetRef,          // Có thể null, hoặc ghi chú tên học sinh
+            TargetType = "KitchenStaff",   // theo code cũ: cố định KitchenStaff
+            TargetRef = request.TargetRef,
             Content = request.Content.Trim(),
             DailyMealId = request.DailyMealId,
             CreatedAt = DateTime.UtcNow
         };
 
-        _context.Feedbacks.Add(feedback);
-        await _context.SaveChangesAsync();
+        await _repo.AddFeedbackAsync(feedback);
+        await _repo.SaveChangesAsync();
 
-        // 🟢 Trả về DTO
         return new FeedbackDto
         {
             FeedbackId = feedback.FeedbackId,
@@ -145,10 +155,9 @@ public class WardensFeedbackService : IWardensFeedbackService
             SenderName = sender.FullName,
             Content = feedback.Content,
             TargetRef = feedback.TargetRef,
+            TargetType = feedback.TargetType,
             CreatedAt = feedback.CreatedAt,
             DailyMealId = feedback.DailyMealId
         };
     }
-
 }
-

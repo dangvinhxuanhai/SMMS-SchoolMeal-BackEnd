@@ -1,32 +1,50 @@
-using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Entities.school;
-using SMMS.Domain.Entities.nutrition;
-using SMMS.Domain.Entities.billing;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using ClosedXML.Excel;
+using MediatR;
 using SMMS.Application.Features.Wardens.DTOs;
 using SMMS.Application.Features.Wardens.Interfaces;
-using SMMS.Persistence.Dbcontext;
+using SMMS.Application.Features.Wardens.Queries;
+using Microsoft.EntityFrameworkCore;
 
-
-namespace SMMS.Persistence.Repositories.Wardens;
-
-public class WardensService : IWardensService
+namespace SMMS.Application.Features.Wardens.Handlers;
+public class WardensHandler :
+    IRequestHandler<GetWardenClassesQuery, IEnumerable<ClassDto>>,
+    IRequestHandler<GetClassAttendanceQuery, ClassAttendanceDto>,
+    IRequestHandler<ExportAttendanceReportQuery, byte[]>,
+    IRequestHandler<GetStudentsInClassQuery, IEnumerable<StudentDto>>,
+    IRequestHandler<GetHealthSummaryQuery, HealthSummaryDto>,
+    IRequestHandler<GetStudentsHealthQuery, IEnumerable<StudentHealthDto>>,
+    IRequestHandler<GetWardenDashboardQuery, DashboardDto>,
+    IRequestHandler<GetWardenNotificationsQuery, IEnumerable<NotificationDto>>,
+    IRequestHandler<ExportClassStudentsQuery, byte[]>,
+    IRequestHandler<ExportClassHealthQuery, byte[]>,
+    IRequestHandler<GetHealthRecordsQuery, object>,
+    IRequestHandler<SearchStudentsInClassQuery, object>
 {
-    private readonly EduMealContext _context;
+    private readonly IWardensRepository _repo;
 
-    public WardensService(EduMealContext context)
+    public WardensHandler(IWardensRepository repo)
     {
-        _context = context;
+        _repo = repo;
     }
 
-    public async Task<IEnumerable<ClassDto>> GetClassesAsync(Guid wardenId)
+    #region 1️⃣ GetClassesAsync
+
+    public async Task<IEnumerable<ClassDto>> Handle(
+        GetWardenClassesQuery request,
+        CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var classes = await (
-            from c in _context.Classes
-            join t in _context.Teachers on c.TeacherId equals t.TeacherId
-            join u in _context.Users on t.TeacherId equals u.UserId
-            where c.TeacherId == wardenId && c.IsActive
+            from c in _repo.Classes
+            join t in _repo.Teachers on c.TeacherId equals t.TeacherId
+            join u in _repo.Users on t.TeacherId equals u.UserId
+            where c.TeacherId == request.WardenId && c.IsActive
             select new
             {
                 c.ClassId,
@@ -35,25 +53,22 @@ public class WardensService : IWardensService
                 WardenId = c.TeacherId,
                 WardenName = u.FullName
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var result = new List<ClassDto>();
 
         foreach (var cls in classes)
         {
-            // Tổng số học sinh
-            var totalStudents = await _context.StudentClasses
-                .CountAsync(sc => sc.ClassId == cls.ClassId);
+            var totalStudents = await _repo.StudentClasses
+                .CountAsync(sc => sc.ClassId == cls.ClassId, cancellationToken);
 
-            // Số học sinh vắng hôm nay
             var absentCount = await (
-                from sc in _context.StudentClasses
-                join a in _context.Attendances on sc.StudentId equals a.StudentId
+                from sc in _repo.StudentClasses
+                join a in _repo.Attendances on sc.StudentId equals a.StudentId
                 where sc.ClassId == cls.ClassId && a.AbsentDate == today
                 select a
-            ).CountAsync();
+            ).CountAsync(cancellationToken);
 
-            // Số học sinh có mặt
             var presentCount = totalStudents - absentCount;
 
             result.Add(new ClassDto
@@ -65,54 +80,66 @@ public class WardensService : IWardensService
                 WardenName = cls.WardenName,
                 TotalStudents = totalStudents,
                 PresentToday = presentCount,
-                AbsentToday = absentCount
+                AbsentToday = absentCount,
+                AttendanceRate = totalStudents > 0
+                    ? Math.Round((double)presentCount / totalStudents * 100, 2)
+                    : 0
             });
         }
 
         return result;
     }
 
-    public async Task<ClassAttendanceDto> GetClassAttendanceAsync(Guid classId)
+    #endregion
+
+    #region 2️⃣ GetClassAttendanceAsync
+
+    public async Task<ClassAttendanceDto> Handle(
+        GetClassAttendanceQuery request,
+        CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var classInfo = await _context.Classes
-            .Where(c => c.ClassId == classId)
+        var classInfo = await _repo.Classes
+            .Where(c => c.ClassId == request.ClassId)
             .Select(c => new { c.ClassId, c.ClassName })
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (classInfo == null)
             throw new ArgumentException("Class not found");
 
         var students = await (
-            from sc in _context.StudentClasses
-            join s in _context.Students on sc.StudentId equals s.StudentId
-            where sc.ClassId == classId
+            from sc in _repo.StudentClasses
+            join s in _repo.Students on sc.StudentId equals s.StudentId
+            where sc.ClassId == request.ClassId
             select new StudentAttendanceDto
             {
                 StudentId = s.StudentId,
                 StudentName = s.FullName,
-                Status = _context.Attendances
-                    .Any(a => a.StudentId == s.StudentId && a.AbsentDate == today) ? "Absent" : "Present",
-                Reason = _context.Attendances
+                Status = _repo.Attendances
+                    .Any(a => a.StudentId == s.StudentId && a.AbsentDate == today)
+                    ? "Absent"
+                    : "Present",
+                Reason = _repo.Attendances
                     .Where(a => a.StudentId == s.StudentId && a.AbsentDate == today)
                     .Select(a => a.Reason)
                     .FirstOrDefault(),
-                CreatedAt = _context.Attendances
+                CreatedAt = _repo.Attendances
                     .Where(a => a.StudentId == s.StudentId && a.AbsentDate == today)
                     .Select(a => a.CreatedAt)
                     .FirstOrDefault()
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var summary = new AttendanceSummaryDto
         {
             TotalStudents = students.Count,
             Present = students.Count(s => s.Status == "Present"),
             Absent = students.Count(s => s.Status == "Absent"),
-            Late = 0, // Không có thông tin về Late trong model hiện tại
-            AttendanceRate = students.Count > 0 ? 
-                Math.Round((double)students.Count(s => s.Status == "Present") / students.Count * 100, 2) : 0
+            Late = 0,
+            AttendanceRate = students.Count > 0
+                ? Math.Round((double)students.Count(s => s.Status == "Present") / students.Count * 100, 2)
+                : 0
         };
 
         return new ClassAttendanceDto
@@ -124,20 +151,26 @@ public class WardensService : IWardensService
         };
     }
 
-    public async Task<byte[]> ExportAttendanceReportAsync(Guid classId)
+    #endregion
+
+    #region 3️⃣ ExportAttendanceReportAsync
+
+    public async Task<byte[]> Handle(
+        ExportAttendanceReportQuery request,
+        CancellationToken cancellationToken)
     {
-        var attendanceData = await GetClassAttendanceAsync(classId);
-        
-        using var workbook = new ClosedXML.Excel.XLWorkbook();
+        var attendanceData = await Handle(
+            new GetClassAttendanceQuery(request.ClassId),
+            cancellationToken);
+
+        using var workbook = new XLWorkbook();
         var worksheet = workbook.Worksheets.Add("Attendance Report");
 
-        // Headers
         worksheet.Cell(1, 1).Value = "Student Name";
         worksheet.Cell(1, 2).Value = "Status";
         worksheet.Cell(1, 3).Value = "Reason";
         worksheet.Cell(1, 4).Value = "Time";
 
-        // Data
         for (int i = 0; i < attendanceData.Students.Count; i++)
         {
             var student = attendanceData.Students[i];
@@ -147,7 +180,6 @@ public class WardensService : IWardensService
             worksheet.Cell(i + 2, 4).Value = student.CreatedAt.ToString("HH:mm");
         }
 
-        // Summary
         var summaryRow = attendanceData.Students.Count + 3;
         worksheet.Cell(summaryRow, 1).Value = "Total Students:";
         worksheet.Cell(summaryRow, 2).Value = attendanceData.Summary.TotalStudents;
@@ -163,31 +195,39 @@ public class WardensService : IWardensService
         return stream.ToArray();
     }
 
-    public async Task<IEnumerable<StudentDto>> GetStudentsInClassAsync(Guid classId)
+    #endregion
+
+    #region 4️⃣ GetStudentsInClassAsync
+
+    public async Task<IEnumerable<StudentDto>> Handle(
+        GetStudentsInClassQuery request,
+        CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        
-        var students = await (from sc in _context.StudentClasses
-                              join s in _context.Students on sc.StudentId equals s.StudentId
-                              join p in _context.Users on s.ParentId equals p.UserId into parentJoin
-                              from parent in parentJoin.DefaultIfEmpty()
-                              where sc.ClassId == classId
-                              select new
-                              {
-                                  s.StudentId,
-                                  s.FullName,
-                                  s.Gender,
-                                  s.DateOfBirth,
-                                  ParentName = parent.FullName,
-                                  ParentPhone = parent.Phone,
-                                  s.IsActive,
-                                  Allergies = (from sa in _context.StudentAllergens
-                                               join al in _context.Allergens on sa.AllergenId equals al.AllergenId
-                                               where sa.StudentId == s.StudentId
-                                               select al.AllergenName).ToList(),
-                                  IsAbsent = _context.Attendances
-                                      .Any(a => a.StudentId == s.StudentId && a.AbsentDate == today)
-                              }).ToListAsync();
+
+        var students = await (
+            from sc in _repo.StudentClasses
+            join s in _repo.Students on sc.StudentId equals s.StudentId
+            join p in _repo.Users on s.ParentId equals p.UserId into parentJoin
+            from parent in parentJoin.DefaultIfEmpty()
+            where sc.ClassId == request.ClassId
+            select new
+            {
+                s.StudentId,
+                s.FullName,
+                s.Gender,
+                s.DateOfBirth,
+                s.RelationName,
+                ParentName = parent.FullName,
+                ParentPhone = parent.Phone,
+                s.IsActive,
+                Allergies = (from sa in _repo.StudentAllergens
+                             join al in _repo.Allergens on sa.AllergenId equals al.AllergenId
+                             where sa.StudentId == s.StudentId
+                             select al.AllergenName).ToList(),
+                IsAbsent = _repo.Attendances
+                    .Any(a => a.StudentId == s.StudentId && a.AbsentDate == today)
+            }).ToListAsync(cancellationToken);
 
         return students.Select(s => new StudentDto
         {
@@ -196,6 +236,7 @@ public class WardensService : IWardensService
             Gender = s.Gender,
             DateOfBirth = s.DateOfBirth,
             IsActive = s.IsActive,
+            RelationName = s.RelationName,
             ParentName = s.ParentName,
             ParentPhone = s.ParentPhone,
             Allergies = s.Allergies,
@@ -203,33 +244,39 @@ public class WardensService : IWardensService
         });
     }
 
-    public async Task<HealthSummaryDto> GetHealthSummaryAsync(Guid wardenId)
-    {
-        var classes = await _context.Classes
-            .Where(c => c.TeacherId == wardenId)
-            .Select(c => c.ClassId)
-            .ToListAsync();
+    #endregion
 
-        var studentIds = await _context.StudentClasses
+    #region 5️⃣ GetHealthSummaryAsync
+
+    public async Task<HealthSummaryDto> Handle(
+        GetHealthSummaryQuery request,
+        CancellationToken cancellationToken)
+    {
+        var classes = await _repo.Classes
+            .Where(c => c.TeacherId == request.WardenId)
+            .Select(c => c.ClassId)
+            .ToListAsync(cancellationToken);
+
+        var studentIds = await _repo.StudentClasses
             .Where(sc => classes.Contains(sc.ClassId))
             .Select(sc => sc.StudentId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
-        var healthRecords = await _context.StudentHealthRecords
+        var healthRecords = await _repo.StudentHealthRecords
             .Where(h => studentIds.Contains(h.StudentId))
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var totalStudents = studentIds.Count;
         var normalWeight = 0;
         var underweight = 0;
         var overweight = 0;
         var obese = 0;
-        var totalBMI = 0.0;
+        double totalBMI = 0.0;
         var validBMICount = 0;
 
         foreach (var record in healthRecords)
         {
-            if (record.HeightCm.HasValue && record.WeightKg.HasValue)
+            if (record.HeightCm.HasValue && record.WeightKg.HasValue && record.HeightCm > 0)
             {
                 var bmi = (double)record.WeightKg.Value / Math.Pow((double)record.HeightCm.Value / 100, 2);
                 totalBMI += bmi;
@@ -253,46 +300,80 @@ public class WardensService : IWardensService
         };
     }
 
-    public async Task<IEnumerable<StudentHealthDto>> GetStudentsHealthAsync(Guid classId)
+    #endregion
+
+    #region 6️⃣ GetStudentsHealthAsync
+
+    public async Task<IEnumerable<StudentHealthDto>> Handle(
+        GetStudentsHealthQuery request,
+        CancellationToken cancellationToken)
     {
         return await (
-            from sc in _context.StudentClasses
-            join s in _context.Students on sc.StudentId equals s.StudentId
-            join h in _context.StudentHealthRecords on s.StudentId equals h.StudentId into healthJoin
+            from sc in _repo.StudentClasses
+            join s in _repo.Students on sc.StudentId equals s.StudentId
+            join h in _repo.StudentHealthRecords on s.StudentId equals h.StudentId into healthJoin
             from health in healthJoin.DefaultIfEmpty()
-            where sc.ClassId == classId
+            where sc.ClassId == request.ClassId
             select new StudentHealthDto
             {
                 StudentId = s.StudentId,
                 StudentName = s.FullName,
                 HeightCm = health != null ? (double?)health.HeightCm : null,
                 WeightKg = health != null ? (double?)health.WeightKg : null,
-                BMI = health != null && health.HeightCm.HasValue && health.WeightKg.HasValue ?
-                    Math.Round((double)health.WeightKg.Value / Math.Pow((double)health.HeightCm.Value / 100, 2), 2) : null,
-                BMICategory = health != null && health.HeightCm.HasValue && health.WeightKg.HasValue ?
-                    GetBMICategory((double)health.WeightKg.Value / Math.Pow((double)health.HeightCm.Value / 100, 2)) : null,
-                RecordDate = health != null ? health.RecordAt.ToDateTime(TimeOnly.MinValue) : DateTime.MinValue
+                BMI = health != null && health.HeightCm.HasValue && health.WeightKg.HasValue
+                    ? Math.Round(
+                        (double)health.WeightKg.Value /
+                        Math.Pow((double)health.HeightCm.Value / 100, 2), 2)
+                    : null,
+                BMICategory = health != null && health.HeightCm.HasValue && health.WeightKg.HasValue
+                    ? GetBMICategory(
+                        (double)health.WeightKg.Value /
+                        Math.Pow((double)health.HeightCm.Value / 100, 2))
+                    : null,
+                RecordDate = health != null
+                    ? health.RecordAt.ToDateTime(TimeOnly.MinValue)
+                    : DateTime.MinValue
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<DashboardDto> GetDashboardAsync(Guid wardenId)
+    private static string GetBMICategory(double bmi)
     {
-        var classes = await _context.Classes
-            .Where(c => c.TeacherId == wardenId)
-            .Select(c => c.ClassId)
-            .ToListAsync();
+        return bmi switch
+        {
+            < 18.5 => "Underweight",
+            < 25 => "Normal",
+            < 30 => "Overweight",
+            _ => "Obese"
+        };
+    }
 
-        var totalStudents = await _context.StudentClasses
-            .CountAsync(sc => classes.Contains(sc.ClassId));
+    #endregion
+
+    #region 7️⃣ GetDashboardAsync
+
+    public async Task<DashboardDto> Handle(
+        GetWardenDashboardQuery request,
+        CancellationToken cancellationToken)
+    {
+        var classes = await _repo.Classes
+            .Where(c => c.TeacherId == request.WardenId)
+            .Select(c => c.ClassId)
+            .ToListAsync(cancellationToken);
+
+        var totalStudents = await _repo.StudentClasses
+            .CountAsync(sc => classes.Contains(sc.ClassId), cancellationToken);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        var absentToday = await _context.Attendances
+        var absentToday = await _repo.Attendances
             .CountAsync(a => a.Student.StudentClasses.Any(sc => classes.Contains(sc.ClassId)) &&
-                           a.AbsentDate == today);
+                             a.AbsentDate == today,
+                        cancellationToken);
 
         var presentToday = totalStudents - absentToday;
-        var attendanceRate = totalStudents > 0 ? Math.Round((double)presentToday / totalStudents * 100, 2) : 0;
+        var attendanceRate = totalStudents > 0
+            ? Math.Round((double)presentToday / totalStudents * 100, 2)
+            : 0;
 
         var recentActivities = new List<RecentActivityDto>
         {
@@ -312,12 +393,18 @@ public class WardensService : IWardensService
         };
     }
 
-    public async Task<IEnumerable<NotificationDto>> GetNotificationsAsync(Guid wardenId)
+    #endregion
+
+    #region 8️⃣ GetNotificationsAsync
+
+    public async Task<IEnumerable<NotificationDto>> Handle(
+        GetWardenNotificationsQuery request,
+        CancellationToken cancellationToken)
     {
         return await (
-            from nr in _context.NotificationRecipients
-            join n in _context.Notifications on nr.NotificationId equals n.NotificationId
-            where nr.UserId == wardenId
+            from nr in _repo.NotificationRecipients
+            join n in _repo.Notifications on nr.NotificationId equals n.NotificationId
+            where nr.UserId == request.WardenId
             orderby n.CreatedAt descending
             select new NotificationDto
             {
@@ -329,44 +416,48 @@ public class WardensService : IWardensService
                 SendType = n.SendType
             })
             .Take(10)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<byte[]> ExportClassStudentsAsync(Guid classId)
+    #endregion
+
+    #region 9️⃣ ExportClassStudentsAsync
+
+    public async Task<byte[]> Handle(
+        ExportClassStudentsQuery request,
+        CancellationToken cancellationToken)
     {
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // 1️⃣ Lấy danh sách học sinh
-        var students = await (from sc in _context.StudentClasses
-                              join s in _context.Students on sc.StudentId equals s.StudentId
-                              join p in _context.Users on s.ParentId equals p.UserId into parentJoin
-                              from parent in parentJoin.DefaultIfEmpty()
-                              where sc.ClassId == classId
-                              select new
-                              {
-                                  s.StudentId,
-                                  s.FullName,
-                                  s.Gender,
-                                  s.DateOfBirth,
-                                  ParentName = parent.FullName,
-                                  ParentPhone = parent.Phone,
-                                  Allergies = (from sa in _context.StudentAllergens
-                                               join al in _context.Allergens on sa.AllergenId equals al.AllergenId
-                                               where sa.StudentId == s.StudentId
-                                               select al.AllergenName).ToList(),
-                                  IsAbsent = _context.Attendances
-                                      .Any(a => a.StudentId == s.StudentId && a.AbsentDate == today),
-                                  AbsentReason = _context.Attendances
-                                      .Where(a => a.StudentId == s.StudentId && a.AbsentDate == today)
-                                      .Select(a => a.Reason)
-                                      .FirstOrDefault()
-                              }).ToListAsync();
+        var students = await (
+            from sc in _repo.StudentClasses
+            join s in _repo.Students on sc.StudentId equals s.StudentId
+            join p in _repo.Users on s.ParentId equals p.UserId into parentJoin
+            from parent in parentJoin.DefaultIfEmpty()
+            where sc.ClassId == request.ClassId
+            select new
+            {
+                s.StudentId,
+                s.FullName,
+                s.Gender,
+                s.DateOfBirth,
+                ParentName = parent.FullName,
+                ParentPhone = parent.Phone,
+                Allergies = (from sa in _repo.StudentAllergens
+                             join al in _repo.Allergens on sa.AllergenId equals al.AllergenId
+                             where sa.StudentId == s.StudentId
+                             select al.AllergenName).ToList(),
+                IsAbsent = _repo.Attendances
+                    .Any(a => a.StudentId == s.StudentId && a.AbsentDate == today),
+                AbsentReason = _repo.Attendances
+                    .Where(a => a.StudentId == s.StudentId && a.AbsentDate == today)
+                    .Select(a => a.Reason)
+                    .FirstOrDefault()
+            }).ToListAsync(cancellationToken);
 
-        // 2️⃣ Tạo workbook Excel
-        using var workbook = new ClosedXML.Excel.XLWorkbook();
+        using var workbook = new XLWorkbook();
         var worksheet = workbook.Worksheets.Add("Danh sách học sinh");
 
-        // 3️⃣ Header
         worksheet.Cell(1, 1).Value = "STT";
         worksheet.Cell(1, 2).Value = "Họ tên học sinh";
         worksheet.Cell(1, 3).Value = "Giới tính";
@@ -377,9 +468,8 @@ public class WardensService : IWardensService
 
         var headerRange = worksheet.Range("A1:G1");
         headerRange.Style.Font.Bold = true;
-        headerRange.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightBlue;
+        headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
 
-        // 4️⃣ Ghi dữ liệu
         int row = 2;
         int index = 1;
 
@@ -400,7 +490,6 @@ public class WardensService : IWardensService
 
         worksheet.Columns().AdjustToContents();
 
-        // 5️⃣ Trả về file
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         stream.Position = 0;
@@ -408,28 +497,32 @@ public class WardensService : IWardensService
         return stream.ToArray();
     }
 
-    public async Task<byte[]> ExportClassHealthAsync(Guid classId)
-    {
-        // 1️⃣ Lấy dữ liệu mới nhất theo học sinh
-        var healthData = await (
-         from sc in _context.StudentClasses
-         join s in _context.Students on sc.StudentId equals s.StudentId
-         join h in _context.StudentHealthRecords on s.StudentId equals h.StudentId into healthJoin
-         from health in healthJoin
-             .OrderByDescending(x => x.RecordAt)
-             .Take(1)
-             .DefaultIfEmpty()
-         where sc.ClassId == classId
-         select new
-         {
-             s.FullName,
-             HeightCm = health != null ? health.HeightCm : null,
-             WeightKg = health != null ? health.WeightKg : null,
-             RecordAt = (DateOnly?)health.RecordAt // ✅ ép kiểu sang nullable
-         })
-         .ToListAsync();
+    #endregion
 
-        // 2️⃣ Xử lý dữ liệu BMI & trạng thái
+    #region 🔟 ExportClassHealthAsync
+
+    public async Task<byte[]> Handle(
+        ExportClassHealthQuery request,
+        CancellationToken cancellationToken)
+    {
+        var healthData = await (
+            from sc in _repo.StudentClasses
+            join s in _repo.Students on sc.StudentId equals s.StudentId
+            join h in _repo.StudentHealthRecords on s.StudentId equals h.StudentId into healthJoin
+            from health in healthJoin
+                .OrderByDescending(x => x.RecordAt)
+                .Take(1)
+                .DefaultIfEmpty()
+            where sc.ClassId == request.ClassId
+            select new
+            {
+                s.FullName,
+                HeightCm = health != null ? health.HeightCm : null,
+                WeightKg = health != null ? health.WeightKg : null,
+                RecordAt = (DateOnly?)health.RecordAt
+            })
+            .ToListAsync(cancellationToken);
+
         var records = healthData.Select(x =>
         {
             double bmi = 0;
@@ -457,16 +550,14 @@ public class WardensService : IWardensService
                 Bmi = bmi > 0 ? bmi.ToString("0.0") : "-",
                 Status = status,
                 RecordDate = x.RecordAt != null
-                ? x.RecordAt.Value.ToString("dd/MM/yyyy")
+                    ? x.RecordAt.Value.ToString("dd/MM/yyyy")
                     : "-"
             };
         }).ToList();
 
-        // 3️⃣ Tạo workbook Excel
-        using var workbook = new ClosedXML.Excel.XLWorkbook();
+        using var workbook = new XLWorkbook();
         var ws = workbook.Worksheets.Add("Chỉ số BMI học sinh");
 
-        // Header
         ws.Cell(1, 1).Value = "STT";
         ws.Cell(1, 2).Value = "Học sinh";
         ws.Cell(1, 3).Value = "Chiều cao";
@@ -477,10 +568,9 @@ public class WardensService : IWardensService
 
         var headerRange = ws.Range("A1:G1");
         headerRange.Style.Font.Bold = true;
-        headerRange.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightBlue;
-        headerRange.Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+        headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
+        headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-        // 4️⃣ Ghi dữ liệu
         int row = 2;
         int index = 1;
 
@@ -494,18 +584,17 @@ public class WardensService : IWardensService
             ws.Cell(row, 6).Value = item.Status;
             ws.Cell(row, 7).Value = item.RecordDate;
 
-            // Màu nền theo trạng thái
             var statusCell = ws.Cell(row, 6);
             switch (item.Status)
             {
                 case "Thiếu cân":
-                    statusCell.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightYellow;
+                    statusCell.Style.Fill.BackgroundColor = XLColor.LightYellow;
                     break;
                 case "Bình thường":
-                    statusCell.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightGreen;
+                    statusCell.Style.Fill.BackgroundColor = XLColor.LightGreen;
                     break;
                 case "Thừa cân / Béo phì":
-                    statusCell.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.LightPink;
+                    statusCell.Style.Fill.BackgroundColor = XLColor.LightPink;
                     break;
             }
 
@@ -514,7 +603,6 @@ public class WardensService : IWardensService
 
         ws.Columns().AdjustToContents();
 
-        // 5️⃣ Xuất file Excel
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         stream.Position = 0;
@@ -522,29 +610,23 @@ public class WardensService : IWardensService
         return stream.ToArray();
     }
 
-    private static string GetBMICategory(double bmi)
-    {
-        return bmi switch
-        {
-            < 18.5 => "Underweight",
-            < 25 => "Normal",
-            < 30 => "Overweight",
-            _ => "Obese"
-        };
-    }
+    #endregion
 
-    public async Task<object> GetHealthRecordsAsync(Guid classId)
+    #region 1️⃣1️⃣ GetHealthRecordsAsync
+
+    public async Task<object> Handle(
+        GetHealthRecordsQuery request,
+        CancellationToken cancellationToken)
     {
-        // 1️⃣ Lấy dữ liệu BMI trước
         var temp = await (
-            from sc in _context.StudentClasses
-            join s in _context.Students on sc.StudentId equals s.StudentId
-            join h in _context.StudentHealthRecords on s.StudentId equals h.StudentId into healthJoin
+            from sc in _repo.StudentClasses
+            join s in _repo.Students on sc.StudentId equals s.StudentId
+            join h in _repo.StudentHealthRecords on s.StudentId equals h.StudentId into healthJoin
             from health in healthJoin
                 .OrderByDescending(x => x.RecordAt)
                 .Take(1)
                 .DefaultIfEmpty()
-            where sc.ClassId == classId
+            where sc.ClassId == request.ClassId
             select new
             {
                 s.StudentId,
@@ -554,9 +636,8 @@ public class WardensService : IWardensService
                 HeightCm = health.HeightCm,
                 WeightKg = health.WeightKg
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
-        // 2️⃣ Xử lý tính toán & phân loại sau khi EF đã load xong
         var latestRecords = temp.Select(x =>
         {
             double bmi = 0;
@@ -592,20 +673,26 @@ public class WardensService : IWardensService
 
         return latestRecords;
     }
-    public async Task<object> SearchAsync(Guid classId, string keyword)
+
+    #endregion
+
+    #region 1️⃣2️⃣ SearchAsync
+
+    public async Task<object> Handle(
+        SearchStudentsInClassQuery request,
+        CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(keyword))
+        if (string.IsNullOrWhiteSpace(request.Keyword))
             return new { Students = new List<object>() };
 
-        keyword = keyword.Trim().ToLower();
+        var keyword = request.Keyword.Trim().ToLower();
 
-        // 🔍 Tìm học sinh hoặc phụ huynh theo tên trong lớp cụ thể
         var students = await (
-            from sc in _context.StudentClasses
-            join s in _context.Students on sc.StudentId equals s.StudentId
-            join p in _context.Users on s.ParentId equals p.UserId into parentJoin
+            from sc in _repo.StudentClasses
+            join s in _repo.Students on sc.StudentId equals s.StudentId
+            join p in _repo.Users on s.ParentId equals p.UserId into parentJoin
             from parent in parentJoin.DefaultIfEmpty()
-            where sc.ClassId == classId &&
+            where sc.ClassId == request.ClassId &&
                   (
                       s.FullName.ToLower().Contains(keyword) ||
                       (parent.FullName != null && parent.FullName.ToLower().Contains(keyword))
@@ -619,11 +706,10 @@ public class WardensService : IWardensService
                 ParentName = parent.FullName,
                 ClassName = sc.Class.ClassName,
                 SchoolName = sc.Class.School.SchoolName
-            }).ToListAsync();
+            }).ToListAsync(cancellationToken);
 
         return new { Students = students };
     }
 
-
-
+    #endregion
 }

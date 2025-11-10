@@ -1,92 +1,115 @@
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.Manager.Commands;
 using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Manager.Interfaces;
+using SMMS.Application.Features.Manager.Queries;
 
 namespace SMMS.WebAPI.Controllers.Modules.Manager;
 [Route("api/[controller]")]
 [ApiController]
 public class ManagerParentController : ControllerBase
 {
-    private readonly IManagerParentService _service;
+    private readonly IMediator _mediator;
 
-    public ManagerParentController(IManagerParentService service)
+    public ManagerParentController(IMediator mediator)
     {
-        _service = service;
+        _mediator = mediator;
     }
+
+    // 🔍 Tìm kiếm phụ huynh
     [HttpGet("search")]
-    public async Task<IActionResult> Search(Guid schoolId, [FromQuery] string keyword)
+    public async Task<IActionResult> Search([FromQuery] Guid schoolId, [FromQuery] string keyword)
     {
         if (string.IsNullOrWhiteSpace(keyword))
             return BadRequest(new { message = "Từ khóa tìm kiếm không được để trống." });
 
-        var result = await _service.SearchAsync(schoolId, keyword);
+        var result = await _mediator.Send(new SearchParentsQuery(schoolId, keyword));
         return Ok(new { count = result.Count, data = result });
     }
+
+    // 🟢 Lấy danh sách phụ huynh (theo trường / theo lớp)
     [HttpGet]
-    public async Task<IActionResult> GetAll(Guid schoolId, Guid? classId)
+    public async Task<IActionResult> GetAll([FromQuery] Guid schoolId, [FromQuery] Guid? classId)
     {
-        var parents = await _service.GetAllAsync(schoolId, classId);
+        var parents = await _mediator.Send(new GetParentsQuery(schoolId, classId));
         return Ok(new { count = parents.Count, data = parents });
     }
 
+    // 🟡 Tạo tài khoản phụ huynh + con + gán lớp
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateParentRequest request)
     {
-        var result = await _service.CreateAsync(request);
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _mediator.Send(new CreateParentCommand(request));
         return Ok(new { message = "Tạo tài khoản phụ huynh thành công!", data = result });
     }
 
-    [HttpPut("{userId}")]
+    // 🟠 Cập nhật phụ huynh + con
+    [HttpPut("{userId:guid}")]
     public async Task<IActionResult> Update(Guid userId, [FromBody] UpdateParentRequest request)
     {
-        var result = await _service.UpdateAsync(userId, request);
+        var result = await _mediator.Send(new UpdateParentCommand(userId, request));
         if (result == null)
             return NotFound(new { message = "Không tìm thấy phụ huynh cần cập nhật." });
 
         return Ok(new { message = "Cập nhật thành công!", data = result });
     }
 
-    [HttpPatch("{userId}/status")]
+    // 🔵 Đổi trạng thái kích hoạt
+    [HttpPatch("{userId:guid}/status")]
     public async Task<IActionResult> ChangeStatus(Guid userId, [FromQuery] bool isActive)
     {
-        var success = await _service.ChangeStatusAsync(userId, isActive);
+        var success = await _mediator.Send(new ChangeParentStatusCommand(userId, isActive));
         if (!success)
             return NotFound(new { message = "Không tìm thấy tài khoản." });
 
         return Ok(new { message = "Cập nhật trạng thái thành công!" });
     }
 
-    [HttpDelete("{userId}")]
+    // 🔴 Xóa tài khoản phụ huynh + con + lớp
+    [HttpDelete("{userId:guid}")]
     public async Task<IActionResult> Delete(Guid userId)
     {
-        var success = await _service.DeleteAsync(userId);
+        var success = await _mediator.Send(new DeleteParentCommand(userId));
         if (!success)
             return NotFound(new { message = "Không tìm thấy tài khoản." });
 
         return Ok(new { message = "Xóa tài khoản thành công!" });
     }
+
+    // 📥 Import phụ huynh từ Excel
     [HttpPost("import-excel")]
-    public async Task<IActionResult> ImportExcel(Guid schoolId, IFormFile file, [FromQuery] string createdBy)
+    public async Task<IActionResult> ImportExcel(
+        [FromQuery] Guid schoolId,
+        IFormFile file,
+        [FromQuery] string createdBy)
     {
         if (file == null || file.Length == 0)
             return BadRequest(new { message = "Vui lòng chọn file Excel hợp lệ." });
 
-        var result = await _service.ImportFromExcelAsync(schoolId, file, createdBy);
+        var result = await _mediator.Send(
+            new ImportParentsFromExcelCommand(schoolId, file, createdBy));
+
         return Ok(new
         {
-            message = $"Đã nhập thành công phụ huynh từ file Excel.",
+            message = "Đã nhập thành công phụ huynh từ file Excel.",
             data = result
         });
     }
+
+    // 📄 Download mẫu Excel
     [HttpGet("download-template")]
     public async Task<IActionResult> DownloadTemplate()
     {
-        var fileBytes = await _service.GetExcelTemplateAsync();
+        var fileBytes = await _mediator.Send(new GetParentExcelTemplateQuery());
 
-        return File(fileBytes,
+        return File(
+            fileBytes,
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             "Mau_Nhap_PhuHuynh.xlsx");
     }
-
 }

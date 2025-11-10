@@ -1,27 +1,31 @@
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.Wardens.Commands;
 using SMMS.Application.Features.Wardens.DTOs;
 using SMMS.Application.Features.Wardens.Interfaces;
+using SMMS.Application.Features.Wardens.Queries;
 
 namespace SMMS.WebAPI.Controllers.Modules.Wardens;
 [Route("api/[controller]")]
 [ApiController]
 public class WardensFeedbackController : ControllerBase
 {
-    private readonly IWardensFeedbackService _feedbackService;
+    private readonly IMediator _mediator;
 
-    public WardensFeedbackController(IWardensFeedbackService feedbackService)
+    public WardensFeedbackController(IMediator mediator)
     {
-        _feedbackService = feedbackService;
+        _mediator = mediator;
     }
 
     // 🟢 Lấy danh sách feedback của giám thị
+    // GET: /api/WardensFeedback/{wardenId}/list
     [HttpGet("{wardenId:guid}/list")]
     public async Task<IActionResult> GetFeedbacks(Guid wardenId)
     {
         try
         {
-            var feedbacks = await _feedbackService.GetFeedbacksByWardenAsync(wardenId);
+            var feedbacks = await _mediator.Send(new GetWardenFeedbacksQuery(wardenId));
 
             if (!feedbacks.Any())
                 return NotFound(new { message = "Chưa có phản hồi nào." });
@@ -39,12 +43,14 @@ public class WardensFeedbackController : ControllerBase
     }
 
     // 🟡 Tạo feedback gửi kitchen staff
+    // POST: /api/WardensFeedback/create
     [HttpPost("create")]
     public async Task<IActionResult> CreateFeedback([FromBody] CreateFeedbackRequest request)
     {
         try
         {
-            var feedback = await _feedbackService.CreateFeedbackAsync(request);
+            var feedback = await _mediator.Send(new CreateWardenFeedbackCommand(request));
+
             return Ok(new
             {
                 message = "Gửi phản hồi thành công!",
