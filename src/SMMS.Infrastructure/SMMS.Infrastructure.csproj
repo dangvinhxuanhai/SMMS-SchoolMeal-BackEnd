@@ -17,7 +17,7 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SMMS.Application\SMMS.Application.csproj" />
+    <ProjectReference Include="..\SMMS.Domain\SMMS.Domain.csproj" />
     <ProjectReference Include="..\SMMS.Persistence\SMMS.Persistence.csproj" />
   </ItemGroup>
   <ItemGroup>
