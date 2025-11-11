@@ -10,9 +10,6 @@ using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Application.Features.Identity.Interfaces;
 using SMMS.Application.Features.school.Interfaces;
 using SMMS.Infrastructure.Security;
-using SMMS.Infrastructure.Service;
-using SMMS.Infrastructure.Services;
-using SMMS.Persistence.DbContextSite;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
@@ -28,6 +25,16 @@ using SMMS.Persistence.Repositories.Schools;
 using SMMS.Persistence.Repositories.auth;
 using SMMS.Application.Features.school.Handlers;
 using SMMS.Application.Features.billing.Handlers;
+
+using Microsoft.EntityFrameworkCore;
+using SMMS.Application.Features.Wardens.Interfaces;
+using SMMS.Persistence.Repositories.Wardens;
+using SMMS.Domain.Entities.school;
+using SMMS.Persistence.Dbcontext;
+using SMMS.Application.Features.Manager.Interfaces;
+using SMMS.Application.Features.Manager.Handlers;
+using SMMS.Persistence.Repositories.Manager;
+using SMMS.Application.Features.Wardens.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -143,7 +150,38 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-
+builder.Services.AddDbContext<EduMealContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.Configure<CloudinarySettings>(
+    builder.Configuration.GetSection("CloudinarySettings"));
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssemblyContaining<ManagerAccountHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<ManagerClassHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<ManagerFinanceHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<ManagerParentHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<ManagerHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<WardensFeedbackHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<WardensHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<CloudStorageHandler>();
+});
+// Register Application Services
+builder.Services.AddScoped<IWardensRepository, WardensRepository>();
+builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
+builder.Services.AddScoped<IManagerAccountRepository, ManagerAccountRepository>();
+builder.Services.AddScoped<IWardensFeedbackRepository, WardensFeedbackRepository>();
+builder.Services.AddScoped<IManagerClassRepository, ManagerClassRepository>();
+builder.Services.AddScoped<IManagerFinanceRepository, ManagerFinanceRepository>();
+builder.Services.AddScoped<ICloudStorageRepository, CloudStorageRepository>();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
@@ -164,6 +202,8 @@ app.UseHttpsRedirection();
 
 // ✅ Thứ tự rất quan trọng:
 app.UseAuthentication();
+app.UseCors("AllowFrontend");
+
 app.UseAuthorization();
 
 app.MapControllers();
