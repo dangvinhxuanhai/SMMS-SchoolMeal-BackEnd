@@ -5,7 +5,7 @@ using SMMS.Application.Features.Identity.Interfaces;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.school;
-using SMMS.Persistence.DbContextSite;
+using SMMS.Persistence.Data;
 using  SMMS.Persistence.Repositories.Skeleton;
 namespace SMMS.Persistence.Repositories.auth
 {

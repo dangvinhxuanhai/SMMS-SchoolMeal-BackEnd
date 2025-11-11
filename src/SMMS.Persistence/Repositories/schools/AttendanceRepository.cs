@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.school.DTOs;
 using SMMS.Application.Features.school.Interfaces;
 using SMMS.Domain.Entities.school;
-using SMMS.Persistence.DbContextSite;
+using SMMS.Persistence.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;

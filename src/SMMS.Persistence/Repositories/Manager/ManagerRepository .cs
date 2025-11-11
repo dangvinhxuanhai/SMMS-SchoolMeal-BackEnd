@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SMMS.Domain.Entities.billing;
 using SMMS.Domain.Entities.purchasing;
-using SMMS.Persistence.Dbcontext;
+using SMMS.Persistence.Data;
 using SMMS.Application.Features.Manager.Interfaces;
 
 namespace SMMS.Persistence.Repositories.Manager;

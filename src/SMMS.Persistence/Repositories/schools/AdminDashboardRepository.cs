@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.school.DTOs;
 using SMMS.Application.Features.school.Interfaces;
-using SMMS.Persistence.DbContextSite;
+using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.schools
 {

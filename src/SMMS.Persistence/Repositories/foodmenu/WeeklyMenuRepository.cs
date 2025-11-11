@@ -9,7 +9,7 @@ using SMMS.Application.Common.Exceptions;
 using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Domain.Entities.foodmenu;
-using SMMS.Persistence.DbContextSite;
+using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.foodmenu;
 public sealed class WeeklyMenuRepository : IWeeklyMenuRepository

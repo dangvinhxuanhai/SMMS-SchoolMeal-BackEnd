@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.auth.DTOs;
 using SMMS.Application.Features.auth.Interfaces;
-using SMMS.Persistence.DbContextSite;
+using SMMS.Persistence.Data;
 
 namespace SMMS.Infrastructure.Repositories.Implementations
 {

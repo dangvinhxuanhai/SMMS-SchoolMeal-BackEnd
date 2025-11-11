@@ -7,7 +7,7 @@ using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.foodmenu;
 using SMMS.Domain.Entities.school;
-using SMMS.Persistence.Dbcontext;
+using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.Wardens;
 public class WardensFeedbackRepository : IWardensFeedbackRepository

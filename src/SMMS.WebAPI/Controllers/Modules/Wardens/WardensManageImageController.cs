@@ -7,7 +7,7 @@ using SMMS.Application.Features.Wardens.DTOs;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Application.Features.Wardens.Queries;
 using SMMS.Domain.Entities.school;
-using SMMS.Persistence.Dbcontext;
+using SMMS.Persistence.Data;
 
 namespace SMMS.WebAPI.Controllers.Modules.Wardens;
 [Route("api/[controller]")]

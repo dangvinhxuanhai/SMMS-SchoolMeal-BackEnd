@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.school.Interfaces;
-using SMMS.Persistence.DbContextSite;
+using SMMS.Persistence.Data;
 using SMMS.Domain.Entities.school;
 
 namespace SMMS.Persistence.Repositories.schools

@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Domain.Entities.school;
-using SMMS.Persistence.Dbcontext;
+using SMMS.Persistence.Data;
 using Microsoft.EntityFrameworkCore;
 namespace SMMS.Persistence.Repositories.Manager;
 public class ManagerClassRepository : IManagerClassRepository

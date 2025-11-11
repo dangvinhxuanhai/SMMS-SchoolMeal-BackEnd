@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Domain.Entities.billing;
-using SMMS.Persistence.DbContextSite;
+using SMMS.Persistence.Data;
 
 namespace SMMS.Infrastructure.Repositories
 {

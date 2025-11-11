@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.billing.DTOs;
 using SMMS.Application.Features.billing.Interfaces;
-using SMMS.Persistence.DbContextSite;
+using SMMS.Persistence.Data;
 
 namespace SMMS.Infrastructure.Repositories
 {

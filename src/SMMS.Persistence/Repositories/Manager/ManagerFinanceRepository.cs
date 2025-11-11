@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Domain.Entities.billing;
 using SMMS.Domain.Entities.purchasing;
-using SMMS.Persistence.Dbcontext;
+using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.Manager;
 public class ManagerFinanceRepository : IManagerFinanceRepository

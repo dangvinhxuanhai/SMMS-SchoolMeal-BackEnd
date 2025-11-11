@@ -4,7 +4,7 @@ using SMMS.Application.Features.auth.DTOs;
 using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Domain.Entities.auth;
 using SMMS.Infrastructure.Security;
-using SMMS.Persistence.DbContextSite;
+using SMMS.Persistence.Data;
 using System;
 using System.Threading.Tasks;
 

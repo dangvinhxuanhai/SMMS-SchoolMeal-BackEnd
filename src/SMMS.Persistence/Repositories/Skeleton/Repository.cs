@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Skeleton.Interfaces;
-using SMMS.Persistence.DbContextSite;
+using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.Skeleton;
 //public class InventoryService : Service<Inventory>, IInventoryService

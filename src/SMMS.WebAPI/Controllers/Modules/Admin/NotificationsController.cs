@@ -10,7 +10,7 @@ using SMMS.Application.Features.billing.Queries;
 using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.billing;
-using SMMS.Persistence.DbContextSite;
+using SMMS.Persistence.Data;
 
 namespace SMMS.API.Controllers
 {

@@ -8,7 +8,7 @@ using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.billing;
 using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.school;
-using SMMS.Persistence.Dbcontext;
+using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.Wardens;
 public class WardensRepository : IWardensRepository
