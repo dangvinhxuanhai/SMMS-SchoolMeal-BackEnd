@@ -173,7 +173,7 @@ public class ManagerParentHandler :
             RoleId = role.RoleId,
             SchoolId = request.SchoolId,
             LanguagePref = "vi",
-            IsActive = false,
+            IsActive = true,
             CreatedAt = DateTime.UtcNow,
             CreatedBy = request.CreatedBy
         };
@@ -444,7 +444,7 @@ public class ManagerParentHandler :
                     RoleId = role.RoleId,
                     SchoolId = schoolId,
                     LanguagePref = "vi",
-                    IsActive = false,
+                    IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 };
                 parent.PasswordHash = HashPassword(password);
