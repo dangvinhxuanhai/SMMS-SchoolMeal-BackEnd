@@ -10,7 +10,7 @@ using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.purchasing;
 using SMMS.Domain.Entities.rag;
 using SMMS.Domain.Entities.school;
-using SMMS.Domain.Entities.Logs;
+using SMMS.Domain.Entities.logs;
 namespace SMMS.Persistence.Data;
 
 public partial class EduMealContext : DbContext
@@ -121,10 +121,6 @@ public partial class EduMealContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<UserExternalLogin> UserExternalLogins { get; set; }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("server =MSI\\MSSQLSERVER1; database=EduMeal;Trusted_Connection=True; TrustServerCertificate=True;Connection Timeout=120;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

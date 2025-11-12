@@ -36,7 +36,6 @@ using SMMS.Application.Features.Manager.Handlers;
 using SMMS.Persistence.Repositories.Manager;
 using SMMS.Application.Features.Wardens.Handlers;
 using SMMS.Infrastructure.Services;
-using SMMS.Infrastructure.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 

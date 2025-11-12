@@ -7,16 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Configurations\" />
-    <Folder Include="Repositories\fridge\" />
-    <Folder Include="Repositories\inventory\" />
-    <Folder Include="Repositories\logs\" />
-    <Folder Include="Repositories\purchasing\" />
-    <Folder Include="Repositories\rag\" />
-    <Folder Include="Service\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.20" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="8.0.20" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.20">
@@ -30,13 +20,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" /> 
-    <Folder Include="Migrations\" />
     <Folder Include="Data\" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SMMS.Application\SMMS.Application.csproj" />
     <ProjectReference Include="..\SMMS.Domain\SMMS.Domain.csproj" />
+    <ProjectReference Include="..\SMMS.Infrastructure\SMMS.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

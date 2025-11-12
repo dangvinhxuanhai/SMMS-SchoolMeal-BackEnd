@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using ClosedXML.Excel;
@@ -15,7 +14,9 @@ using SMMS.Application.Features.Manager.Queries;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.school;
 using Microsoft.EntityFrameworkCore;
+
 namespace SMMS.Application.Features.Manager.Handlers;
+
 public class ManagerParentHandler :
     IRequestHandler<SearchParentsQuery, List<ParentAccountDto>>,
     IRequestHandler<GetParentsQuery, List<ParentAccountDto>>,
@@ -178,7 +179,6 @@ public class ManagerParentHandler :
             CreatedBy = request.CreatedBy
         };
         parent.PasswordHash = HashPassword(request.Password);
-
         await _repo.AddAsync(parent);
 
         // tạo con
@@ -569,31 +569,6 @@ public class ManagerParentHandler :
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         return await Task.FromResult(stream.ToArray());
-    }
-
-    #endregion
-
-    #region 🔐 HashPassword
-
-    private string HashPassword(string password)
-    {
-        if (string.IsNullOrWhiteSpace(password))
-            throw new ArgumentException("Password không được để trống.", nameof(password));
-
-        byte[] salt = new byte[16];
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(salt);
-        }
-
-        using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 100000, HashAlgorithmName.SHA256);
-        byte[] hash = pbkdf2.GetBytes(32);
-
-        byte[] hashBytes = new byte[48];
-        Array.Copy(salt, 0, hashBytes, 0, 16);
-        Array.Copy(hash, 0, hashBytes, 16, 32);
-
-        return Convert.ToBase64String(hashBytes);
     }
 
     #endregion

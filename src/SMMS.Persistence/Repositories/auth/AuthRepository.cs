@@ -3,12 +3,12 @@ using Microsoft.Extensions.Configuration;
 using SMMS.Application.Features.auth.DTOs;
 using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Domain.Entities.auth;
-using SMMS.Infrastructure.Security;
 using SMMS.Persistence.Data;
+using SMMS.Infrastructure.Security;
 using System;
 using System.Threading.Tasks;
 
-namespace SMMS.Infrastructure.Service
+namespace SMMS.Persistence.Repositories.auth
 {
     public class AuthRepository : IAuthRepository
     {
@@ -34,7 +34,7 @@ namespace SMMS.Infrastructure.Service
 
             if (user == null)
                 throw new Exception("Tài khoản không tồn tại.");
-            // Kiểm tra tài khoản có bị Ban không 
+            // Kiểm tra tài khoản có bị Ban không
             if (!user.IsActive)
                 throw new Exception("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
             // Kiểm tra mật khẩu
