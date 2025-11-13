@@ -24,19 +24,19 @@ import faiss
 # --------------------------
 def parse_list(x):
     """
-    Chuẩn hoá field dạng list thành List[str].
+    Chuẩn hóa 1 ô thành list[str].
 
     Hỗ trợ:
-    - None / NaN                 -> []
-    - List (đã structured)       -> strip từng phần tử
-    - JSON list string           -> parse thành list
-    - Chuỗi "a, b, c"            -> tách theo dấu phẩy
-
-    Trả về:
-        list[str]
+    - None / NaN
+    - list đã chuẩn
+    - chuỗi JSON list: ["a", "b"]
+    - chuỗi Python list: ['a', 'b']
+    - chuỗi "a, b, c"
     """
     if x is None or (isinstance(x, float) and math.isnan(x)):
         return []
+
+    # Nếu đã là list -> strip từng phần tử
     if isinstance(x, list):
         return [str(i).strip() for i in x if str(i).strip()]
 
@@ -44,17 +44,28 @@ def parse_list(x):
     if not s:
         return []
 
-    # Thử parse JSON (vd: '["egg","milk"]')
-    try:
-        j = json.loads(s)
-        if isinstance(j, list):
-            return [str(i).strip() for i in j if str(i).strip()]
-    except Exception:
-        pass
+    # 1) Thử parse JSON list
+    if s.startswith("[") and s.endswith("]"):
+        # Có thể là JSON hoặc Python literal
+        try:
+            j = json.loads(s)
+            if isinstance(j, list):
+                return [str(i).strip() for i in j if str(i).strip()]
+        except Exception:
+            try:
+                j = ast.literal_eval(s)  # xử lý kiểu ['a', 'b']
+                if isinstance(j, (list, tuple)):
+                    return [str(i).strip() for i in j if str(i).strip()]
+            except Exception:
+                pass
 
-    # Fallback: tách theo dấu phẩy
-    parts = [p.strip() for p in s.split(",")]
-    return [p for p in parts if p]
+    # 2) Fallback: tách theo dấu phẩy, bỏ ' " [ ]
+    items = []
+    for p in s.split(","):
+        t = p.strip().strip("'").strip('"').strip()
+        if t and t not in ("[", "]"):
+            items.append(t)
+    return items
 
 
 def make_doc_text(row):

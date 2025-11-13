@@ -76,7 +76,6 @@ def mmr_select(ids_sorted, id2vec, id2score, top_n=5, lam=0.7):
     Trả về:
       - List ID đã chọn theo thứ tự MMR.
     """
-    import numpy as np
 
     def _to_int(x):
         # Helper: cố gắng ép key về int để đồng nhất kiểu; nếu không được thì giữ nguyên.

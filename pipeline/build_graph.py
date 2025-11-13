@@ -46,6 +46,30 @@ def save_gpickle(G, path: str):
             pickle.dump(G, f)
 
 
+def _clean_token(t: str) -> str:
+    """
+    Làm sạch 1 phần tử:
+    - bỏ khoảng trắng dư
+    - bỏ ngoặc vuông dư ở 2 đầu
+    - bỏ cặp '...' hoặc "..." bọc ngoài
+    """
+    if t is None:
+        return ""
+    s = str(t).strip()
+
+    # bỏ ngoặc vuông dư ở 2 đầu nếu có
+    if s.startswith("[") and len(s) > 1:
+        s = s[1:]
+    if s.endswith("]") and len(s) > 1:
+        s = s[:-1]
+    s = s.strip()
+
+    # nếu được bọc bởi cùng 1 loại quote -> bỏ
+    if (s.startswith("'") and s.endswith("'")) or (s.startswith('"') and s.endswith('"')):
+        s = s[1:-1].strip()
+
+    return s
+
 
 def parse_list(x):
     """
@@ -57,41 +81,65 @@ def parse_list(x):
     - chuỗi JSON list: ["a", "b"]
     - chuỗi Python list: ['a', 'b']
     - chuỗi "a, b, c"
+    - các biến thể hơi bẩn kiểu "['a', 'b']"
     """
+    # None hoặc NaN -> []
     if x is None or (isinstance(x, float) and math.isnan(x)):
         return []
 
-    # Nếu đã là list -> strip từng phần tử
+    # Nếu đã là list -> clean từng phần tử
     if isinstance(x, list):
-        return [str(i).strip() for i in x if str(i).strip()]
+        out = []
+        for v in x:
+            s = _clean_token(v)
+            if s:
+                out.append(s)
+        return out
 
+    # Convert sang string
     s = str(x).strip()
     if not s:
         return []
 
-    # 1) Thử parse JSON list
+    # 1) Thử JSON list: ["a","b"]
     if s.startswith("[") and s.endswith("]"):
-        # Có thể là JSON hoặc Python literal
         try:
             j = json.loads(s)
             if isinstance(j, list):
-                return [str(i).strip() for i in j if str(i).strip()]
+                out = []
+                for v in j:
+                    ss = _clean_token(v)
+                    if ss:
+                        out.append(ss)
+                if out:
+                    return out
         except Exception:
-            try:
-                j = ast.literal_eval(s)  # xử lý kiểu ['a', 'b']
-                if isinstance(j, (list, tuple)):
-                    return [str(i).strip() for i in j if str(i).strip()]
-            except Exception:
-                pass
+            # không sao, thử tiếp
+            pass
 
-    # 2) Fallback: tách theo dấu phẩy, bỏ ' " [ ]
-    items = []
-    for p in s.split(","):
-        t = p.strip().strip("'").strip('"').strip()
-        if t and t not in ("[", "]"):
-            items.append(t)
-    return items
+        # 2) Thử Python literal list: ['a','b']
+        try:
+            j = ast.literal_eval(s)
+            if isinstance(j, (list, tuple, set)):
+                out = []
+                for v in j:
+                    ss = _clean_token(v)
+                    if ss:
+                        out.append(ss)
+                if out:
+                    return out
+        except Exception:
+            pass
 
+    # 3) Fallback an toàn: tách theo dấu phẩy + clean từng mảnh
+    parts = s.split(",")
+    out = []
+    for p in parts:
+        ss = _clean_token(p)
+        if ss:
+            out.append(ss)
+
+    return out
 
 def main():
     # Khai báo argument CLI:

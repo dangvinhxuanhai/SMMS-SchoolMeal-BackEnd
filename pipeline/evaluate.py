@@ -35,26 +35,48 @@ import joblib
 
 def parse_list(x):
     """
-    Chuẩn hoá field list tương tự các file khác:
-    - None / NaN           -> []
-    - list                 -> strip phần tử
-    - JSON list hợp lệ     -> parse
-    - "a,b,c"              -> tách theo dấu phẩy
+    Chuẩn hóa 1 ô thành list[str].
+
+    Hỗ trợ:
+    - None / NaN
+    - list đã chuẩn
+    - chuỗi JSON list: ["a", "b"]
+    - chuỗi Python list: ['a', 'b']
+    - chuỗi "a, b, c"
     """
     if x is None or (isinstance(x, float) and math.isnan(x)):
         return []
+
+    # Nếu đã là list -> strip từng phần tử
     if isinstance(x, list):
         return [str(i).strip() for i in x if str(i).strip()]
+
     s = str(x).strip()
     if not s:
         return []
-    try:
-        j = json.loads(s)
-        if isinstance(j, list):
-            return [str(i).strip() for i in j if str(i).strip()]
-    except Exception:
-        pass
-    return [p.strip() for p in s.split(",") if p.strip()]
+
+    # 1) Thử parse JSON list
+    if s.startswith("[") and s.endswith("]"):
+        # Có thể là JSON hoặc Python literal
+        try:
+            j = json.loads(s)
+            if isinstance(j, list):
+                return [str(i).strip() for i in j if str(i).strip()]
+        except Exception:
+            try:
+                j = ast.literal_eval(s)  # xử lý kiểu ['a', 'b']
+                if isinstance(j, (list, tuple)):
+                    return [str(i).strip() for i in j if str(i).strip()]
+            except Exception:
+                pass
+
+    # 2) Fallback: tách theo dấu phẩy, bỏ ' " [ ]
+    items = []
+    for p in s.split(","):
+        t = p.strip().strip("'").strip('"').strip()
+        if t and t not in ("[", "]"):
+            items.append(t)
+    return items
 
 
 def build_features_for(df_rows: pd.DataFrame, ctx: dict) -> pd.DataFrame:

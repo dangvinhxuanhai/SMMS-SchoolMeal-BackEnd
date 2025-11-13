@@ -22,7 +22,7 @@ router = APIRouter(prefix="/menu", tags=["menu"])
 # NẠP TÀI NGUYÊN 1 LẦN (tải sẵn vào RAM khi app khởi động)
 # ----------------------------
 DF = pd.read_csv(DATA_CSV)                 # Đọc file CSV chứa metadata các recipe (đã chuẩn hoá cột)
-EMB = Embedder(EMBED_MODEL)                # Tạo đối tượng Embedder với model cấu hình (SentenceTransformer/OpenAI)
+EMB = Embedder(EMBED_MODEL, provider=EMBED_PROVIDER)                # Tạo đối tượng Embedder với model cấu hình (SentenceTransformer/OpenAI)
 RET = FaissRetriever(INDEX_PATH, DF)       # Tạo retriever FAISS dùng index + DF để map id -> recipe info
 KG  = KitchenGraph(GRAPH_PATH)             # Load đồ thị kiến thức (graph) từ file gpickle
 RANKER = MLRanker(RANKER_PKL if USE_ML else None)  # Tạo MLRanker, nếu USE_ML=False thì bên trong sẽ fallback heuristic
