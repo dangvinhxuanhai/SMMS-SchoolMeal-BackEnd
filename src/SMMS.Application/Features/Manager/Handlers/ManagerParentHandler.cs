@@ -561,6 +561,9 @@ public class ManagerParentHandler :
         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
         headerRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
+        // 👇 Định dạng cả cột Phone (cột 3) là Text
+        var phoneColumn = sheet.Column(3);
+        phoneColumn.Style.NumberFormat.Format = "@"; // "@" = Text
         sheet.Cell(2, 1).Value = "Nguyễn Văn A";
         sheet.Cell(2, 2).Value = "a@gmail.com";
         sheet.Cell(2, 3).Value = "0901234567";
