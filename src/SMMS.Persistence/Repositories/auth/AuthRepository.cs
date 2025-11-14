@@ -7,6 +7,7 @@ using SMMS.Persistence.Data;
 using SMMS.Infrastructure.Security;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 
 namespace SMMS.Persistence.Repositories.auth
 {
@@ -15,12 +16,14 @@ namespace SMMS.Persistence.Repositories.auth
         private readonly EduMealContext _dbContext;
         private readonly IJwtService _jwtService;
         private readonly IConfiguration _configuration;
+        private readonly IPasswordHasher<User> _passwordHasher;
 
-        public AuthRepository(EduMealContext dbContext, IJwtService jwtService, IConfiguration configuration)
+        public AuthRepository(EduMealContext dbContext, IJwtService jwtService, IConfiguration configuration, IPasswordHasher<User> passwordHasher)
         {
             _dbContext = dbContext;
             _jwtService = jwtService;
             _configuration = configuration;
+            _passwordHasher = passwordHasher;
         }
 
         // ✅ Đăng nhập bằng SĐT hoặc Email
@@ -37,12 +40,14 @@ namespace SMMS.Persistence.Repositories.auth
             // Kiểm tra tài khoản có bị Ban không
             if (!user.IsActive)
                 throw new Exception("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
+            var passwordVerificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
             // Kiểm tra mật khẩu
-            if (!PasswordHasher.VerifyPassword(request.Password, user.PasswordHash))
-                throw new Exception("Mật khẩu không đúng.");
+            if (passwordVerificationResult == PasswordVerificationResult.Failed)
+                throw new Exception("Mật khẩu không đúng");
 
             // ✅ Kiểm tra xem có đang dùng mật khẩu tạm không
-            bool isUsingTempPassword = PasswordHasher.VerifyPassword("@1", user.PasswordHash);
+            bool isUsingTempPassword = (_passwordHasher.VerifyHashedPassword(user, user.PasswordHash, "@1") !=
+                                        PasswordVerificationResult.Failed);
 
             if (isUsingTempPassword)
             {

@@ -35,6 +35,7 @@ using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.Manager.Handlers;
 using SMMS.Persistence.Repositories.Manager;
 using SMMS.Application.Features.Wardens.Handlers;
+using SMMS.Domain.Entities.auth;
 using SMMS.Infrastructure.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -43,8 +44,7 @@ var builder = WebApplication.CreateBuilder(args);
 // 1️⃣ Add Controllers
 // =========================
 builder.Services.AddControllers();
-
-// =========================
+builder.Services.AddTransient<IPasswordHasher<User>, PasswordHasher<User>>();
 // 2️⃣ MediatR + Validation
 // =========================
 builder.Services.AddMediatR(cfg =>

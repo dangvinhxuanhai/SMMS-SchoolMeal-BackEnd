@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using ClosedXML.Excel;
@@ -14,9 +15,8 @@ using SMMS.Application.Features.Manager.Queries;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.school;
 using Microsoft.EntityFrameworkCore;
-
+using Microsoft.AspNetCore.Identity;
 namespace SMMS.Application.Features.Manager.Handlers;
-
 public class ManagerParentHandler :
     IRequestHandler<SearchParentsQuery, List<ParentAccountDto>>,
     IRequestHandler<GetParentsQuery, List<ParentAccountDto>>,
@@ -29,13 +29,14 @@ public class ManagerParentHandler :
 {
     private readonly IManagerAccountRepository _repo;
     private readonly ILogger<ManagerParentHandler> _logger;
-
+    private readonly PasswordHasher<User> _passwordHasher;
     public ManagerParentHandler(
         IManagerAccountRepository repo,
         ILogger<ManagerParentHandler> logger)
     {
         _repo = repo;
         _logger = logger;
+        _passwordHasher = new PasswordHasher<User>();
     }
 
     #region 🔍 SearchAsync
@@ -178,7 +179,10 @@ public class ManagerParentHandler :
             CreatedAt = DateTime.UtcNow,
             CreatedBy = request.CreatedBy
         };
-        parent.PasswordHash = HashPassword(request.Password);
+        // ✅ dùng PasswordHasher
+        parent.PasswordHash = _passwordHasher.HashPassword(parent, request.Password);
+
+
         await _repo.AddAsync(parent);
 
         // tạo con
@@ -249,7 +253,10 @@ public class ManagerParentHandler :
         if (!string.IsNullOrWhiteSpace(request.Phone))
             user.Phone = request.Phone.Trim();
         if (!string.IsNullOrWhiteSpace(request.Password))
-            user.PasswordHash = HashPassword(request.Password);
+        {
+            // ✅ đổi mật khẩu dùng PasswordHasher
+            user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
+        }
         if (!string.IsNullOrWhiteSpace(request.Gender))
             user.LanguagePref = request.Gender; // (theo code cũ của bạn)
 
@@ -447,7 +454,8 @@ public class ManagerParentHandler :
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 };
-                parent.PasswordHash = HashPassword(password);
+                // ✅ hash password bằng PasswordHasher
+                parent.PasswordHash = _passwordHasher.HashPassword(parent, password);
                 await _repo.AddAsync(parent);
 
                 if (!string.IsNullOrWhiteSpace(fullNameChild))
@@ -572,4 +580,6 @@ public class ManagerParentHandler :
     }
 
     #endregion
+
+
 }
