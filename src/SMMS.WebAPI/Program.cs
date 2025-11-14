@@ -37,6 +37,7 @@ using SMMS.Persistence.Repositories.Manager;
 using SMMS.Application.Features.Wardens.Handlers;
 using SMMS.Infrastructure.Services;
 using SMMS.Infrastructure.Service;
+using SMMS.Persistence.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -89,6 +90,7 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(AttendanceCommandHandler).Assembly));
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(NotificationHandler).Assembly));
+builder.Services.AddScoped<CloudinaryService>();
 // =========================
 // 5️⃣ Swagger
 // =========================
