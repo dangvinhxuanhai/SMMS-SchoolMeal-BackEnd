@@ -53,8 +53,9 @@ namespace SMMS.Persistence.Repositories.auth
                     StudentId = student.StudentId,
                     FullName = student.FullName,
                     AvatarUrl = student.AvatarUrl,
+                    Relation = student.RelationName,
                     AllergyFoods = allergenNames,
-                    ClassName = className
+                    ClassName = className,
                 });
             }
 
@@ -63,6 +64,9 @@ namespace SMMS.Persistence.Repositories.auth
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
+                DateOfBirth = user.DateOfBirth,
+// wait DB
+//               Gender = user.Gender,
                 Children = childrenWithAllergies
             };
         }
@@ -92,8 +96,15 @@ namespace SMMS.Persistence.Repositories.auth
             if (fileData == null || fileData.Length == 0)
                 return null;
 
-            var newFileName = $"student_{studentId}_{DateTime.Now:yyyyMMddHHmmss}{Path.GetExtension(fileName)}";
-            return await _fileStorageService.SaveFileAsync(fileName, fileData, "student-avatars", newFileName);
+            var newFileName = $"student_{studentId}_{DateTime.Now:yyyyMMddHHmmss}";
+
+            // Cloudinary sẽ tự thêm extension
+            return await _fileStorageService.SaveFileAsync(
+                fileName,
+                fileData,
+                "edu-meal/student-avatars",
+                newFileName
+            );
         }
 
         private async Task UpdateChildInfoAsync(Guid parentId, ChildProfileDto childDto)

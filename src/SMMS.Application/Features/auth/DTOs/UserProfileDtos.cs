@@ -8,6 +8,9 @@ namespace SMMS.Application.Features.auth.DTOs
         public string FullName { get; set; }
         public string Email { get; set; }
         public string Phone { get; set; }
+        public string? Gender { get; set; }
+        public DateOnly? DateOfBirth { get; set; }
+
         public List<ChildProfileResponseDto> Children { get; set; } = new();
     }
 
@@ -16,6 +19,7 @@ namespace SMMS.Application.Features.auth.DTOs
         public Guid StudentId { get; set; }
         public string FullName { get; set; }
         public string AvatarUrl { get; set; }
+        public string Relation { get; set; }
         public List<string> AllergyFoods { get; set; } = new();
         public string ClassName { get; set; }
     }
@@ -25,6 +29,8 @@ namespace SMMS.Application.Features.auth.DTOs
         public string FullName { get; set; }
         public string Email { get; set; }
         public string Phone { get; set; }
+        public string? Gender { get; set; }
+        public DateOnly? DateOfBirth { get; set; }
         public List<ChildProfileDto> Children { get; set; } = new();
     }
 
@@ -34,7 +40,7 @@ namespace SMMS.Application.Features.auth.DTOs
         public string? FullName { get; set; }
         public string? AvatarFileName { get; set; }
         public byte[]? AvatarFileData { get; set; }
+        public string Relation { get; set; }
         public List<string>? AllergyFoods { get; set; } = new();
-        public string? FoodPreferences { get; set; }
     }
 }
