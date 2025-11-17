@@ -1,17 +1,19 @@
 @SMMS.WebAPI_HostAddress = http://localhost:56578
 
-POST {{SMMS.WebAPI_HostAddress}}/fastapi/Menus
+POST {{SMMS.WebAPI_HostAddress}}/fastapi/DailyMeals
 Accept: application/json
 Content-Type: application/json
 
 {
-  "publishedAt": "2025-11-17T07:00:00",
   "schoolId": "c62bf3e9-ac76-4061-8ae6-e9104141df3c",
-  "isVisible": true,
+  "menuId": 2,
+  "weekStart": "2025-11-18",
+  "weekEnd": "2025-11-24",
   "weekNo": 1,
-  "confirmedBy": "875cfd43-4e8b-4157-9cef-0c57d0bb6188",
-  "confirmedAt": "2025-11-17T08:00:00",
-  "askToDelete": false,
-  "yearId": 1
+  "yearNo": 2025,
+  "status": "Published",
+  "publishedAt": "2025-11-17T08:30:00",
+  "notes": "Thực đơn tuần 1",
+  "createdBy": "875cfd43-4e8b-4157-9cef-0c57d0bb6188"
 }
 ###
