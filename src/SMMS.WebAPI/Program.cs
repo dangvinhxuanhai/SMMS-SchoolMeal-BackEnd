@@ -26,7 +26,6 @@ using SMMS.Persistence.Repositories.auth;
 using SMMS.Application.Features.school.Handlers;
 using SMMS.Application.Features.billing.Handlers;
 
-using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence.Repositories.Wardens;
 using SMMS.Domain.Entities.school;
@@ -96,7 +95,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     // ✅ Thêm cấu hình để Swagger nhập JWT token
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    /*options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
         Description = "Nhập token JWT vào đây (ví dụ: Bearer abcdef12345)",
@@ -104,7 +103,7 @@ builder.Services.AddSwaggerGen(options =>
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
         BearerFormat = "JWT",
         Scheme = "Bearer"
-    });
+    });*/
 
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
@@ -209,5 +208,6 @@ app.UseCors("AllowFrontend");
 app.UseAuthorization();
 
 app.MapControllers();
+
 app.Run();
 

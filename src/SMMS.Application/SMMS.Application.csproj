@@ -37,6 +37,12 @@
     <Folder Include="Features\Inventory\Validators\" />
     <Folder Include="Features\Inventory\Queries\" />
     <Folder Include="Features\Meal\" />
+    <Folder Include="Features\Menu\Command\" />
+    <Folder Include="Features\Menu\DTOs\" />
+    <Folder Include="Features\Menu\Handlers\" />
+    <Folder Include="Features\Menu\Interfaces\" />
+    <Folder Include="Features\Menu\Search\" />
+    <Folder Include="Features\Menu\Queries\" />
     <Folder Include="Features\Notifications\" />
     <Folder Include="Features\Payment\" />
     <Folder Include="Features\Plan\" />
