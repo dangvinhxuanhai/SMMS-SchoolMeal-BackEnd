@@ -4,9 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SMMS.Application.Common.Interfaces
+namespace SMMS.Application.Common.Interfaces;
+public interface IGenericRepository
 {
-    internal interface IGenericRepository
-    {
-    }
+
 }

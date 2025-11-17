@@ -1,6 +1,6 @@
 @SMMS.WebAPI_HostAddress = http://localhost:56578
 
-GET {{SMMS.WebAPI_HostAddress}}/fastapi/MenuDayFoodItems
+GET {{SMMS.WebAPI_HostAddress}}/fastapi/Menus/2
 Accept: application/json
 Content-Type: application/json
 

@@ -29,6 +29,7 @@ using SMMS.Application.Features.billing.Handlers;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence.Repositories.Wardens;
 using SMMS.Domain.Entities.school;
+using SMMS.Persistence;
 using SMMS.Persistence.Data;
 using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.Manager.Handlers;
@@ -52,6 +53,8 @@ builder.Services.AddMediatR(cfg =>
 
 builder.Services.AddValidatorsFromAssembly(typeof(WeeklyMenuHandler).Assembly);
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+builder.Services.AddPersistenceServices();
 
 // =========================
 // 3️⃣ Database Context

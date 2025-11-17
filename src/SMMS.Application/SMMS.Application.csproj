@@ -12,16 +12,19 @@
     <Compile Remove="Features\Notifications\**" />
     <Compile Remove="Features\Payment\**" />
     <Compile Remove="Features\Plan\**" />
+    <Compile Remove="Features\Skeleton\Interface\**" />
     <EmbeddedResource Remove="Features\Identity\**" />
     <EmbeddedResource Remove="Features\Meal\**" />
     <EmbeddedResource Remove="Features\Notifications\**" />
     <EmbeddedResource Remove="Features\Payment\**" />
     <EmbeddedResource Remove="Features\Plan\**" />
+    <EmbeddedResource Remove="Features\Skeleton\Interface\**" />
     <None Remove="Features\Identity\**" />
     <None Remove="Features\Meal\**" />
     <None Remove="Features\Notifications\**" />
     <None Remove="Features\Payment\**" />
     <None Remove="Features\Plan\**" />
+    <None Remove="Features\Skeleton\Interface\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,7 +49,6 @@
     <Folder Include="Features\Notifications\" />
     <Folder Include="Features\Payment\" />
     <Folder Include="Features\Plan\" />
-    <Folder Include="Features\Skeleton\Interface\" />
     <Folder Include="Features\Skeleton\Service\" />
   </ItemGroup>
 
