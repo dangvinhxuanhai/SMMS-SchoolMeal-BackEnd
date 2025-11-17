@@ -9,9 +9,9 @@ using SMMS.Persistence.Data;
 using SMMS.Persistence.Repositories.Skeleton;
 
 namespace SMMS.Persistence.Repositories.foodmenu;
-public class MenuRepository : Repository<Menu>, IMenuRepository
-{
-    public MenuRepository(EduMealContext dbContext) : base(dbContext)
-    {
-    }
-}
+//public class MenuRepository : Repository<Menu>, IMenuRepository
+//{
+//    public MenuRepository(EduMealContext dbContext) : base(dbContext)
+//    {
+//    }
+//}
