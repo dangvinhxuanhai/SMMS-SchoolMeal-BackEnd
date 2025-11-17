@@ -121,6 +121,7 @@ public partial class EduMealContext : DbContext
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<UserExternalLogin> UserExternalLogins { get; set; }
+    public virtual DbSet<SchoolPaymentSetting> SchoolPaymentSettings { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -1228,6 +1229,22 @@ public partial class EduMealContext : DbContext
                 .HasConstraintName("FK__UserExter__UserI__46E78A0C");
         });
 
+        modelBuilder.Entity<SchoolPaymentSetting>(entity =>
+        {
+            entity.HasKey(e => e.SettingId).HasName("PK__SchoolPa__54372B1D10C021B2");
+
+            entity.ToTable("SchoolPaymentSettings", "billing");
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.Note).HasMaxLength(200);
+            entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.School).WithMany(p => p.SchoolPaymentSettings)
+                .HasForeignKey(d => d.SchoolId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_SPS_School");
+        });
         OnModelCreatingPartial(modelBuilder);
     }
 

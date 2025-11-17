@@ -37,6 +37,7 @@ using SMMS.Persistence.Repositories.Manager;
 using SMMS.Application.Features.Wardens.Handlers;
 using SMMS.Infrastructure.Services;
 using SMMS.Infrastructure.Service;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -85,6 +86,7 @@ builder.Services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>(
 builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
+builder.Services.AddScoped<IManagerPaymentSettingRepository, ManagerPaymentSettingRepository>();
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(AttendanceCommandHandler).Assembly));
 builder.Services.AddMediatR(cfg =>
@@ -166,6 +168,7 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<WardensFeedbackHandler>();
     cfg.RegisterServicesFromAssemblyContaining<WardensHandler>();
     cfg.RegisterServicesFromAssemblyContaining<CloudStorageHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<ManagerPaymentSettingHandler>();
 });
 // Register Application Services
 builder.Services.AddScoped<IWardensRepository, WardensRepository>();

@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Domain.Entities.auth;
+using SMMS.Domain.Entities.billing;
 using SMMS.Domain.Entities.foodmenu;
 using SMMS.Domain.Entities.fridge;
 using SMMS.Domain.Entities.inventory;
@@ -96,4 +97,8 @@ public partial class School
 
     [InverseProperty("School")]
     public virtual ICollection<User> Users { get; set; } = new List<User>();
+
+    [InverseProperty("School")]
+    public virtual ICollection<SchoolPaymentSetting> SchoolPaymentSettings { get; set; }
+    = new List<SchoolPaymentSetting>();
 }
