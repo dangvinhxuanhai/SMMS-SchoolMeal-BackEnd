@@ -17,6 +17,12 @@ using SMMS.Persistence.Repositories.schools;
 using SMMS.Persistence.Repositories.Skeleton;
 
 namespace SMMS.Persistence;
+/// <summary>
+/// * Điểm mạnh:
+///     1. với những repo mà ko có cái gì mới hay là ko cần override thì auto ko cần impl lại
+///     2. ngắn gọn hạn chế quá tràn lan ở program.cs
+///     3. đó e sẽ refactor lại code sau tạm thời thì cứ để chạy được cho kịp tiến độ
+/// </summary>
 public static class DependencyInjection
 {
     public static IServiceCollection AddPersistenceServices(this IServiceCollection services)
