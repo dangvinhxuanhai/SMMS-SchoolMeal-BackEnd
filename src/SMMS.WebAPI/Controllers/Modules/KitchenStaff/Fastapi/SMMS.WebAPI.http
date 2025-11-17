@@ -1,16 +1,17 @@
 @SMMS.WebAPI_HostAddress = http://localhost:56578
 
-GET {{SMMS.WebAPI_HostAddress}}/fastapi/Users
+POST {{SMMS.WebAPI_HostAddress}}/fastapi/Menus
 Accept: application/json
 Content-Type: application/json
 
 {
-  "foodName": "Cơm tấm sườn bì",
-  "foodType": "Món chính",
-  "foodDesc": "Cơm tấm sườn bì chả trứng",
-  "imageUrl": "https://i.ytimg.com/vi/cJu6tFJe_Gc/maxresdefault.jpg",
-  "createdBy": "a4671aa4-5c00-437a-a49f-c7ee890fd0b1",
+  "publishedAt": "2025-11-17T07:00:00",
   "schoolId": "c62bf3e9-ac76-4061-8ae6-e9104141df3c",
-  "isActive": true
+  "isVisible": true,
+  "weekNo": 1,
+  "confirmedBy": "875cfd43-4e8b-4157-9cef-0c57d0bb6188",
+  "confirmedAt": "2025-11-17T08:00:00",
+  "askToDelete": false,
+  "yearId": 1
 }
 ###

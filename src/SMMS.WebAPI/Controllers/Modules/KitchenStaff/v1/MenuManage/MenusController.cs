@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Domain.Entities.foodmenu;
 using SMMS.Persistence.Data;
+using SMMS.WebAPI.Controllers.Modules.KitchenStaff.Fastapi.DTOs;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff.v1.MenuManage;
 
@@ -76,13 +77,26 @@ public class MenusController : ControllerBase
     // POST: api/Menus
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<Menu>> PostMenu(Menu menu)
+    public async Task<ActionResult<Menu>> PostMenu([FromBody] CreateMenuDto dto)
     {
+        var menu = new Menu
+        {
+            PublishedAt = dto.PublishedAt,
+            SchoolId = dto.SchoolId,
+            IsVisible = dto.IsVisible,
+            WeekNo = dto.WeekNo,
+            CreatedAt = DateTime.UtcNow,
+            ConfirmedBy = dto.ConfirmedBy,
+            ConfirmedAt = dto.ConfirmedAt,
+            AskToDelete = dto.AskToDelete,
+            YearId = dto.YearId
+        };
+
         _context.Menus.Add(menu);
         await _context.SaveChangesAsync();
-
-        return CreatedAtAction("GetMenu", new { id = menu.MenuId }, menu);
+        return CreatedAtAction(nameof(GetMenu), new { id = menu.MenuId }, menu);
     }
+
 
     // DELETE: api/Menus/5
     [HttpDelete("{id}")]
