@@ -1,16 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using SMMS.Domain.Entities.auth;
-using SMMS.Domain.Entities.billing;
-using SMMS.Domain.Entities.foodmenu;
-using SMMS.Domain.Entities.fridge;
-using SMMS.Domain.Entities.inventory;
-using SMMS.Domain.Entities.nutrition;
-using SMMS.Domain.Entities.purchasing;
+using Microsoft.EntityFrameworkCore;
 
-namespace SMMS.Domain.Entities.school;
+namespace SMMS.Domain.Models;
 
 [Table("Schools", Schema = "school")]
 public partial class School

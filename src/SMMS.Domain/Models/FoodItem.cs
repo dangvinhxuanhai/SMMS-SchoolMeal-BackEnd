@@ -1,15 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Entities.auth;
-using SMMS.Domain.Entities.foodmenu;
-using SMMS.Domain.Entities.fridge;
-using SMMS.Domain.Entities.rag;
-using SMMS.Domain.Entities.school;
 
-namespace SMMS.Domain.Entities.nutrition;
+namespace SMMS.Domain.Models;
 
 [Table("FoodItems", Schema = "nutrition")]
 public partial class FoodItem
@@ -35,9 +30,9 @@ public partial class FoodItem
 
     public Guid SchoolId { get; set; }
 
-    public bool IsActive { get; set; }
-
     public bool IsMainDish { get; set; }
+
+    public bool IsActive { get; set; }
 
     [ForeignKey("CreatedBy")]
     [InverseProperty("FoodItems")]

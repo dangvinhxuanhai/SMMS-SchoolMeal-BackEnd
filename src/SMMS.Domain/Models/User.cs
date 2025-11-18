@@ -1,18 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Entities.billing;
-using SMMS.Domain.Entities.foodmenu;
-using SMMS.Domain.Entities.fridge;
-using SMMS.Domain.Entities.inventory;
-using SMMS.Domain.Entities.nutrition;
-using SMMS.Domain.Entities.purchasing;
-using SMMS.Domain.Entities.school;
-using SMMS.Domain.Entities.Logs;
 
-namespace SMMS.Domain.Entities.auth;
+namespace SMMS.Domain.Models;
 
 [Table("Users", Schema = "auth")]
 [Index("Phone", Name = "UQ_Users_Phone", IsUnique = true)]

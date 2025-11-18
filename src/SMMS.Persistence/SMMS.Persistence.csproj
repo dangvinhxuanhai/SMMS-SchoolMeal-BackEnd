@@ -31,7 +31,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" /> 
     <Folder Include="Migrations\" />
-    <Folder Include="Data\" />
   </ItemGroup>
 
   <ItemGroup>

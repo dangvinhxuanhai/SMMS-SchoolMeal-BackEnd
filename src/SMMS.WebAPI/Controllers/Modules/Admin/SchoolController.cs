@@ -33,7 +33,7 @@ namespace SMMS.API.Controllers
                     SchoolName = s.SchoolName,
                     ContactEmail = s.ContactEmail,
                     Hotline = s.Hotline,
-                    SchoolContract = s.SchoolContract,
+                    SchoolContract = null,
                     SchoolAddress = s.SchoolAddress,
                     IsActive = s.IsActive,
                     CreatedAt = s.CreatedAt,
