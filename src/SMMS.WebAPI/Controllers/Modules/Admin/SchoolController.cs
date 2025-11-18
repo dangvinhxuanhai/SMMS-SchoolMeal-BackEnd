@@ -40,14 +40,14 @@ namespace SMMS.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create([FromForm] CreateSchoolDto dto)
+        public async Task<IActionResult> Create([FromBody] CreateSchoolDto dto)
         {
             var schoolId = await _mediator.Send(new CreateSchoolCommand(dto));
             return CreatedAtAction(nameof(GetById), new { id = schoolId }, null);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, [FromForm] UpdateSchoolDto dto)
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSchoolDto dto)
         {
             await _mediator.Send(new UpdateSchoolCommand(id, dto));
             return NoContent();

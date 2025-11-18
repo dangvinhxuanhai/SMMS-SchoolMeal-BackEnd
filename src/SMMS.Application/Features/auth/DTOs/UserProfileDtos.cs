@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Http;
 
 namespace SMMS.Application.Features.auth.DTOs
 {
@@ -8,6 +9,7 @@ namespace SMMS.Application.Features.auth.DTOs
         public string FullName { get; set; }
         public string Email { get; set; }
         public string Phone { get; set; }
+        public string AvatarUrl { get; set; }
         public string? Gender { get; set; }
         public DateOnly? DateOfBirth { get; set; }
 
@@ -29,17 +31,17 @@ namespace SMMS.Application.Features.auth.DTOs
         public string FullName { get; set; }
         public string Email { get; set; }
         public string Phone { get; set; }
-        public string? Gender { get; set; }
+        public string?  Gender { get; set; }
+        public IFormFile? AvatarFile { get; set; }
         public DateOnly? DateOfBirth { get; set; }
-        public List<ChildProfileDto> Children { get; set; } = new();
+        public string ChildrenJson { get; set; }
     }
 
     public class ChildProfileDto
     {
         public Guid StudentId { get; set; }
         public string? FullName { get; set; }
-        public string? AvatarFileName { get; set; }
-        public byte[]? AvatarFileData { get; set; }
+        public IFormFile? AvatarFile { get; set; }
         public string Relation { get; set; }
         public List<string>? AllergyFoods { get; set; } = new();
     }

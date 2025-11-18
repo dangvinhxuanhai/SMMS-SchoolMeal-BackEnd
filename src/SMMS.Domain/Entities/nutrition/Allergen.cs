@@ -4,13 +4,12 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Domain.Entities.auth;
-using SMMS.Domain.Entities.rag;
 using SMMS.Domain.Entities.school;
 
 namespace SMMS.Domain.Entities.nutrition;
 
 [Table("Allergens", Schema = "nutrition")]
-[Index("AllergenName", Name = "UQ__Allergen__7D988619907EC52D", IsUnique = true)]
+[Index("AllergenName", Name = "UQ__Allergen__7D9886190081153F", IsUnique = true)]
 public partial class Allergen
 {
     [Key]
@@ -37,9 +36,6 @@ public partial class Allergen
     [ForeignKey("CreatedBy")]
     [InverseProperty("Allergens")]
     public virtual User? CreatedByNavigation { get; set; }
-
-    [InverseProperty("Allergen")]
-    public virtual ICollection<RagRequestAllergen> RagRequestAllergens { get; set; } = new List<RagRequestAllergen>();
 
     [ForeignKey("SchoolId")]
     [InverseProperty("Allergens")]

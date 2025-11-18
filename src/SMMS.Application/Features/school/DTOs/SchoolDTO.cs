@@ -13,7 +13,6 @@ namespace SMMS.Application.Features.school.DTOs
         public string SchoolName { get; set; } = string.Empty;
         public string? ContactEmail { get; set; }
         public string? Hotline { get; set; }
-        public string? SchoolContract { get; set; }
         public string? SchoolAddress { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -24,7 +23,6 @@ namespace SMMS.Application.Features.school.DTOs
         public string SchoolName { get; set; } = null!;
         public string? ContactEmail { get; set; }
         public string? Hotline { get; set; }
-        public IFormFile? SchoolContractFile { get; set; }
         public string? SchoolAddress { get; set; }
         public bool IsActive { get; set; }
     }
@@ -34,7 +32,6 @@ namespace SMMS.Application.Features.school.DTOs
         public string SchoolName { get; set; } = null!;
         public string? ContactEmail { get; set; }
         public string? Hotline { get; set; }
-        public IFormFile? SchoolContractFile { get; set; }
         public string? SchoolAddress { get; set; }
         public bool IsActive { get; set; }
     }

@@ -29,7 +29,6 @@ using SMMS.Application.Features.billing.Handlers;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence.Repositories.Wardens;
-using SMMS.Domain.Entities.school;
 using SMMS.Persistence.Data;
 using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.Manager.Handlers;
@@ -38,6 +37,7 @@ using SMMS.Application.Features.Wardens.Handlers;
 using SMMS.Infrastructure.Services;
 using SMMS.Infrastructure.Service;
 using SMMS.Persistence.Service;
+using SMMS.Application.Features.auth.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -86,11 +86,16 @@ builder.Services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>(
 builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
+builder.Services.AddScoped<ISchoolRevenueRepository, SchoolRevenueRepository>();
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(AttendanceCommandHandler).Assembly));
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(NotificationHandler).Assembly));
 builder.Services.AddScoped<CloudinaryService>();
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssemblyContaining<ParentProfileHandler>();
+});
 // =========================
 // 5️⃣ Swagger
 // =========================
@@ -194,15 +199,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-//var password = "@1";
-//var hashed = PasswordHasher.HashPassword(password);
+var password = "@1";
+var hashed = PasswordHasher.HashPassword(password);
 
-//Console.ForegroundColor = ConsoleColor.Green;
-//Console.WriteLine("=====================================");
-//Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
-//Console.WriteLine(hashed);
-//Console.WriteLine("=====================================");
-//Console.ResetColor();
+Console.ForegroundColor = ConsoleColor.Green;
+Console.WriteLine("=====================================");
+Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
+Console.WriteLine(hashed);
+Console.WriteLine("=====================================");
+Console.ResetColor();
 
 // ✅ Thứ tự rất quan trọng:
 app.UseAuthentication();

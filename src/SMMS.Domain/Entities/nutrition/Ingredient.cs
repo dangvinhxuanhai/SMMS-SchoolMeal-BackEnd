@@ -7,7 +7,6 @@ using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.fridge;
 using SMMS.Domain.Entities.inventory;
 using SMMS.Domain.Entities.purchasing;
-using SMMS.Domain.Entities.rag;
 using SMMS.Domain.Entities.school;
 
 namespace SMMS.Domain.Entities.nutrition;
@@ -68,9 +67,6 @@ public partial class Ingredient
 
     [InverseProperty("Ingredient")]
     public virtual ICollection<PurchasePlanLine> PurchasePlanLines { get; set; } = new List<PurchasePlanLine>();
-
-    [InverseProperty("SourceIngredient")]
-    public virtual ICollection<RagSuggestedIngredient> RagSuggestedIngredients { get; set; } = new List<RagSuggestedIngredient>();
 
     [ForeignKey("SchoolId")]
     [InverseProperty("Ingredients")]

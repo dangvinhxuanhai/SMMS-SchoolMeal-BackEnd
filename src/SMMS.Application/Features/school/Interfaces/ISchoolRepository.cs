@@ -9,8 +9,8 @@ namespace SMMS.Application.Features.school.Interfaces
         IQueryable<School> GetAllSchools();
         Task<List<School>> GetAllAsync();
         Task<School?> GetByIdAsync(Guid id);
-        Task AddAsync(School school, IFormFile? schoolContract);
-        Task UpdateAsync(School school, IFormFile? schoolContract);
+        Task AddAsync(School school);
+        Task UpdateAsync(School school);
         Task DeleteAsync(Guid id);
     }
 }

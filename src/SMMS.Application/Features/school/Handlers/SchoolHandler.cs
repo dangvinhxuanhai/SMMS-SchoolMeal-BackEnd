@@ -38,8 +38,6 @@ namespace SMMS.Application.Features.school.Handlers
                 IsActive = dto.IsActive,
                 CreatedAt = DateTime.UtcNow
             };
-
-            await _repo.AddAsync(school, dto.SchoolContractFile);
             return school.SchoolId;
         }
 
@@ -56,8 +54,6 @@ namespace SMMS.Application.Features.school.Handlers
             existing.SchoolAddress = dto.SchoolAddress;
             existing.IsActive = dto.IsActive;
             existing.UpdatedAt = DateTime.UtcNow;
-
-            await _repo.UpdateAsync(existing, dto.SchoolContractFile);
             return Unit.Value;
         }
 
@@ -90,7 +86,6 @@ namespace SMMS.Application.Features.school.Handlers
                     SchoolName = s.SchoolName,
                     ContactEmail = s.ContactEmail,
                     Hotline = s.Hotline,
-                    SchoolContract = s.SchoolContract,
                     SchoolAddress = s.SchoolAddress,
                     IsActive = s.IsActive,
                     CreatedAt = s.CreatedAt,
@@ -111,7 +106,6 @@ namespace SMMS.Application.Features.school.Handlers
                 SchoolName = s.SchoolName,
                 ContactEmail = s.ContactEmail,
                 Hotline = s.Hotline,
-                SchoolContract = s.SchoolContract,
                 SchoolAddress = s.SchoolAddress,
                 IsActive = s.IsActive,
                 CreatedAt = s.CreatedAt,
