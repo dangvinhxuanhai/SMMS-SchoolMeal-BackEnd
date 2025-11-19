@@ -87,6 +87,7 @@ builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<ISchoolRevenueRepository, SchoolRevenueRepository>();
+builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(AttendanceCommandHandler).Assembly));
 builder.Services.AddMediatR(cfg =>
@@ -159,8 +160,6 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-builder.Services.AddDbContext<EduMealContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.Configure<CloudinarySettings>(
     builder.Configuration.GetSection("CloudinarySettings"));
 builder.Services.AddMediatR(cfg =>
@@ -199,15 +198,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-var password = "@1";
-var hashed = PasswordHasher.HashPassword(password);
+//var password = "@1";
+//var hashed = PasswordHasher.HashPassword(password);
 
-Console.ForegroundColor = ConsoleColor.Green;
-Console.WriteLine("=====================================");
-Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
-Console.WriteLine(hashed);
-Console.WriteLine("=====================================");
-Console.ResetColor();
+//Console.ForegroundColor = ConsoleColor.Green;
+//Console.WriteLine("=====================================");
+//Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
+//Console.WriteLine(hashed);
+//Console.WriteLine("=====================================");
+//Console.ResetColor();
 
 // ✅ Thứ tự rất quan trọng:
 app.UseAuthentication();
