@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace SMMS.Domain.Entities.auth;
 
 [Table("RefreshTokens", Schema = "auth")]
-[Index("Token", Name = "UQ__RefreshT__1EB4F8178C10FB02", IsUnique = true)]
+[Index("Token", Name = "UQ__RefreshT__1EB4F817E3CAB654", IsUnique = true)]
 public partial class RefreshToken
 {
     [Key]

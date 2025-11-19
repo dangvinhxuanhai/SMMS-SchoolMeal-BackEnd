@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using SMMS.Application.Features.auth.DTOs;
 using SMMS.Application.Features.Skeleton.Interfaces;
 using SMMS.Domain.Entities.auth;
@@ -10,6 +11,8 @@ namespace SMMS.Application.Features.auth.Interfaces
     {
         Task<UserProfileResponseDto> GetUserProfileAsync(Guid userId);
         Task<bool> UpdateUserProfileAsync(Guid userId, UpdateUserProfileDto dto);
-        Task<string> UploadChildAvatarAsync(string fileName, byte[] fileData, Guid studentId);
+        Task<bool> UpdateChildInfoAsync(Guid userId, ChildProfileDto dto);
+        Task<string> UploadChildAvatarAsync(IFormFile file, Guid studentId);
+        Task<string> UploadUserAvatarAsync(IFormFile file, Guid userId);
     }
 }

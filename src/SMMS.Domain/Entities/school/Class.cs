@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace SMMS.Domain.Entities.school;
 
 [Table("Classes", Schema = "school")]
-[Index("TeacherId", Name = "UQ__Classes__EDF259655C9638AA", IsUnique = true)]
+[Index("TeacherId", Name = "UQ__Classes__EDF259652891263B", IsUnique = true)]
 public partial class Class
 {
     [Key]

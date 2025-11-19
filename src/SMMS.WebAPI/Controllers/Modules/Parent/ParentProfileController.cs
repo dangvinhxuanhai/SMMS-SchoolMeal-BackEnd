@@ -1,7 +1,10 @@
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.auth.Commands;
 using SMMS.Application.Features.auth.DTOs;
 using SMMS.Application.Features.auth.Interfaces;
+using SMMS.Application.Features.auth.Queries;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -10,100 +13,81 @@ namespace SMMS.WebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Parent")] // chỉ cho phép role Parent
+    [Authorize(Roles = "Parent")]
     public class ParentProfileController : ControllerBase
     {
-        private readonly IUserProfileRepository _userProfileService;
+        private readonly IMediator _mediator;
 
-        public ParentProfileController(IUserProfileRepository userProfileService)
+        public ParentProfileController(IMediator mediator)
         {
-            _userProfileService = userProfileService;
+            _mediator = mediator;
         }
 
-        // ✅ Lấy thông tin hồ sơ của chính phụ huynh đang đăng nhập
+        // GET: Lấy profile
         [HttpGet("profile")]
         public async Task<ActionResult<UserProfileResponseDto>> GetUserProfile()
         {
-            try
-            {
-                var userId = GetCurrentUserId(); // lấy ID từ token
-                var profile = await _userProfileService.GetUserProfileAsync(userId);
-
-                if (profile == null)
-                    return NotFound(new { message = "Không tìm thấy thông tin hồ sơ người dùng." });
-
-                return Ok(profile);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = $"Lỗi hệ thống: {ex.Message}" });
-            }
+            var parentId = GetCurrentUserId();
+            var query = new GetParentProfileQuery(parentId);
+            var profile = await _mediator.Send(query);
+            return Ok(profile);
         }
 
-        // ✅ Cập nhật hồ sơ cá nhân của chính phụ huynh
+        // PUT: Cập nhật profile (có upload avatar)
         [HttpPut("profile")]
-        public async Task<ActionResult<bool>> UpdateUserProfile([FromBody] UpdateUserProfileDto dto)
+        [Consumes("multipart/form-data")] // quan trọng để Swagger hiểu
+        public async Task<ActionResult<bool>> UpdateUserProfile([FromForm] UpdateUserProfileDto dto)
         {
-            try
-            {
-                var userId = GetCurrentUserId(); // lấy ID từ token
-                var result = await _userProfileService.UpdateUserProfileAsync(userId, dto);
-                return Ok(result);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = $"Lỗi hệ thống: {ex.Message}" });
-            }
+            var parentId = GetCurrentUserId();
+            var command = new UpdateParentProfileCommand(parentId, dto);
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        // PUT: Cập nhật children profile 
+        [HttpPut("child")]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<bool>> UpdateChildProfile([FromForm] ChildProfileDto  dto)
+        {
+            var parentId = GetCurrentUserId();
+            var command = new UpdateChildProfileCommand(parentId, dto);
+            var result = await _mediator.Send(command);
+            return Ok(result);
+        }
+        // POST: Upload avatar parent
+        [HttpPost("upload-avatar")]
+        [Consumes("multipart/form-data")]
+        public async Task<ActionResult<string>> UploadParentAvatar([FromForm] UploadAvatarRequest request)
+        {
+            var parentId = GetCurrentUserId();
+            var command = new UploadParentAvatarCommand(parentId, request.File);
+            var avatarUrl = await _mediator.Send(command);
+            return Ok(new { avatarUrl });
         }
 
-        // ✅ Upload avatar cho con của phụ huynh đang đăng nhập
+        // POST: Upload avatar con
         [HttpPost("upload-avatar/{studentId:guid}")]
+        [Consumes("multipart/form-data")]
         public async Task<ActionResult<string>> UploadChildAvatar(Guid studentId, [FromForm] UploadAvatarRequest request)
         {
-            try
-            {
-                var parentId = GetCurrentUserId(); // có thể kiểm tra quyền sở hữu học sinh
-                var avatarUrl = await _userProfileService.UploadChildAvatarAsync(
-                    request.FileName,
-                    request.FileData,
-                    studentId);
-
-                return Ok(new { avatarUrl });
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = $"Lỗi hệ thống: {ex.Message}" });
-            }
+            var parentId = GetCurrentUserId();
+            var command = new UploadChildAvatarCommand(parentId, studentId, request.File);
+            var avatarUrl = await _mediator.Send(command);
+            return Ok(new { avatarUrl });
         }
 
-        // 🔹 Hàm tiện ích lấy userId từ JWT token
         private Guid GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
-            {
                 throw new UnauthorizedAccessException("Không tìm thấy ID người dùng trong token.");
-            }
-
             return Guid.Parse(userIdClaim.Value);
         }
     }
 
     public class UploadAvatarRequest
     {
-        public string FileName { get; set; }
-        public byte[] FileData { get; set; }
+        public IFormFile File { get; set; }
     }
+
+
 }

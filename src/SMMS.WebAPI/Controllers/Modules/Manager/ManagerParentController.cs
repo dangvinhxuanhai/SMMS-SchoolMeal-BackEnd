@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.Manager.Commands;
@@ -9,6 +10,7 @@ using SMMS.Application.Features.Manager.Queries;
 namespace SMMS.WebAPI.Controllers.Modules.Manager;
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Manager")]
 public class ManagerParentController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -17,11 +19,19 @@ public class ManagerParentController : ControllerBase
     {
         _mediator = mediator;
     }
+    private Guid GetSchoolIdFromToken()
+    {
+        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        if (string.IsNullOrEmpty(schoolIdClaim))
+            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
 
+        return Guid.Parse(schoolIdClaim);
+    }
     // 🔍 Tìm kiếm phụ huynh
     [HttpGet("search")]
-    public async Task<IActionResult> Search([FromQuery] Guid schoolId, [FromQuery] string keyword)
+    public async Task<IActionResult> Search([FromQuery] string keyword)
     {
+        var schoolId = GetSchoolIdFromToken();
         if (string.IsNullOrWhiteSpace(keyword))
             return BadRequest(new { message = "Từ khóa tìm kiếm không được để trống." });
 
@@ -31,8 +41,9 @@ public class ManagerParentController : ControllerBase
 
     // 🟢 Lấy danh sách phụ huynh (theo trường / theo lớp)
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] Guid schoolId, [FromQuery] Guid? classId)
+    public async Task<IActionResult> GetAll([FromQuery] Guid? classId)
     {
+        var schoolId = GetSchoolIdFromToken();
         var parents = await _mediator.Send(new GetParentsQuery(schoolId, classId));
         return Ok(new { count = parents.Count, data = parents });
     }
@@ -84,10 +95,10 @@ public class ManagerParentController : ControllerBase
     // 📥 Import phụ huynh từ Excel
     [HttpPost("import-excel")]
     public async Task<IActionResult> ImportExcel(
-        [FromQuery] Guid schoolId,
         IFormFile file,
         [FromQuery] string createdBy)
     {
+        var schoolId = GetSchoolIdFromToken();
         if (file == null || file.Length == 0)
             return BadRequest(new { message = "Vui lòng chọn file Excel hợp lệ." });
 

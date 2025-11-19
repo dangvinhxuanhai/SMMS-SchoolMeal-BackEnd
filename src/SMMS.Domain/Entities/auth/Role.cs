@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace SMMS.Domain.Entities.auth;
 
 [Table("Roles", Schema = "auth")]
-[Index("RoleName", Name = "UQ__Roles__8A2B61609021742E", IsUnique = true)]
+[Index("RoleName", Name = "UQ__Roles__8A2B616026863920", IsUnique = true)]
 public partial class Role
 {
     [Key]
