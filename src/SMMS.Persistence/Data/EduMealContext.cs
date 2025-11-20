@@ -10,7 +10,7 @@ using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.purchasing;
 using SMMS.Domain.Entities.rag;
 using SMMS.Domain.Entities.school;
-using SMMS.Domain.Entities.logs;
+using SMMS.Domain.Entities.Logs;
 
 namespace SMMS.Persistence.Data;
 
