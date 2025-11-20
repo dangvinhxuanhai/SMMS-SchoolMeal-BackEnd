@@ -25,8 +25,9 @@ using SMMS.Persistence.Repositories.Schools;
 using SMMS.Persistence.Repositories.auth;
 using SMMS.Application.Features.school.Handlers;
 using SMMS.Application.Features.billing.Handlers;
-
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using SMMS.Application.Common.Interfaces;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence.Repositories.Wardens;
 using SMMS.Persistence.Data;
@@ -75,7 +76,7 @@ builder.Services.AddControllers()
 // 4️⃣ Dependency Injection (Services)
 // =========================
 builder.Services.AddScoped<IWeeklyMenuRepository, WeeklyMenuRepository>();
-builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<IFileStorageService, CloudinaryService>();
 builder.Services.AddScoped<IUserProfileRepository, UserProfileRepository>();
 builder.Services.AddScoped<IAttendanceRepository, AttendanceRepository>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
@@ -104,15 +105,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     // ✅ Thêm cấu hình để Swagger nhập JWT token
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-    {
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Nhập token JWT vào đây (ví dụ: Bearer abcdef12345)",
-        Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        BearerFormat = "JWT",
-        Scheme = "Bearer"
-    });
+    options.AddSecurityDefinition("Bearer",
+        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        {
+            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            Description = "Nhập token JWT vào đây (ví dụ: Bearer abcdef12345)",
+            Name = "Authorization",
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+            BearerFormat = "JWT",
+            Scheme = "Bearer"
+        });
 
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
@@ -121,11 +123,10 @@ builder.Services.AddSwaggerGen(options =>
             {
                 Reference = new Microsoft.OpenApi.Models.OpenApiReference
                 {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "Bearer"
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme, Id = "Bearer"
                 }
             },
-            new string[] {}
+            new string[] { }
         }
     });
 });
@@ -134,30 +135,30 @@ builder.Services.AddSwaggerGen(options =>
 // 6️⃣ JWT Authentication
 // =========================
 builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-
-    options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
-        ),
-        NameClaimType = "UserId", // ✅ ánh xạ claim "UserId"
-        RoleClaimType = ClaimTypes.Role
-    };
-});
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+            ),
+            NameClaimType = "UserId", // ✅ ánh xạ claim "UserId"
+            RoleClaimType = ClaimTypes.Role
+        };
+    });
 
 builder.Services.AddAuthorization();
 builder.Services.Configure<CloudinarySettings>(
@@ -176,6 +177,7 @@ builder.Services.AddMediatR(cfg =>
 // Register Application Services
 builder.Services.AddScoped<IWardensRepository, WardensRepository>();
 builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IManagerAccountRepository, ManagerAccountRepository>();
 builder.Services.AddScoped<IWardensFeedbackRepository, WardensFeedbackRepository>();
 builder.Services.AddScoped<IManagerClassRepository, ManagerClassRepository>();
@@ -186,18 +188,26 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins("http://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 var app = builder.Build();
+var uploadFolderPath = Path.Combine(builder.Environment.ContentRootPath, "edu-meal");
+Console.WriteLine($"---> Folder ảnh đang nằm tại: {uploadFolderPath}");
+if (!Directory.Exists(uploadFolderPath))
+{
+    Directory.CreateDirectory(uploadFolderPath);
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 //var password = "@1";
 //var hashed = PasswordHasher.HashPassword(password);
 
@@ -208,12 +218,16 @@ app.UseHttpsRedirection();
 //Console.WriteLine("=====================================");
 //Console.ResetColor();
 
-// ✅ Thứ tự rất quan trọng:
-app.UseAuthentication();
 app.UseCors("AllowFrontend");
 
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadFolderPath),
+    RequestPath = "/uploads"
+});
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 app.Run();
-

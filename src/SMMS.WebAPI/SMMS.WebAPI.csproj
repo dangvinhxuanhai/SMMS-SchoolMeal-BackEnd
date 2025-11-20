@@ -50,12 +50,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Controllers\Modules\KitchenStaff\" />
     <Folder Include="Controllers\Modules\Wardens\" />
     <Folder Include="Controllers\Modules\Manager\" />
-    <Folder Include="Middlewares\" />
-    <Folder Include="Extensions\" />
-    <Folder Include="Filters\" />
   </ItemGroup>
 
   <ItemGroup>

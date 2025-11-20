@@ -1,19 +1,20 @@
 using Microsoft.AspNetCore.Identity;
+using SMMS.Application.Common.Interfaces;
 
 namespace SMMS.Infrastructure.Security
 {
-    public static class PasswordHasher
+    public class PasswordHasher : IPasswordHasher
     {
-        private static readonly PasswordHasher<object> _hasher = new PasswordHasher<object>();
+        private  readonly PasswordHasher<object> _hasher = new PasswordHasher<object>();
 
         // Hash mật khẩu theo chuẩn ASP.NET Identity
-        public static string HashPassword(string password)
+        public string HashPassword(string password)
         {
             return _hasher.HashPassword(null, password);
         }
 
         // Kiểm tra mật khẩu có khớp với hash không
-        public static bool VerifyPassword(string plainPassword, string hashedPassword)
+        public bool VerifyPassword(string plainPassword, string hashedPassword)
         {
             var result = _hasher.VerifyHashedPassword(null, hashedPassword, plainPassword);
             return result == PasswordVerificationResult.Success ||

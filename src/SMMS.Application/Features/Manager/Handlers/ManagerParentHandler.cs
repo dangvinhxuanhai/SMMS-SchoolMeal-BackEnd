@@ -15,6 +15,8 @@ using SMMS.Application.Features.Manager.Queries;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.school;
 using Microsoft.EntityFrameworkCore;
+using SMMS.Application.Common.Interfaces;
+
 namespace SMMS.Application.Features.Manager.Handlers;
 public class ManagerParentHandler :
     IRequestHandler<SearchParentsQuery, List<ParentAccountDto>>,
@@ -28,13 +30,17 @@ public class ManagerParentHandler :
 {
     private readonly IManagerAccountRepository _repo;
     private readonly ILogger<ManagerParentHandler> _logger;
+    private readonly IPasswordHasher _passwordHasher;
 
     public ManagerParentHandler(
         IManagerAccountRepository repo,
-        ILogger<ManagerParentHandler> logger)
+        ILogger<ManagerParentHandler> logger
+        , IPasswordHasher passwordHasher
+        )
     {
         _repo = repo;
         _logger = logger;
+        _passwordHasher = passwordHasher;
     }
 
     #region 🔍 SearchAsync
@@ -177,7 +183,7 @@ public class ManagerParentHandler :
             CreatedAt = DateTime.UtcNow,
             CreatedBy = request.CreatedBy
         };
-        parent.PasswordHash = HashPassword(request.Password);
+        parent.PasswordHash = _passwordHasher.HashPassword(request.Password);
 
         await _repo.AddAsync(parent);
 
@@ -249,7 +255,7 @@ public class ManagerParentHandler :
         if (!string.IsNullOrWhiteSpace(request.Phone))
             user.Phone = request.Phone.Trim();
         if (!string.IsNullOrWhiteSpace(request.Password))
-            user.PasswordHash = HashPassword(request.Password);
+            user.PasswordHash = _passwordHasher.HashPassword(request.Password);
         if (!string.IsNullOrWhiteSpace(request.Gender))
             user.LanguagePref = request.Gender; // (theo code cũ của bạn)
 
@@ -447,7 +453,7 @@ public class ManagerParentHandler :
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 };
-                parent.PasswordHash = HashPassword(password);
+                parent.PasswordHash = _passwordHasher.HashPassword(password);
                 await _repo.AddAsync(parent);
 
                 if (!string.IsNullOrWhiteSpace(fullNameChild))
@@ -569,31 +575,6 @@ public class ManagerParentHandler :
         using var stream = new MemoryStream();
         workbook.SaveAs(stream);
         return await Task.FromResult(stream.ToArray());
-    }
-
-    #endregion
-
-    #region 🔐 HashPassword
-
-    private string HashPassword(string password)
-    {
-        if (string.IsNullOrWhiteSpace(password))
-            throw new ArgumentException("Password không được để trống.", nameof(password));
-
-        byte[] salt = new byte[16];
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(salt);
-        }
-
-        using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 100000, HashAlgorithmName.SHA256);
-        byte[] hash = pbkdf2.GetBytes(32);
-
-        byte[] hashBytes = new byte[48];
-        Array.Copy(salt, 0, hashBytes, 0, 16);
-        Array.Copy(hash, 0, hashBytes, 16, 32);
-
-        return Convert.ToBase64String(hashBytes);
     }
 
     #endregion

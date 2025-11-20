@@ -7,6 +7,7 @@ using SMMS.Infrastructure.Security;
 using SMMS.Persistence.Data;
 using System;
 using System.Threading.Tasks;
+using SMMS.Application.Common.Interfaces;
 
 namespace SMMS.Infrastructure.Service
 {
@@ -15,12 +16,15 @@ namespace SMMS.Infrastructure.Service
         private readonly EduMealContext _dbContext;
         private readonly IJwtService _jwtService;
         private readonly IConfiguration _configuration;
+        private readonly IPasswordHasher _passwordHasher; // ✅ Inject vào đây
 
-        public AuthRepository(EduMealContext dbContext, IJwtService jwtService, IConfiguration configuration)
+        public AuthRepository(EduMealContext dbContext, IJwtService jwtService, IConfiguration configuration,
+            IPasswordHasher passwordHasher)
         {
             _dbContext = dbContext;
             _jwtService = jwtService;
             _configuration = configuration;
+            _passwordHasher = passwordHasher;
         }
 
         // ✅ Đăng nhập bằng SĐT hoặc Email
@@ -34,15 +38,15 @@ namespace SMMS.Infrastructure.Service
 
             if (user == null)
                 throw new Exception("Tài khoản không tồn tại.");
-            // Kiểm tra tài khoản có bị Ban không 
+            // Kiểm tra tài khoản có bị Ban không
             if (!user.IsActive)
                 throw new Exception("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
             // Kiểm tra mật khẩu
-            if (!PasswordHasher.VerifyPassword(request.Password, user.PasswordHash))
+            if (!_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
                 throw new Exception("Mật khẩu không đúng.");
 
             // ✅ Kiểm tra xem có đang dùng mật khẩu tạm không
-            bool isUsingTempPassword = PasswordHasher.VerifyPassword("@1", user.PasswordHash);
+            bool isUsingTempPassword = _passwordHasher.VerifyPassword("@1", user.PasswordHash);
 
             if (isUsingTempPassword)
             {
@@ -56,9 +60,23 @@ namespace SMMS.Infrastructure.Service
             // ✅ Sinh JWT token
             string token = _jwtService.GenerateToken(user, user.Role.RoleName);
 
+            string refreshToken = _jwtService.GenerateRefreshToken();
+            var refreshTokenEntity = new RefreshToken
+            {
+                UserId = user.UserId,
+                Token = refreshToken,
+                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                CreatedAt = DateTime.UtcNow,
+                CreatedByIp = "UserLogin",
+                RevokedAt = null
+            };
+            await _dbContext.RefreshTokens.AddAsync(refreshTokenEntity);
+            await _dbContext.SaveChangesAsync();
+
             return new LoginResponseDto
             {
                 Token = token,
+                RefreshToken = refreshToken,
                 Message = "Đăng nhập thành công.",
                 User = new UserInfoDto
                 {
@@ -87,24 +105,31 @@ namespace SMMS.Infrastructure.Service
                 throw new Exception("Refresh token không hợp lệ.");
 
             var newToken = _jwtService.GenerateToken(storedRefreshToken.User, storedRefreshToken.User.Role.RoleName);
-            var newRefreshToken = _jwtService.GenerateRefreshToken();
+            var newRefreshTokenString = _jwtService.GenerateRefreshToken();
 
-            storedRefreshToken.RevokedAt = DateTime.UtcNow;
-            storedRefreshToken.ReplacedById = (await _dbContext.RefreshTokens.AddAsync(new RefreshToken
+            var refreshTokenEntity = new RefreshToken
             {
                 UserId = storedRefreshToken.UserId,
-                Token = newRefreshToken,
+                Token = newRefreshTokenString,
                 ExpiresAt = DateTime.UtcNow.AddDays(7),
                 CreatedAt = DateTime.UtcNow,
-                CreatedByIp = "System"
-            })).Entity.RefreshTokenId;
+                CreatedByIp = "System",
+                RevokedAt = null,
+                ReplacedById = null
+            };
+            await _dbContext.RefreshTokens.AddAsync(refreshTokenEntity);
+            await _dbContext.SaveChangesAsync();
 
+            storedRefreshToken.RevokedAt = DateTime.UtcNow;
+            storedRefreshToken.ReplacedById = refreshTokenEntity.RefreshTokenId;
+
+            _dbContext.RefreshTokens.Update(storedRefreshToken);
             await _dbContext.SaveChangesAsync();
 
             return new LoginResponseDto
             {
                 Token = newToken,
-                RefreshToken = newRefreshToken,
+                RefreshToken = newRefreshTokenString,
                 Expiration = DateTime.UtcNow.AddMinutes(Convert.ToDouble(_configuration["Jwt:ExpireMinutes"])),
                 User = new UserInfoDto
                 {
@@ -142,14 +167,14 @@ namespace SMMS.Infrastructure.Service
             if (user == null)
                 throw new Exception("Không tìm thấy tài khoản.");
 
-            if (!PasswordHasher.VerifyPassword(currentPassword, user.PasswordHash))
+            if (!_passwordHasher.VerifyPassword(currentPassword, user.PasswordHash))
                 throw new Exception("Mật khẩu hiện tại không đúng.");
 
-            bool isTemp = PasswordHasher.VerifyPassword("@1", user.PasswordHash);
+            bool isTemp = _passwordHasher.VerifyPassword("@1", user.PasswordHash);
             if (!isTemp)
                 throw new Exception("Tài khoản đã được đổi mật khẩu trước đó.");
 
-            user.PasswordHash = PasswordHasher.HashPassword(newPassword);
+            user.PasswordHash = _passwordHasher.HashPassword(newPassword);
             await _dbContext.SaveChangesAsync();
         }
     }
