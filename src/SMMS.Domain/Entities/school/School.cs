@@ -84,8 +84,4 @@ public partial class School
 
     [InverseProperty("School")]
     public virtual ICollection<User> Users { get; set; } = new List<User>();
-
-    [InverseProperty("School")]
-    public virtual ICollection<SchoolPaymentSetting> SchoolPaymentSettings { get; set; }
-    = new List<SchoolPaymentSetting>();
 }

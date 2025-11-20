@@ -38,7 +38,6 @@ using SMMS.Persistence.Repositories.schools;
 using SMMS.Persistence.Repositories.Schools;
 using SMMS.Persistence.Repositories.Wardens;
 using SMMS.WebAPI.Configurations;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 
 var builder = WebApplication.CreateBuilder(args);
 
