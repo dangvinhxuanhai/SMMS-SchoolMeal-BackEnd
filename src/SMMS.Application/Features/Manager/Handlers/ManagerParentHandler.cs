@@ -15,6 +15,7 @@ using SMMS.Application.Features.Manager.Queries;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.school;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 namespace SMMS.Application.Features.Manager.Handlers;
 public class ManagerParentHandler :
     IRequestHandler<SearchParentsQuery, List<ParentAccountDto>>,
@@ -28,13 +29,14 @@ public class ManagerParentHandler :
 {
     private readonly IManagerAccountRepository _repo;
     private readonly ILogger<ManagerParentHandler> _logger;
-
+    private readonly PasswordHasher<User> _passwordHasher;
     public ManagerParentHandler(
         IManagerAccountRepository repo,
         ILogger<ManagerParentHandler> logger)
     {
         _repo = repo;
         _logger = logger;
+        _passwordHasher = new PasswordHasher<User>();
     }
 
     #region 🔍 SearchAsync
@@ -157,18 +159,26 @@ public class ManagerParentHandler :
         if (role == null)
             throw new InvalidOperationException("Không tìm thấy vai trò 'Parent'.");
 
+        var normalizedEmail = string.IsNullOrWhiteSpace(request.Email)
+            ? null
+            : request.Email.Trim().ToLower();
+
         var exists = await _repo.Users.AnyAsync(
-            u => u.Email == request.Email || u.Phone == request.Phone,
+            u => (normalizedEmail != null && u.Email == normalizedEmail) || u.Phone == request.Phone,
             cancellationToken);
 
         if (exists)
-            throw new InvalidOperationException("Email hoặc số điện thoại đã tồn tại.");
+            throw new InvalidOperationException(
+                normalizedEmail == null
+                    ? "Số điện thoại đã tồn tại."
+                    : "Email hoặc số điện thoại đã tồn tại."
+            );
 
         var parent = new User
         {
             UserId = Guid.NewGuid(),
             FullName = request.FullName.Trim(),
-            Email = request.Email?.Trim().ToLower(),
+            Email = normalizedEmail,
             Phone = request.Phone.Trim(),
             RoleId = role.RoleId,
             SchoolId = request.SchoolId,
@@ -177,7 +187,9 @@ public class ManagerParentHandler :
             CreatedAt = DateTime.UtcNow,
             CreatedBy = request.CreatedBy
         };
-        parent.PasswordHash = HashPassword(request.Password);
+        // ✅ dùng PasswordHasher
+        parent.PasswordHash = _passwordHasher.HashPassword(parent, request.Password);
+
 
         await _repo.AddAsync(parent);
 
@@ -249,7 +261,10 @@ public class ManagerParentHandler :
         if (!string.IsNullOrWhiteSpace(request.Phone))
             user.Phone = request.Phone.Trim();
         if (!string.IsNullOrWhiteSpace(request.Password))
-            user.PasswordHash = HashPassword(request.Password);
+        {
+            // ✅ đổi mật khẩu dùng PasswordHasher
+            user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
+        }
         if (!string.IsNullOrWhiteSpace(request.Gender))
             user.LanguagePref = request.Gender; // (theo code cũ của bạn)
 
@@ -428,18 +443,25 @@ public class ManagerParentHandler :
                 if (string.IsNullOrWhiteSpace(fullNameParent) || string.IsNullOrWhiteSpace(phone))
                     throw new InvalidOperationException($"Thiếu thông tin bắt buộc tại dòng {row}: FullName_Parent hoặc Phone.");
 
+                var normalizedEmail = string.IsNullOrWhiteSpace(email)
+                ? null
+                : email.ToLower();
                 var exists = await _repo.Users.AnyAsync(
-                    u => u.Email == email || u.Phone == phone,
+                    u => normalizedEmail != null && u.Email == normalizedEmail || u.Phone == phone,
                     cancellationToken);
 
                 if (exists)
-                    throw new InvalidOperationException($"Email hoặc số điện thoại đã tồn tại: {email ?? phone}");
+                    throw new InvalidOperationException(
+                        normalizedEmail == null
+                            ? "Số điện thoại đã tồn tại."
+                            : "Email hoặc số điện thoại đã tồn tại."
+                    );
 
                 var parent = new User
                 {
                     UserId = Guid.NewGuid(),
                     FullName = fullNameParent,
-                    Email = email,
+                    Email = normalizedEmail,
                     Phone = phone,
                     RoleId = role.RoleId,
                     SchoolId = schoolId,
@@ -447,7 +469,8 @@ public class ManagerParentHandler :
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 };
-                parent.PasswordHash = HashPassword(password);
+                // ✅ hash password bằng PasswordHasher
+                parent.PasswordHash = _passwordHasher.HashPassword(parent, password);
                 await _repo.AddAsync(parent);
 
                 if (!string.IsNullOrWhiteSpace(fullNameChild))
@@ -538,6 +561,9 @@ public class ManagerParentHandler :
         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
         headerRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
+        // 👇 Định dạng cả cột Phone (cột 3) là Text
+        var phoneColumn = sheet.Column(3);
+        phoneColumn.Style.NumberFormat.Format = "@"; // "@" = Text
         sheet.Cell(2, 1).Value = "Nguyễn Văn A";
         sheet.Cell(2, 2).Value = "a@gmail.com";
         sheet.Cell(2, 3).Value = "0901234567";
@@ -573,28 +599,5 @@ public class ManagerParentHandler :
 
     #endregion
 
-    #region 🔐 HashPassword
 
-    private string HashPassword(string password)
-    {
-        if (string.IsNullOrWhiteSpace(password))
-            throw new ArgumentException("Password không được để trống.", nameof(password));
-
-        byte[] salt = new byte[16];
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(salt);
-        }
-
-        using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, 100000, HashAlgorithmName.SHA256);
-        byte[] hash = pbkdf2.GetBytes(32);
-
-        byte[] hashBytes = new byte[48];
-        Array.Copy(salt, 0, hashBytes, 0, 16);
-        Array.Copy(hash, 0, hashBytes, 16, 32);
-
-        return Convert.ToBase64String(hashBytes);
-    }
-
-    #endregion
 }

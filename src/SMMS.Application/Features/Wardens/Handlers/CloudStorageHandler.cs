@@ -127,6 +127,7 @@ public class CloudStorageHandler :
     }
 
     // 🟢 3. Upload ảnh học sinh
+    // 🟢 3. Upload ảnh học sinh (theo ClassId, tự chọn student đầu tiên)
     public async Task<UploadImageResultDto> Handle(
         UploadStudentImageCommand command,
         CancellationToken cancellationToken)
@@ -144,14 +145,31 @@ public class CloudStorageHandler :
         if (!allowedExtensions.Contains(fileExtension))
             throw new InvalidOperationException("Chỉ được phép upload các tệp hình ảnh (.jpg, .jpeg, .png, .gif, .webp)");
 
-        // 🔹 Lấy thông tin học sinh, lớp, trường, năm
-        var studentInfo = await (
-            from s in _repo.Students
-            join sc in _repo.StudentClasses on s.StudentId equals sc.StudentId
-            join c in _repo.Classes on sc.ClassId equals c.ClassId
+        // 🔹 1. Lấy student đầu tiên của class (nếu cần dùng StudentId)
+        Guid studentId;
+
+        if (request.StudentId.HasValue && request.StudentId.Value != Guid.Empty)
+        {
+            studentId = request.StudentId.Value;
+        }
+        else
+        {
+            studentId = await _repo.StudentClasses
+                .Where(sc => sc.ClassId == request.ClassId && sc.RegistStatus == true)
+                .OrderBy(sc => sc.JoinedDate)
+                .Select(sc => sc.StudentId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (studentId == Guid.Empty)
+                throw new InvalidOperationException("Lớp này chưa có học sinh nào đăng ký.");
+        }
+
+        // 🔹 2. Lấy thông tin trường / năm học / lớp từ ClassId (không cần StudentId nữa)
+        var classInfo = await (
+            from c in _repo.Classes
             join y in _repo.AcademicYears on c.YearId equals y.YearId
             join sch in _repo.Schools on c.SchoolId equals sch.SchoolId
-            where s.StudentId == request.StudentId
+            where c.ClassId == request.ClassId
             select new
             {
                 SchoolName = sch.SchoolName,
@@ -160,9 +178,8 @@ public class CloudStorageHandler :
             }
         ).FirstOrDefaultAsync(cancellationToken);
 
-        string school = studentInfo?.SchoolName ?? "Unknown_School";
-        string year = studentInfo?.YearName ?? "Unknown_Year";
-        string className = studentInfo?.ClassName ?? "Unknown_Class";
+        if (classInfo == null)
+            throw new InvalidOperationException("Không tìm thấy thông tin lớp học.");
 
         string Normalize(string text)
         {
@@ -178,10 +195,11 @@ public class CloudStorageHandler :
                 .Trim();
         }
 
-        school = Normalize(school);
-        year = Normalize(year);
-        className = Normalize(className);
+        string school = Normalize(classInfo.SchoolName);
+        string year = Normalize(classInfo.YearName);
+        string className = Normalize(classInfo.ClassName);
 
+        // Folder dạng: student_images/Truong_A/2025-2026/Lop_1A
         var folderPath = $"{baseFolder}/{school}/{year}/{className}";
 
         await using var stream = file.OpenReadStream();
@@ -199,6 +217,9 @@ public class CloudStorageHandler :
 
         if (result.StatusCode != HttpStatusCode.OK)
             throw new Exception($"Cloudinary upload failed: {result.Error?.Message}");
+
+        // 🔹 Nếu sau này bạn insert bản ghi StudentImages, bạn có sẵn studentId ở đây
+        // tạo StudentImage entity và lưu bằng _repo.DbContext.SaveChangesAsync() chẳng hạn.
 
         return new UploadImageResultDto
         {
