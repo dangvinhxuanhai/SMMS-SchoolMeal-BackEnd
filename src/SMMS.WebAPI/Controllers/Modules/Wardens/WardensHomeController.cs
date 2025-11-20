@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.Wardens.DTOs;
@@ -9,6 +11,7 @@ namespace SMMS.WebAPI.Controllers.Modules.Wardens;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Teacher")]
 public class WardensHomeController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -17,14 +20,22 @@ public class WardensHomeController : ControllerBase
     {
         _mediator = mediator;
     }
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null)
+            throw new UnauthorizedAccessException("Không tìm thấy ID người dùng trong token.");
 
+        return Guid.Parse(userIdClaim.Value);
+    }
     // 1️⃣ Lấy danh sách lớp mà giám thị phụ trách
     // GET: /api/WardensHome/classes/{wardenId}
     [HttpGet("classes/{wardenId:guid}")]
-    public async Task<IActionResult> GetClasses(Guid wardenId)
+    public async Task<IActionResult> GetClasses()
     {
         try
         {
+            var wardenId = GetCurrentUserId();
             var classes = await _mediator.Send(new GetWardenClassesQuery(wardenId));
             return Ok(classes);
         }
@@ -75,10 +86,11 @@ public class WardensHomeController : ControllerBase
     // 4️⃣ Lấy thông báo của giám thị
     // GET: /api/WardensHome/notifications/{wardenId}
     [HttpGet("notifications/{wardenId:guid}")]
-    public async Task<IActionResult> GetNotifications(Guid wardenId)
+    public async Task<IActionResult> GetNotifications()
     {
         try
         {
+            var wardenId = GetCurrentUserId();
             var notifications = await _mediator.Send(new GetWardenNotificationsQuery(wardenId));
             return Ok(notifications);
         }

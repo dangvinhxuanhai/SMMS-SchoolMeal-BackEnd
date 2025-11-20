@@ -7,7 +7,6 @@ using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.fridge;
 using SMMS.Domain.Entities.inventory;
 using SMMS.Domain.Entities.purchasing;
-using SMMS.Domain.Entities.rag;
 using SMMS.Domain.Entities.school;
 
 namespace SMMS.Domain.Entities.nutrition;

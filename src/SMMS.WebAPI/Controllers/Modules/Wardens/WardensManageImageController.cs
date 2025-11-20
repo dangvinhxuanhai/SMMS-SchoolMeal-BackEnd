@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,7 @@ using SMMS.Persistence.Data;
 namespace SMMS.WebAPI.Controllers.Modules.Wardens;
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Teacher")]
 public class WardensManageImageController : ControllerBase
 {
     private readonly EduMealContext _context;

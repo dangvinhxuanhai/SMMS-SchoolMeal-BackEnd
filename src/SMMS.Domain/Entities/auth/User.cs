@@ -7,10 +7,10 @@ using SMMS.Domain.Entities.billing;
 using SMMS.Domain.Entities.foodmenu;
 using SMMS.Domain.Entities.fridge;
 using SMMS.Domain.Entities.inventory;
+using SMMS.Domain.Entities.logs;
 using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.purchasing;
 using SMMS.Domain.Entities.school;
-using SMMS.Domain.Entities.Logs;
 
 namespace SMMS.Domain.Entities.auth;
 

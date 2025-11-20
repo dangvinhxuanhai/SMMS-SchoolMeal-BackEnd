@@ -35,9 +35,9 @@ public partial class FoodItem
 
     public Guid SchoolId { get; set; }
 
-    public bool IsActive { get; set; }
-
     public bool IsMainDish { get; set; }
+
+    public bool IsActive { get; set; }
 
     [ForeignKey("CreatedBy")]
     [InverseProperty("FoodItems")]

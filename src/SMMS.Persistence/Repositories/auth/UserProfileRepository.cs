@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.auth.DTOs;
 using SMMS.Application.Features.auth.Interfaces;
@@ -53,8 +55,9 @@ namespace SMMS.Persistence.Repositories.auth
                     StudentId = student.StudentId,
                     FullName = student.FullName,
                     AvatarUrl = student.AvatarUrl,
+                    Relation = student.RelationName,
                     AllergyFoods = allergenNames,
-                    ClassName = className
+                    ClassName = className,
                 });
             }
 
@@ -63,6 +66,9 @@ namespace SMMS.Persistence.Repositories.auth
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
+                DateOfBirth = user.DateOfBirth,
+                AvatarUrl = user.AvatarUrl,
+                Gender = user.Gender ? "Nam" : "Nữ",
                 Children = childrenWithAllergies
             };
         }
@@ -76,27 +82,76 @@ namespace SMMS.Persistence.Repositories.auth
             user.FullName = dto.FullName;
             user.Email = dto.Email;
             user.Phone = dto.Phone;
-            user.UpdatedAt = DateTime.UtcNow;
-
-            foreach (var childDto in dto.Children)
+            user.DateOfBirth = dto.DateOfBirth;
+            if (!string.IsNullOrEmpty(dto.Gender))
             {
-                await UpdateChildInfoAsync(userId, childDto);
+                user.Gender = dto.Gender.Trim().ToLower() == "nam";
             }
+            if (dto.AvatarFile != null)
+            {
+                user.AvatarUrl = await UploadUserAvatarAsync(dto.AvatarFile, userId);
+            }
+            user.UpdatedAt = DateTime.UtcNow;
 
             await _dbContext.SaveChangesAsync();
             return true;
         }
-
-        public async Task<string> UploadChildAvatarAsync(string fileName, byte[] fileData, Guid studentId)
+        public async Task<string> UploadUserAvatarAsync(IFormFile file, Guid userId)
         {
-            if (fileData == null || fileData.Length == 0)
+            if (file == null || file.Length == 0)
                 return null;
+            // Lấy thông tin file
+            var fileName = file.FileName;
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+            var fileData = ms.ToArray();
+            // Tạo tên file mới để tránh trùng
+            var newFileName = $"user_{userId}_{DateTime.UtcNow:yyyyMMddHHmmss}";
+            // Upload lên storage
+            var avatarUrl = await _fileStorageService.SaveFileAsync(
+                fileName,
+                fileData,
+                "edu-meal/user-avatars", // folder lưu avatar user
+                newFileName
+            );
 
-            var newFileName = $"student_{studentId}_{DateTime.Now:yyyyMMddHHmmss}{Path.GetExtension(fileName)}";
-            return await _fileStorageService.SaveFileAsync(fileName, fileData, "student-avatars", newFileName);
+            // Cập nhật URL avatar vào DB
+            var user = await _dbContext.Users.FindAsync(userId); // hoặc table Parent nếu riêng
+            if (user != null)
+            {
+                user.AvatarUrl = avatarUrl;
+                user.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+            }
+
+            return avatarUrl;
         }
 
-        private async Task UpdateChildInfoAsync(Guid parentId, ChildProfileDto childDto)
+        public async Task<string> UploadChildAvatarAsync(IFormFile file, Guid studentId)
+        {
+            if (file == null || file.Length == 0)
+                return null;
+
+            var fileName = file.FileName;
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+            var fileData = ms.ToArray();
+
+            var newFileName = $"student_{studentId}_{DateTime.UtcNow:yyyyMMddHHmmss}";
+
+            var url = await _fileStorageService.SaveFileAsync(
+                fileName,
+                fileData,
+                "edu-meal/student-avatars",
+                newFileName
+            );
+
+            // Chỉ trả URL, không SaveChangesAsync() ở đây
+            return url;
+        }
+
+
+        public async Task<bool> UpdateChildInfoAsync(Guid parentId, ChildProfileDto childDto)
         {
             var student = await _dbContext.Students
                 .Include(s => s.StudentAllergens)
@@ -104,17 +159,23 @@ namespace SMMS.Persistence.Repositories.auth
 
             if (student != null)
             {
-                if (!string.IsNullOrEmpty(childDto.AvatarFileName) && childDto.AvatarFileData != null)
-                {
-                    student.AvatarUrl = await UploadChildAvatarAsync(
-                        childDto.AvatarFileName,
-                        childDto.AvatarFileData,
-                        childDto.StudentId);
-                }
+                if (!string.IsNullOrEmpty(childDto.FullName))
+                    student.FullName = childDto.FullName;
+
+                if (!string.IsNullOrEmpty(childDto.Relation))
+                    student.RelationName = childDto.Relation;
+
+                if (childDto.AvatarFile != null)
+                    student.AvatarUrl = await UploadChildAvatarAsync(childDto.AvatarFile, student.StudentId);
+
+                await UpdateChildAllergiesAsync(student, childDto.AllergyFoods);
 
                 student.UpdatedAt = DateTime.UtcNow;
-                await UpdateChildAllergiesAsync(student, childDto.AllergyFoods);
+                await _dbContext.SaveChangesAsync();
+                return true;
             }
+
+            return false;
         }
 
         private async Task UpdateChildAllergiesAsync(Student student, List<string> allergyFoods)

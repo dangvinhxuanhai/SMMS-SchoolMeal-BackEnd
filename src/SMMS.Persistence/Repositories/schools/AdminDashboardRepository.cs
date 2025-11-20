@@ -24,27 +24,29 @@ namespace SMMS.Persistence.Repositories.schools
             var totalSchools = await _context.Schools.CountAsync();
             var totalStudents = await _context.Students.CountAsync();
 
-            const decimal SchoolMonthlyFee = 1200000m;
-
             var now = DateTime.UtcNow;
+
             var currentMonth = now.Month;
             var currentYear = now.Year;
-            var previousMonth = now.AddMonths(-1).Month;
-            var previousYear = now.AddMonths(-1).Year;
 
-            // Số trường đăng ký trong tháng này
-            var schoolsThisMonth = await _context.Schools
-                .CountAsync(s => s.CreatedAt.Month == currentMonth && s.CreatedAt.Year == currentYear);
+            var previous = now.AddMonths(-1);
+            var previousMonth = previous.Month;
+            var previousYear = previous.Year;
 
-            // Số trường đăng ký trong tháng trước
-            var schoolsLastMonth = await _context.Schools
-                .CountAsync(s => s.CreatedAt.Month == previousMonth && s.CreatedAt.Year == previousYear);
+            // --- Lấy doanh thu từ bảng SchoolRevenues ---
+            var currentMonthRevenue = await _context.SchoolRevenues
+                .Where(r => r.RevenueDate.Month == currentMonth &&
+                            r.RevenueDate.Year == currentYear &&
+                            r.IsActive == true)
+                .SumAsync(r => (decimal?)r.RevenueAmount) ?? 0;
 
-            // Tính doanh thu
-            var currentMonthRevenue = schoolsThisMonth * SchoolMonthlyFee;
-            var previousMonthRevenue = schoolsLastMonth * SchoolMonthlyFee;
+            var previousMonthRevenue = await _context.SchoolRevenues
+                .Where(r => r.RevenueDate.Month == previousMonth &&
+                            r.RevenueDate.Year == previousYear &&
+                            r.IsActive == true)
+                .SumAsync(r => (decimal?)r.RevenueAmount) ?? 0;
 
-            // Tính tăng trưởng (%)
+            // --- Tính % tăng trưởng doanh thu ---
             decimal revenueGrowth = 0;
             if (previousMonthRevenue > 0)
             {
@@ -57,6 +59,7 @@ namespace SMMS.Persistence.Repositories.schools
                 TotalStudents = totalStudents,
                 CurrentMonthRevenue = currentMonthRevenue,
                 PreviousMonthRevenue = previousMonthRevenue,
+                RevenueGrowth = revenueGrowth
             };
         }
     }

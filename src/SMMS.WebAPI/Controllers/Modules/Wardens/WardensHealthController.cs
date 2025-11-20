@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.Wardens.DTOs;
@@ -8,6 +9,7 @@ namespace SMMS.WebAPI.Controllers.Modules.Wardens;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Teacher")]
 public class WardensHealthController : ControllerBase
 {
     private readonly IMediator _mediator;

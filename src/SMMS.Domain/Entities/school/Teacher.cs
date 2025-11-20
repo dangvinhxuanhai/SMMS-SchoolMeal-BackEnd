@@ -8,7 +8,7 @@ using SMMS.Domain.Entities.auth;
 namespace SMMS.Domain.Entities.school;
 
 [Table("Teachers", Schema = "school")]
-[Index("EmployeeCode", Name = "UQ__Teachers__1F642548EB34401D", IsUnique = true)]
+[Index("EmployeeCode", Name = "UQ__Teachers__1F6425484B87CBAA", IsUnique = true)]
 public partial class Teacher
 {
     [Key]

@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.Manager.Commands;
@@ -9,6 +11,7 @@ using SMMS.Application.Features.Manager.Queries;
 namespace SMMS.WebAPI.Controllers.Modules.Manager;
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Manager")]
 public class ManagerClassController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -17,11 +20,19 @@ public class ManagerClassController : ControllerBase
     {
         _mediator = mediator;
     }
+    private Guid GetSchoolIdFromToken()
+    {
+        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        if (string.IsNullOrEmpty(schoolIdClaim))
+            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
 
+        return Guid.Parse(schoolIdClaim);
+    }
     // 🟢 GET: /api/ManagerClass?schoolId={id}
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] Guid schoolId)
+    public async Task<IActionResult> GetAll()
     {
+        var schoolId = GetSchoolIdFromToken();
         var result = await _mediator.Send(new GetAllClassesQuery(schoolId));
         return Ok(new { count = result.Count, data = result });
     }
@@ -61,10 +72,11 @@ public class ManagerClassController : ControllerBase
 
     // 🧑‍🏫 GET: /api/ManagerClass/teachers/assignment-status?schoolId={id}
     [HttpGet("teachers/assignment-status")]
-    public async Task<IActionResult> GetTeacherAssignmentStatus([FromQuery] Guid schoolId)
+    public async Task<IActionResult> GetTeacherAssignmentStatus()
     {
         try
         {
+            var schoolId = GetSchoolIdFromToken();
             var result = await _mediator.Send(new GetTeacherAssignmentStatusQuery(schoolId));
             return Ok(result);
         }
