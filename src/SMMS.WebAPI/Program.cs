@@ -191,6 +191,9 @@ builder.Services.AddScoped<IWardensFeedbackRepository, WardensFeedbackRepository
 builder.Services.AddScoped<IManagerClassRepository, ManagerClassRepository>();
 builder.Services.AddScoped<IManagerFinanceRepository, ManagerFinanceRepository>();
 builder.Services.AddScoped<ICloudStorageRepository, CloudStorageRepository>();
+builder.Services.AddScoped<IClassStudentRepository, ClassStudentRepository>();
+builder.Services.AddScoped<IMenuRecommendSessionRepository, MenuRecommendSessionRepository>();
+builder.Services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
