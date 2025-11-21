@@ -4,7 +4,6 @@ using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.billing;
 using SMMS.Application.Features.Wardens.DTOs;
 using SMMS.Application.Features.Wardens.Interfaces;
-using SMMS.Persistence.DbContextSite;
 
 namespace SMMS.Application.Features.Wardens.Services;
 

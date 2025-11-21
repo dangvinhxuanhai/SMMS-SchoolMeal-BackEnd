@@ -7,7 +7,6 @@ using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using SMMS.Application.Features.Wardens.Interfaces;
-using SMMS.Persistence.Configurations;
 
 namespace SMMS.Application.Features.Wardens.Services;
 public class CloudStorageService : ICloudStorageService
@@ -98,5 +97,5 @@ public class CloudStorageService : ICloudStorageService
         var result = await _cloudinary.DestroyAsync(deletionParams);
         return result.Result == "ok";
     }
-    
+
 }
