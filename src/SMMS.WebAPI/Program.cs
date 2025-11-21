@@ -195,7 +195,6 @@ builder.Services.AddCors(options =>
 });
 var app = builder.Build();
 var uploadFolderPath = Path.Combine(builder.Environment.ContentRootPath, "edu-meal");
-Console.WriteLine($"---> Folder ảnh đang nằm tại: {uploadFolderPath}");
 if (!Directory.Exists(uploadFolderPath))
 {
     Directory.CreateDirectory(uploadFolderPath);
