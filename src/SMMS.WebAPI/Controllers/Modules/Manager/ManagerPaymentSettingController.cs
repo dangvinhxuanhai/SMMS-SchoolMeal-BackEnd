@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.Manager.Commands;
 using SMMS.Application.Features.Manager.DTOs;
@@ -8,6 +9,7 @@ namespace SMMS.WebAPI.Controllers.Modules.Manager;
 
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Manager")]
 public class ManagerPaymentSettingController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -16,11 +18,19 @@ public class ManagerPaymentSettingController : ControllerBase
     {
         _mediator = mediator;
     }
+    private Guid GetSchoolIdFromToken()
+    {
+        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        if (string.IsNullOrEmpty(schoolIdClaim))
+            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
 
+        return Guid.Parse(schoolIdClaim);
+    }
     // GET: api/ManagerPaymentSetting/school/{schoolId}
     [HttpGet("school/{schoolId:guid}")]
-    public async Task<IActionResult> GetBySchool(Guid schoolId)
+    public async Task<IActionResult> GetBySchool()
     {
+        var schoolId = GetSchoolIdFromToken();
         var result = await _mediator.Send(new GetSchoolPaymentSettingsQuery(schoolId));
 
         return Ok(new
