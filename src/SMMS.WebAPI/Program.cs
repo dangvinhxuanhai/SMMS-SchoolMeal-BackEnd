@@ -207,15 +207,14 @@ if (app.Environment.IsDevelopment())
 }
 
 // app.UseHttpsRedirection();
-//var password = "@1";
-//var hashed = PasswordHasher.HashPassword(password);
-
-//Console.ForegroundColor = ConsoleColor.Green;
-//Console.WriteLine("=====================================");
-//Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
-//Console.WriteLine(hashed);
-//Console.WriteLine("=====================================");
-//Console.ResetColor();
+// var password = "@1";
+// var hasher = new SMMS.Infrastructure.Security.PasswordHasher();
+// var hashed = hasher.HashPassword(password);
+//
+// Console.ForegroundColor = ConsoleColor.Yellow;
+// Console.WriteLine("👇 COPY CHÍNH XÁC ĐOẠN NẰM GIỮA 2 DẤU NHÁY ĐƠN 👇");
+// Console.WriteLine($"'{hashed}'");
+// Console.ResetColor();
 
 app.UseCors("AllowFrontend");
 

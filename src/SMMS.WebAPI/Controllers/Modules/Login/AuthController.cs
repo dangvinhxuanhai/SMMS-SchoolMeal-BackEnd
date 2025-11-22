@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.auth.DTOs;
 using SMMS.Application.Features.auth.Interfaces;
@@ -21,13 +23,7 @@ public class AuthController : ControllerBase
             var result = await _authService.LoginAsync(request);
             if (!string.IsNullOrEmpty(result.Token))
             {
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTime.Now.AddDays(1)
-                };
+                var cookieOptions = GetCookieOptions(1);
                 Response.Cookies.Append("accessToken", result.Token, cookieOptions);
                 if (!string.IsNullOrEmpty(result.RefreshToken))
                 {
@@ -41,6 +37,53 @@ public class AuthController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        try
+        {
+            var userIdClaim = User.FindFirst("UserId")?.Value
+                              ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                              ?? User.FindFirst("sub")?.Value
+                              ?? User.FindFirst("id")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized("Token không hợp lệ.");
+
+            var userId = Guid.Parse(userIdClaim);
+
+            var user = await _authService.GetUserByIdAsync(userId);
+
+            if (user == null)
+                return NotFound(new { message = "Không tìm thấy người dùng." });
+
+            return Ok(new UserInfoDto
+            {
+                UserId = user.UserId,
+                FullName = user.FullName,
+                Phone = user.Phone,
+                Email = user.Email,
+                Role = user.Role?.RoleName,
+                SchoolId = user.SchoolId
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    private CookieOptions GetCookieOptions(int daysExpire)
+    {
+        return new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = false,
+            SameSite = SameSiteMode.None,
+            Expires = DateTime.UtcNow.AddDays(daysExpire)
+        };
     }
 
     [HttpPost("refresh-token")]
@@ -59,22 +102,10 @@ public class AuthController : ControllerBase
 
             if (!string.IsNullOrEmpty(result.Token))
             {
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTime.UtcNow.AddDays(7)
-                };
+                var cookieOptions = GetCookieOptions(7);
 
                 // Lưu Access Token mới
-                Response.Cookies.Append("accessToken", result.Token, new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Strict,
-                    Expires = DateTime.UtcNow.AddDays(1)
-                });
+                Response.Cookies.Append("accessToken", result.Token, GetCookieOptions(1));
 
                 if (!string.IsNullOrEmpty(result.RefreshToken))
                 {
