@@ -16,7 +16,7 @@ namespace SMMS.Infrastructure.Service
         private readonly EduMealContext _dbContext;
         private readonly IJwtService _jwtService;
         private readonly IConfiguration _configuration;
-        private readonly IPasswordHasher _passwordHasher; // ✅ Inject vào đây
+        private readonly IPasswordHasher _passwordHasher;
 
         public AuthRepository(EduMealContext dbContext, IJwtService jwtService, IConfiguration configuration,
             IPasswordHasher passwordHasher)
@@ -141,6 +141,14 @@ namespace SMMS.Infrastructure.Service
                     SchoolId = storedRefreshToken.User.SchoolId
                 }
             };
+        }
+
+        public async Task<User?> GetUserByIdAsync(Guid userId)
+        {
+            return await _dbContext.Users
+                .Include(u => u.Role)
+                .Include(u => u.School)
+                .FirstOrDefaultAsync(u => u.UserId == userId);
         }
 
         // ✅ Đăng xuất
