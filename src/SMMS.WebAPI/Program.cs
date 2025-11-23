@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using SMMS.Application.Abstractions;
 using SMMS.Application.Common.Validators;
 using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.billing.Handlers;
@@ -19,6 +20,7 @@ using SMMS.Application.Features.Identity.Interfaces;
 using SMMS.Application.Features.Manager.Handlers;
 using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.notification.Interfaces;
+using SMMS.Application.Features.nutrition.Interfaces;
 using SMMS.Application.Features.school.Handlers;
 using SMMS.Application.Features.school.Interfaces;
 using SMMS.Application.Features.Wardens.Handlers;
@@ -30,10 +32,12 @@ using SMMS.Infrastructure.Repositories.Implementations;
 using SMMS.Infrastructure.Security;
 using SMMS.Infrastructure.Service;
 using SMMS.Infrastructure.Services;
+using SMMS.Persistence;
 using SMMS.Persistence.Data;
 using SMMS.Persistence.Repositories.auth;
 using SMMS.Persistence.Repositories.foodmenu;
 using SMMS.Persistence.Repositories.Manager;
+using SMMS.Persistence.Repositories.nutrition;
 using SMMS.Persistence.Repositories.schools;
 using SMMS.Persistence.Repositories.Schools;
 using SMMS.Persistence.Repositories.Wardens;
@@ -87,6 +91,8 @@ builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(AttendanceCommandHandler).Assembly));
 builder.Services.AddMediatR(cfg =>
@@ -194,6 +200,8 @@ builder.Services.AddScoped<ICloudStorageRepository, CloudStorageRepository>();
 builder.Services.AddScoped<IClassStudentRepository, ClassStudentRepository>();
 builder.Services.AddScoped<IMenuRecommendSessionRepository, MenuRecommendSessionRepository>();
 builder.Services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
+builder.Services.AddScoped<IFoodItemRepository, FoodItemRepository>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
