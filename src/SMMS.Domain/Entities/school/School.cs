@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.billing;
 using SMMS.Domain.Entities.foodmenu;
@@ -27,8 +26,6 @@ public partial class School
 
     [StringLength(20)]
     public string? Hotline { get; set; }
-
-    public string? SchoolContract { get; set; }
 
     [StringLength(200)]
     public string? SchoolAddress { get; set; }

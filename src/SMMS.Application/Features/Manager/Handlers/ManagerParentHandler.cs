@@ -417,7 +417,8 @@ public class ManagerParentHandler :
             try
             {
                 var fullNameParent = sheet.Cell(row, 1).GetString()?.Trim();
-                var email = sheet.Cell(row, 2).GetString()?.Trim().ToLower();
+                var rawEmail = sheet.Cell(row, 2).GetString()?.Trim();
+                string? email = string.IsNullOrEmpty(rawEmail) ? null : rawEmail.ToLower();
                 var phone = sheet.Cell(row, 3).GetString()?.Trim();
                 var password = sheet.Cell(row, 4).GetString()?.Trim();
                 if (string.IsNullOrWhiteSpace(password))
@@ -435,7 +436,7 @@ public class ManagerParentHandler :
                     throw new InvalidOperationException($"Thiếu thông tin bắt buộc tại dòng {row}: FullName_Parent hoặc Phone.");
 
                 var exists = await _repo.Users.AnyAsync(
-                    u => u.Email == email || u.Phone == phone,
+                    u => (email != null && u.Email == email) || u.Phone == phone,
                     cancellationToken);
 
                 if (exists)
