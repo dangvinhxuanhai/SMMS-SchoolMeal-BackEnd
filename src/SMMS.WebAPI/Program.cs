@@ -4,7 +4,6 @@ using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -34,11 +33,12 @@ using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.Manager.Handlers;
 using SMMS.Application.Features.Wardens.Handlers;
 using SMMS.Infrastructure.ExternalService.AiMenu;
+using SMMS.Infrastructure.Service;
 using SMMS.Infrastructure.Services;
 using SMMS.Persistence.Repositories.Manager;
 using SMMS.Persistence.Service;
 using SMMS.Application.Features.auth.Handlers;
-using SMMS.Domain.Entities.auth;
+using SMMS.WebAPI.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -87,7 +87,6 @@ builder.Services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>(
 builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
-builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
 builder.Services.AddScoped<IManagerPaymentSettingRepository, ManagerPaymentSettingRepository>();
 builder.Services.AddScoped<ISchoolRevenueRepository, SchoolRevenueRepository>();
@@ -201,6 +200,9 @@ builder.Services.AddScoped<IWardensFeedbackRepository, WardensFeedbackRepository
 builder.Services.AddScoped<IManagerClassRepository, ManagerClassRepository>();
 builder.Services.AddScoped<IManagerFinanceRepository, ManagerFinanceRepository>();
 builder.Services.AddScoped<ICloudStorageRepository, CloudStorageRepository>();
+builder.Services.AddScoped<IManagerNotificationRepository, ManagerNotificationRepository>();
+builder.Services.AddScoped<INotificationRealtimeService, NotificationRealtimeService>();
+builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -216,17 +218,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.MapHub<NotificationHub>("/hubs/notifications");
 app.UseHttpsRedirection();
-var password = "@1";
-var hashed = PasswordHasher.HashPassword(password);
+//var password = "@1";
+//var hashed = PasswordHasher.HashPassword(password);
 
-Console.ForegroundColor = ConsoleColor.Green;
-Console.WriteLine("=====================================");
-Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
-Console.WriteLine(hashed);
-Console.WriteLine("=====================================");
-Console.ResetColor();
+//Console.ForegroundColor = ConsoleColor.Green;
+//Console.WriteLine("=====================================");
+//Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
+//Console.WriteLine(hashed);
+//Console.WriteLine("=====================================");
+//Console.ResetColor();
 
 // ✅ Thứ tự rất quan trọng:
 app.UseAuthentication();

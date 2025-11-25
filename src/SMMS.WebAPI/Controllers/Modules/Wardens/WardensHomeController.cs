@@ -85,13 +85,15 @@ public class WardensHomeController : ControllerBase
 
     // 4️⃣ Lấy thông báo của giám thị
     // GET: /api/WardensHome/notifications/{wardenId}
-    [HttpGet("notifications/{wardenId:guid}")]
+    [HttpGet("notifications")]
     public async Task<IActionResult> GetNotifications()
     {
         try
         {
             var wardenId = GetCurrentUserId();
-            var notifications = await _mediator.Send(new GetWardenNotificationsQuery(wardenId));
+            var notifications = await _mediator.Send(
+                new GetWardenNotificationsQuery(wardenId));
+
             return Ok(notifications);
         }
         catch (Exception ex)
