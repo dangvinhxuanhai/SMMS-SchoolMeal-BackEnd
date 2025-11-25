@@ -74,5 +74,62 @@ namespace SMMS.Infrastructure.Repositories.Implementations
 
             return result;
         }
+        public async Task<List<FinanceReportDto>> GetFinanceReportAsync(FinanceReportFilterDto filter)
+        {
+            var query = _context.SchoolRevenues
+                .Include(r => r.School)
+                .Where(r => r.IsActive)
+                .AsQueryable();
+
+            // Lọc theo trường
+            if (filter.Scope == "TheoTruong" && filter.SchoolId.HasValue)
+            {
+                query = query.Where(r => r.SchoolId == filter.SchoolId);
+            }
+
+            // Lọc theo thời gian
+            if (filter.FromDate.HasValue && filter.ToDate.HasValue)
+            {
+                query = query
+                    .Where(r => r.RevenueDate >= filter.FromDate &&
+                                r.RevenueDate <= filter.ToDate);
+            }
+
+            // Gom nhóm báo cáo
+            var result = await query
+                .GroupBy(r => new
+                {
+                    SchoolName = r.School != null ? r.School.SchoolName : "Chưa gán trường"
+                })
+                .Select(g => new FinanceReportDto
+                {
+                    SchoolName = g.Key.SchoolName,
+                    RevenueCount = g.Count(),
+                    TotalRevenue = g.Sum(x => x.RevenueAmount),
+                })
+                .ToListAsync();
+
+            return result;
+        }
+        public async Task<List<FinanceReportDto>> GetAllFinanceReportAsync()
+        {
+            var result = await _context.SchoolRevenues
+                .Include(r => r.School)
+                .Where(r => r.IsActive)
+                .GroupBy(r => new
+                {
+                    SchoolName = r.School != null ? r.School.SchoolName : "Chưa gán trường"
+                })
+                .Select(g => new FinanceReportDto
+                {
+                    SchoolName = g.Key.SchoolName,
+                    RevenueCount = g.Count(),
+                    TotalRevenue = g.Sum(x => x.RevenueAmount)
+                })
+                .ToListAsync();
+
+            return result;
+        }
+
     }
 }

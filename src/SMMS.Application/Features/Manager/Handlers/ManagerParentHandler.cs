@@ -159,18 +159,26 @@ public class ManagerParentHandler :
         if (role == null)
             throw new InvalidOperationException("Không tìm thấy vai trò 'Parent'.");
 
+        var normalizedEmail = string.IsNullOrWhiteSpace(request.Email)
+            ? null
+            : request.Email.Trim().ToLower();
+
         var exists = await _repo.Users.AnyAsync(
-            u => u.Email == request.Email || u.Phone == request.Phone,
+            u => (normalizedEmail != null && u.Email == normalizedEmail) || u.Phone == request.Phone,
             cancellationToken);
 
         if (exists)
-            throw new InvalidOperationException("Email hoặc số điện thoại đã tồn tại.");
+            throw new InvalidOperationException(
+                normalizedEmail == null
+                    ? "Số điện thoại đã tồn tại."
+                    : "Email hoặc số điện thoại đã tồn tại."
+            );
 
         var parent = new User
         {
             UserId = Guid.NewGuid(),
             FullName = request.FullName.Trim(),
-            Email = request.Email?.Trim().ToLower(),
+            Email = normalizedEmail,
             Phone = request.Phone.Trim(),
             RoleId = role.RoleId,
             SchoolId = request.SchoolId,
@@ -435,18 +443,25 @@ public class ManagerParentHandler :
                 if (string.IsNullOrWhiteSpace(fullNameParent) || string.IsNullOrWhiteSpace(phone))
                     throw new InvalidOperationException($"Thiếu thông tin bắt buộc tại dòng {row}: FullName_Parent hoặc Phone.");
 
+                var normalizedEmail = string.IsNullOrWhiteSpace(email)
+                ? null
+                : email.ToLower();
                 var exists = await _repo.Users.AnyAsync(
-                    u => u.Email == email || u.Phone == phone,
+                    u => normalizedEmail != null && u.Email == normalizedEmail || u.Phone == phone,
                     cancellationToken);
 
                 if (exists)
-                    throw new InvalidOperationException($"Email hoặc số điện thoại đã tồn tại: {email ?? phone}");
+                    throw new InvalidOperationException(
+                        normalizedEmail == null
+                            ? "Số điện thoại đã tồn tại."
+                            : "Email hoặc số điện thoại đã tồn tại."
+                    );
 
                 var parent = new User
                 {
                     UserId = Guid.NewGuid(),
                     FullName = fullNameParent,
-                    Email = email,
+                    Email = normalizedEmail,
                     Phone = phone,
                     RoleId = role.RoleId,
                     SchoolId = schoolId,
@@ -546,6 +561,9 @@ public class ManagerParentHandler :
         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
         headerRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
 
+        // 👇 Định dạng cả cột Phone (cột 3) là Text
+        var phoneColumn = sheet.Column(3);
+        phoneColumn.Style.NumberFormat.Format = "@"; // "@" = Text
         sheet.Cell(2, 1).Value = "Nguyễn Văn A";
         sheet.Cell(2, 2).Value = "a@gmail.com";
         sheet.Cell(2, 3).Value = "0901234567";

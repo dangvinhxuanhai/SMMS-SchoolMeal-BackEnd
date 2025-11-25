@@ -1,22 +1,24 @@
+using System.Security.Claims;
+using System.Text;
+using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SMMS.Application.Common.Validators;
 using SMMS.Application.Features.auth.Interfaces;
+using SMMS.Application.Features.billing.Handlers;
+using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Application.Features.foodmenu.Handlers;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Application.Features.Identity.Interfaces;
 using SMMS.Application.Features.school.Interfaces;
 using SMMS.Infrastructure.Security;
-using System.Text;
-using Microsoft.AspNetCore.Identity;
-using System.Security.Claims;
-using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Infrastructure.Repositories;
 using SMMS.Persistence.Repositories.schools;
-using Microsoft.AspNetCore.OData;
 using SMMS.WebAPI.Configurations;
 using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Infrastructure.Repositories.Implementations;
@@ -24,19 +26,17 @@ using SMMS.Persistence.Repositories.foodmenu;
 using SMMS.Persistence.Repositories.Schools;
 using SMMS.Persistence.Repositories.auth;
 using SMMS.Application.Features.school.Handlers;
-using SMMS.Application.Features.billing.Handlers;
-
-using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence.Repositories.Wardens;
-using SMMS.Domain.Entities.school;
 using SMMS.Persistence.Data;
 using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.Manager.Handlers;
-using SMMS.Persistence.Repositories.Manager;
 using SMMS.Application.Features.Wardens.Handlers;
-using SMMS.Domain.Entities.auth;
+using SMMS.Infrastructure.ExternalService.AiMenu;
 using SMMS.Infrastructure.Services;
+using SMMS.Persistence.Repositories.Manager;
+using SMMS.Persistence.Service;
+using SMMS.Application.Features.auth.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,7 +44,8 @@ var builder = WebApplication.CreateBuilder(args);
 // 1️⃣ Add Controllers
 // =========================
 builder.Services.AddControllers();
-builder.Services.AddTransient<IPasswordHasher<User>, PasswordHasher<User>>();
+
+// =========================
 // 2️⃣ MediatR + Validation
 // =========================
 builder.Services.AddMediatR(cfg =>
@@ -84,10 +85,34 @@ builder.Services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>(
 builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
+builder.Services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
+builder.Services.AddScoped<IManagerPaymentSettingRepository, ManagerPaymentSettingRepository>();
+builder.Services.AddScoped<ISchoolRevenueRepository, SchoolRevenueRepository>();
+builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(AttendanceCommandHandler).Assembly));
 builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(NotificationHandler).Assembly));
+
+builder.Services.Configure<AiMenuOptions>(
+    builder.Configuration.GetSection(AiMenuOptions.SectionName));
+
+builder.Services.AddHttpClient<IAiMenuClient, AiMenuClient>((sp, client) =>
+{
+    var options = sp.GetRequiredService<IOptions<AiMenuOptions>>().Value;
+    client.BaseAddress = new Uri(options.BaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddHttpClient<IAiMenuAdminClient, AiMenuAdminClient>((sp, http) =>
+{
+    var opts = sp.GetRequiredService<IOptions<AiMenuOptions>>().Value;
+    http.BaseAddress = new Uri(opts.BaseUrl);
+});
+builder.Services.AddScoped<CloudinaryService>();
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssemblyContaining<ParentProfileHandler>();
+});
 // =========================
 // 5️⃣ Swagger
 // =========================
@@ -151,8 +176,6 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
-builder.Services.AddDbContext<EduMealContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.Configure<CloudinarySettings>(
     builder.Configuration.GetSection("CloudinarySettings"));
 builder.Services.AddMediatR(cfg =>
@@ -165,6 +188,7 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssemblyContaining<WardensFeedbackHandler>();
     cfg.RegisterServicesFromAssemblyContaining<WardensHandler>();
     cfg.RegisterServicesFromAssemblyContaining<CloudStorageHandler>();
+    cfg.RegisterServicesFromAssemblyContaining<ManagerPaymentSettingHandler>();
 });
 // Register Application Services
 builder.Services.AddScoped<IWardensRepository, WardensRepository>();

@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.Manager.DTOs;
@@ -8,6 +9,7 @@ using SMMS.Application.Features.Manager.Queries;
 namespace SMMS.WebAPI.Controllers.Modules.Manager;
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Manager")]
 public class ManagerHomeController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -16,12 +18,20 @@ public class ManagerHomeController : ControllerBase
     {
         _mediator = mediator;
     }
+    private Guid GetSchoolIdFromToken()
+    {
+        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        if (string.IsNullOrEmpty(schoolIdClaim))
+            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
 
+        return Guid.Parse(schoolIdClaim);
+    }
     // 🟢 1. Dashboard tổng quan
     // GET: /api/ManagerHome/overview?schoolId=...
     [HttpGet("overview")]
-    public async Task<ActionResult<ManagerOverviewDto>> GetOverview([FromQuery] Guid schoolId)
+    public async Task<ActionResult<ManagerOverviewDto>> GetOverview()
     {
+        var schoolId = GetSchoolIdFromToken();
         if (schoolId == Guid.Empty)
             return BadRequest("schoolId không hợp lệ.");
 
@@ -33,9 +43,9 @@ public class ManagerHomeController : ControllerBase
     // GET: /api/ManagerHome/recent-purchases?schoolId=...&take=8
     [HttpGet("recent-purchases")]
     public async Task<ActionResult<List<RecentPurchaseDto>>> GetRecentPurchases(
-        [FromQuery] Guid schoolId,
         [FromQuery] int take = 8)
     {
+        var schoolId = GetSchoolIdFromToken();
         if (schoolId == Guid.Empty)
             return BadRequest("schoolId không hợp lệ.");
 
@@ -56,11 +66,11 @@ public class ManagerHomeController : ControllerBase
     // GET: /api/ManagerHome/revenue?schoolId=...&from=...&to=...&granularity=daily
     [HttpGet("revenue")]
     public async Task<ActionResult<RevenueSeriesDto>> GetRevenue(
-        [FromQuery] Guid schoolId,
         [FromQuery] DateTime from,
         [FromQuery] DateTime to,
         [FromQuery] string granularity = "daily")
     {
+        var schoolId = GetSchoolIdFromToken();
         if (schoolId == Guid.Empty)
             return BadRequest("schoolId không hợp lệ.");
 

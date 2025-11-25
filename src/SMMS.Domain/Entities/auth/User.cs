@@ -7,17 +7,15 @@ using SMMS.Domain.Entities.billing;
 using SMMS.Domain.Entities.foodmenu;
 using SMMS.Domain.Entities.fridge;
 using SMMS.Domain.Entities.inventory;
-using SMMS.Domain.Entities.logs;
+using SMMS.Domain.Entities.Logs;
 using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.purchasing;
-using SMMS.Domain.Entities.rag;
 using SMMS.Domain.Entities.school;
 
 namespace SMMS.Domain.Entities.auth;
 
 [Table("Users", Schema = "auth")]
 [Index("Phone", Name = "UQ_Users_Phone", IsUnique = true)]
-[Index("Email", Name = "UQ__Users__A9D10534FE56C816", IsUnique = true)]
 public partial class User
 {
     [Key]
@@ -34,6 +32,12 @@ public partial class User
 
     [StringLength(20)]
     public string Phone { get; set; } = null!;
+
+    [StringLength(20)]
+    public string? EmergencyPhone { get; set; }
+
+    [StringLength(300)]
+    public string? AvatarUrl { get; set; }
 
     [StringLength(10)]
     public string LanguagePref { get; set; } = null!;
@@ -62,6 +66,8 @@ public partial class User
     public DateTime? LockoutEndAt { get; set; }
 
     public bool LockoutEnabled { get; set; }
+
+    public bool Gender { get; set; }
 
     [InverseProperty("CreatedByNavigation")]
     public virtual ICollection<Allergen> Allergens { get; set; } = new List<Allergen>();
@@ -117,21 +123,6 @@ public partial class User
     [InverseProperty("Staff")]
     public virtual ICollection<PurchasePlan> PurchasePlanStaffs { get; set; } = new List<PurchasePlan>();
 
-    [InverseProperty("CreatedByNavigation")]
-    public virtual ICollection<RagRequestAllergen> RagRequestAllergens { get; set; } = new List<RagRequestAllergen>();
-
-    [InverseProperty("CreatedByNavigation")]
-    public virtual ICollection<RagRequestInput> RagRequestInputs { get; set; } = new List<RagRequestInput>();
-
-    [InverseProperty("CreatedByNavigation")]
-    public virtual ICollection<RagSuggestedFoodItemIngredient> RagSuggestedFoodItemIngredients { get; set; } = new List<RagSuggestedFoodItemIngredient>();
-
-    [InverseProperty("CreatedByNavigation")]
-    public virtual ICollection<RagSuggestedFoodItem> RagSuggestedFoodItems { get; set; } = new List<RagSuggestedFoodItem>();
-
-    [InverseProperty("CreatedByNavigation")]
-    public virtual ICollection<RagSuggestedIngredient> RagSuggestedIngredients { get; set; } = new List<RagSuggestedIngredient>();
-
     [InverseProperty("User")]
     public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
@@ -145,6 +136,12 @@ public partial class User
     [ForeignKey("SchoolId")]
     [InverseProperty("Users")]
     public virtual School? School { get; set; }
+
+    [InverseProperty("CreatedByNavigation")]
+    public virtual ICollection<SchoolRevenue> SchoolRevenueCreatedByNavigations { get; set; } = new List<SchoolRevenue>();
+
+    [InverseProperty("UpdatedByNavigation")]
+    public virtual ICollection<SchoolRevenue> SchoolRevenueUpdatedByNavigations { get; set; } = new List<SchoolRevenue>();
 
     [InverseProperty("UploadedByNavigation")]
     public virtual ICollection<StudentImage> StudentImages { get; set; } = new List<StudentImage>();

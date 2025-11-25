@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace SMMS.Domain.Entities.auth;
 
 [Table("ExternalProviders", Schema = "auth")]
-[Index("ProviderName", Name = "UQ__External__7D057CE5C49A0E73", IsUnique = true)]
+[Index("ProviderName", Name = "UQ__External__7D057CE505536EA9", IsUnique = true)]
 public partial class ExternalProvider
 {
     [Key]

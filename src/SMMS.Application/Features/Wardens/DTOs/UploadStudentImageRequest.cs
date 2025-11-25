@@ -13,7 +13,8 @@ public class UploadStudentImageRequest
     public IFormFile File { get; set; }
 
     [Required]
-    public Guid StudentId { get; set; }
+    public Guid ClassId { get; set; }
+    public Guid? StudentId { get; set; }
 
     [Required]
     public Guid UploaderId { get; set; }

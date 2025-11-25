@@ -9,7 +9,7 @@ using SMMS.Domain.Entities.fridge;
 namespace SMMS.Domain.Entities.school;
 
 [Table("AcademicYears", Schema = "school")]
-[Index("YearName", Name = "UQ__Academic__294C4DA9C2B87D92", IsUnique = true)]
+[Index("YearName", Name = "UQ__Academic__294C4DA99759272B", IsUnique = true)]
 public partial class AcademicYear
 {
     [Key]

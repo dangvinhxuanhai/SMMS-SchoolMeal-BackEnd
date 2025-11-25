@@ -34,5 +34,18 @@ namespace SMMS.API.Controllers
             var result = await _mediator.Send(new GetAllUserReportQuery());
             return Ok(result);
         }
+        [HttpGet("Finance")]
+        public async Task<IActionResult> GetAllFinance()
+        {
+            var result = await _mediator.Send(new GetAllFinanceReportQuery());
+            return Ok(result);
+        }
+        [HttpPost("Finance")]
+        public async Task<IActionResult> GetFinanceReport([FromBody] FinanceReportFilterDto filter)
+        {
+            var result = await _mediator.Send(new GetFinanceReportQuery(filter));
+            return Ok(result);
+
+        }
     }
 }

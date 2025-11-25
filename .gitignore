@@ -628,3 +628,5 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+SMMS-SchoolMeal-BackEnd\src\SMMS.WebAPI\appsettings.json
