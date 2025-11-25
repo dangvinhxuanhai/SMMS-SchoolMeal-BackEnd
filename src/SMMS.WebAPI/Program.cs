@@ -38,6 +38,7 @@ using SMMS.Infrastructure.Services;
 using SMMS.Persistence.Repositories.Manager;
 using SMMS.Persistence.Service;
 using SMMS.Application.Features.auth.Handlers;
+using SMMS.WebAPI.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -199,6 +200,9 @@ builder.Services.AddScoped<IWardensFeedbackRepository, WardensFeedbackRepository
 builder.Services.AddScoped<IManagerClassRepository, ManagerClassRepository>();
 builder.Services.AddScoped<IManagerFinanceRepository, ManagerFinanceRepository>();
 builder.Services.AddScoped<ICloudStorageRepository, CloudStorageRepository>();
+builder.Services.AddScoped<IManagerNotificationRepository, ManagerNotificationRepository>();
+builder.Services.AddScoped<INotificationRealtimeService, NotificationRealtimeService>();
+builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -214,7 +218,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.MapHub<NotificationHub>("/hubs/notifications");
 app.UseHttpsRedirection();
 //var password = "@1";
 //var hashed = PasswordHasher.HashPassword(password);
