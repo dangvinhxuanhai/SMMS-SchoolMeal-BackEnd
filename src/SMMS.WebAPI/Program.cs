@@ -203,6 +203,7 @@ builder.Services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRe
 builder.Services.AddScoped<IFoodItemRepository, FoodItemRepository>();
 builder.Services.AddScoped<IIngredientRepository, IngredientRepository>();
 builder.Services.AddScoped<IFoodItemIngredientRepository, FoodItemIngredientRepository>();
+builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
 
 builder.Services.AddCors(options =>
 {
