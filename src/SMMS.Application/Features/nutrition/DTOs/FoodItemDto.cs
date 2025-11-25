@@ -15,4 +15,5 @@ public class FoodItemDto
     public Guid SchoolId { get; set; }
     public bool IsMainDish { get; set; }
     public bool IsActive { get; set; }
+    public List<FoodItemIngredientDto> Ingredients { get; set; } = new();
 }

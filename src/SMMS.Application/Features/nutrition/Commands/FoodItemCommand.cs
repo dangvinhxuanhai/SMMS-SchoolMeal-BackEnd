@@ -11,11 +11,13 @@ public class CreateFoodItemCommand : UpsertFoodItemRequest, IRequest<FoodItemDto
 {
     public Guid SchoolId { get; set; }       // lấy từ token hoặc truyền vào
     public Guid? CreatedBy { get; set; }     // user hiện tại
+    public List<FoodItemIngredientRequestDto>? Ingredients { get; set; }
 }
 
 public class UpdateFoodItemCommand : UpsertFoodItemRequest, IRequest<FoodItemDto>
 {
     public int FoodId { get; set; }
+    public List<FoodItemIngredientRequestDto>? Ingredients { get; set; }
 }
 
 public class DeleteFoodItemCommand : IRequest

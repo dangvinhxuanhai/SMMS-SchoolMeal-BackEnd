@@ -52,31 +52,39 @@ public class GetFoodItemsQueryHandler
 public class GetFoodItemByIdQueryHandler
     : IRequestHandler<GetFoodItemByIdQuery, FoodItemDto?>
 {
-    private readonly IFoodItemRepository _repository;
+    private readonly IFoodItemRepository _foodRepo;
+    private readonly IFoodItemIngredientRepository _foodIngRepo;
 
-    public GetFoodItemByIdQueryHandler(IFoodItemRepository repository)
+    public GetFoodItemByIdQueryHandler(
+        IFoodItemRepository foodRepo,
+        IFoodItemIngredientRepository foodIngRepo)
     {
-        _repository = repository;
+        _foodRepo = foodRepo;
+        _foodIngRepo = foodIngRepo;
     }
 
-    public async Task<FoodItemDto?> Handle(
-        GetFoodItemByIdQuery request,
-        CancellationToken cancellationToken)
+    public async Task<FoodItemDto?> Handle(GetFoodItemByIdQuery request, CancellationToken token)
     {
-        var e = await _repository.GetByIdAsync(request.FoodId, cancellationToken);
-        if (e == null) return null;
+        var food = await _foodRepo.GetByIdAsync(request.FoodId, token);
+        if (food == null) return null;
 
-        // map tay
+        var links = await _foodIngRepo.GetByFoodIdAsync(food.FoodId, token);
+
         return new FoodItemDto
         {
-            FoodId = e.FoodId,
-            FoodName = e.FoodName,
-            FoodType = e.FoodType,
-            FoodDesc = e.FoodDesc,
-            ImageUrl = e.ImageUrl,
-            SchoolId = e.SchoolId,
-            IsMainDish = e.IsMainDish,
-            IsActive = e.IsActive
+            FoodId = food.FoodId,
+            FoodName = food.FoodName,
+            FoodType = food.FoodType,
+            FoodDesc = food.FoodDesc,
+            ImageUrl = food.ImageUrl,
+            SchoolId = food.SchoolId,
+            IsMainDish = food.IsMainDish,
+            IsActive = food.IsActive,
+            Ingredients = links.Select(l => new FoodItemIngredientDto
+            {
+                IngredientId = l.IngredientId,
+                QuantityGram = l.QuantityGram
+            }).ToList()
         };
     }
 }

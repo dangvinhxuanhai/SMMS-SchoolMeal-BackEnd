@@ -201,6 +201,8 @@ builder.Services.AddScoped<IClassStudentRepository, ClassStudentRepository>();
 builder.Services.AddScoped<IMenuRecommendSessionRepository, MenuRecommendSessionRepository>();
 builder.Services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
 builder.Services.AddScoped<IFoodItemRepository, FoodItemRepository>();
+builder.Services.AddScoped<IIngredientRepository, IngredientRepository>();
+builder.Services.AddScoped<IFoodItemIngredientRepository, FoodItemIngredientRepository>();
 
 builder.Services.AddCors(options =>
 {
