@@ -123,6 +123,14 @@ namespace SMMS.Persistence.Repositories.auth
             };
         }
 
+        public async Task<User?> GetUserByIdAsync(Guid userId)
+        {
+            return await _dbContext.Users
+                .Include(u => u.Role)
+                .Include(u => u.School)
+                .FirstOrDefaultAsync(u => u.UserId == userId);
+        }
+
         // ✅ Đăng xuất
         public async Task<bool> LogoutAsync(string refreshToken)
         {
