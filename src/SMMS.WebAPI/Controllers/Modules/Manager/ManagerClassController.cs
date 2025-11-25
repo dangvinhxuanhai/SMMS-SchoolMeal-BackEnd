@@ -44,6 +44,9 @@ public class ManagerClassController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
+        var schoolId = GetSchoolIdFromToken();
+        request.SchoolId = schoolId;
+
         var result = await _mediator.Send(new CreateClassCommand(request));
         return Ok(result);
     }
