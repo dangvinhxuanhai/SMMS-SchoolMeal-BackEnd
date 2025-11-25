@@ -50,6 +50,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Controllers\Modules\KitchenStaff\v1\SchoolManage\" />
     <Folder Include="Controllers\Modules\Wardens\" />
     <Folder Include="Controllers\Modules\Manager\" />
     <Folder Include="Middlewares\" />
