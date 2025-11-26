@@ -40,11 +40,7 @@
     <Folder Include="Features\Inventory\Validators\" />
     <Folder Include="Features\Inventory\Queries\" />
     <Folder Include="Features\Meal\" />
-    <Folder Include="Features\Menu\Command\Schooling\" />
-    <Folder Include="Features\Menu\DTOs\Schooling\" />
-    <Folder Include="Features\Menu\Handlers\Schooling\" />
     <Folder Include="Features\Menu\Interfaces\" />
-    <Folder Include="Features\Menu\Queries\Schooling\" />
     <Folder Include="Features\Menu\Search\" />
     <Folder Include="Features\Notifications\" />
     <Folder Include="Features\Payment\" />

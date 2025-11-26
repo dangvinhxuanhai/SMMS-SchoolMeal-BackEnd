@@ -1,121 +1,65 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SMMS.Domain.Entities.foodmenu;
-using SMMS.Persistence.Data;
-using SMMS.WebAPI.Controllers.Modules.KitchenStaff.Fastapi.DTOs;
+using SMMS.Application.Features.Menu.Command.Menuing;
+using SMMS.Application.Features.Menu.DTOs.Menuing;
+using SMMS.Application.Features.Menu.Queries.Menuing;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff.v1.MenuManage;
 
-[Route("fastapi/Menus")]
+[Route("api/v1/[controller]")]
 [ApiController]
 public class MenusController : ControllerBase
 {
-    private readonly EduMealContext _context;
+    private readonly ISender _sender;
+    public MenusController(ISender sender) => _sender = sender;
 
-    public MenusController(EduMealContext context)
-    {
-        _context = context;
-    }
 
     // GET: api/Menus
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Menu>>> GetMenus()
+    public async Task<IActionResult> GetAll(CancellationToken ct)
     {
-        return await _context.Menus.ToListAsync();
+        var result = await _sender.Send(new GetAllMenusQuery(), ct);
+        return Ok(result);
     }
 
     // GET: api/Menus/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Menu>> GetMenu(int id)
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetById(int id, CancellationToken ct)
     {
-        var menu = await _context.Menus.FindAsync(id);
-
-        if (menu == null)
-        {
-            return NotFound();
-        }
-
-        return menu;
+        var result = await _sender.Send(new GetMenuByIdQuery(id), ct);
+        return result is null
+            ? NotFound(Problem(title: $"Menu {id} not found"))
+            : Ok(result);
     }
 
     // PUT: api/Menus/5
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutMenu(int id, Menu menu)
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateMenuDto dto, CancellationToken ct)
     {
-        if (id != menu.MenuId)
-        {
-            return BadRequest();
-        }
-
-        _context.Entry(menu).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!MenuExists(id))
-            {
-                return NotFound();
-            }
-            else
-            {
-                throw;
-            }
-        }
-
-        return NoContent();
+        var ok = await _sender.Send(new UpdateMenuCommand(id, dto), ct);
+        return ok
+            ? Ok("UPDATE")
+            : NotFound(Problem(title: $"Menu {id} not found"));
     }
 
     // POST: api/Menus
     // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
-    public async Task<ActionResult<Menu>> PostMenu([FromBody] CreateMenuDto dto)
+    public async Task<IActionResult> Create([FromBody] CreateMenuDto dto, CancellationToken ct)
     {
-        var menu = new Menu
-        {
-            PublishedAt = dto.PublishedAt,
-            SchoolId = dto.SchoolId,
-            IsVisible = dto.IsVisible,
-            WeekNo = dto.WeekNo,
-            CreatedAt = DateTime.UtcNow,
-            ConfirmedBy = dto.ConfirmedBy,
-            ConfirmedAt = dto.ConfirmedAt,
-            AskToDelete = dto.AskToDelete,
-            YearId = dto.YearId
-        };
-
-        _context.Menus.Add(menu);
-        await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetMenu), new { id = menu.MenuId }, menu);
+        var id = await _sender.Send(new CreateMenuCommand(dto), ct);
+        return CreatedAtAction(nameof(GetById), new { id }, new { id });
     }
 
 
     // DELETE: api/Menus/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteMenu(int id)
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var menu = await _context.Menus.FindAsync(id);
-        if (menu == null)
-        {
-            return NotFound();
-        }
-
-        _context.Menus.Remove(menu);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    private bool MenuExists(int id)
-    {
-        return _context.Menus.Any(e => e.MenuId == id);
+        var ok = await _sender.Send(new DeleteMenuCommand(id), ct);
+        return ok
+            ? NoContent()
+            : NotFound(Problem(title: $"Menu {id} not found"));
     }
 }

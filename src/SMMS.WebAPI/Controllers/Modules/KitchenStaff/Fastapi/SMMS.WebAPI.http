@@ -1,7 +1,98 @@
 @SMMS.WebAPI_HostAddress = http://localhost:56578
 
+### Delete by id (use the same id)
+DELETE {{SMMS.WebAPI_HostAddress}}/api/v1/Menus/1002
+Accept: application/json
+Content-Type: application/json
+
+### Update by id (use id from the previous Get)
+PUT {{SMMS.WebAPI_HostAddress}}/api/v1/Menus/1002
+Accept: application/json
+Content-Type: application/json
+
+{
+  "publishedAt": "2025-11-27T00:00:00Z",
+  "schoolId": "c62bf3e9-ac76-4061-8ae6-e9104141df3c",
+  "isVisible": false,
+  "weekNo": 25,
+  "confirmedBy": null,
+  "confirmedAt": null,
+  "askToDelete": false,
+  "yearId": 1
+}
+
+### Get by id (use id from the previous Create response)
+GET {{SMMS.WebAPI_HostAddress}}/api/v1/Menus/1002
+Accept: application/json
+Content-Type: application/json
+
+### Create a menu
+POST {{SMMS.WebAPI_HostAddress}}/api/v1/Menus
+Accept: application/json
+Content-Type: application/json
+
+{
+  "publishedAt": "2025-11-26T00:00:00Z",
+  "schoolId": "c62bf3e9-ac76-4061-8ae6-e9104141df3c",
+  "isVisible": true,
+  "weekNo": 48,
+  "confirmedBy": null,
+  "confirmedAt": null,
+  "askToDelete": false,
+  "yearId": 1
+}
+
+### Get all menus
+GET {{SMMS.WebAPI_HostAddress}}/api/v1/Menus
+Accept: application/json
+Content-Type: application/json
+
+###
+GET {{SMMS.WebAPI_HostAddress}}/fastapi/years/1
+Accept: application/json
+Content-Type: application/json
+
+###
 GET {{SMMS.WebAPI_HostAddress}}/api/FoodItems/
 Accept: application/json
 Content-Type: application/json
 
 ###
+
+POST {{SMMS.WebAPI_HostAddress}}/api/v1/schools
+Content-Type: application/json
+
+{
+  "schoolName": "UIT High School",
+  "contactEmail": "contact@uit.edu.vn",
+  "hotline": "028-1234-5678",
+  "schoolContract": "HĐ-2025-001",
+  "schoolAddress": "Linh Trung, Thủ Đức, HCM",
+  "isActive": true
+}
+
+### Get all schools
+GET {{SMMS.WebAPI_HostAddress}}/api/v1/Schools
+Accept: application/json
+
+### Get school by id (paste an actual id)
+GET {{SMMS.WebAPI_HostAddress}}/api/v1/Schools/c62bf3e9-ac76-4061-8ae6-e9104141df3c
+Accept: application/json
+
+### Update school by id
+PUT {{SMMS.WebAPI_HostAddress}}/api/v1/Schools/4cd6c6b2-d378-44e3-9d65-9e9712038454
+Content-Type: application/json
+
+{
+  "schoolName": "UIT High School - Updated",
+  "contactEmail": "contact-updated@uit.edu.vn",
+  "hotline": "028-9999-0000",
+  "schoolContract": "HĐ-2025-001-UPDATED",
+  "schoolAddress": "Linh Trung, Thủ Đức, HCM (Updated)",
+  "isActive": true,
+  "updatedBy": "11111111-1111-1111-1111-111111111111"
+}
+
+### Delete school by id
+DELETE {{SMMS.WebAPI_HostAddress}}/api/v1/Schools/4cd6c6b2-d378-44e3-9d65-9e9712038454
+Accept: application/json

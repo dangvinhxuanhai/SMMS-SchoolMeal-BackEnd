@@ -14,7 +14,7 @@ using SMMS.Persistence.Data;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff.v1.FoodItemManage;
 
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 [ApiController]
 public class FoodItemsController : ControllerBase
 {
