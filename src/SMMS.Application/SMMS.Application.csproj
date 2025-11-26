@@ -42,6 +42,7 @@
     <Folder Include="Features\Menu\Interfaces\" />
     <Folder Include="Features\Menu\Search\" />
     <Folder Include="Features\Notifications\" />
+    <Folder Include="Features\nutrition\Validators\" />
     <Folder Include="Features\Payment\" />
     <Folder Include="Features\Plan\" />
     <Folder Include="Features\Skeleton\Interface\" />

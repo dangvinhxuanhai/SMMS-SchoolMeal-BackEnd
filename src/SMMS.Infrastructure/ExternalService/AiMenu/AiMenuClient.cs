@@ -27,7 +27,7 @@ public class AiMenuClient : IAiMenuClient
         };
     }
 
-    public async Task<AiMenuRecommendResponse> RecommendAsync(
+    public async Task<AiMenuRawResponse> RecommendAsync(
         AiMenuRecommendRequest request,
         CancellationToken cancellationToken = default)
     {
@@ -47,7 +47,7 @@ public class AiMenuClient : IAiMenuClient
         }
 
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        var result = await JsonSerializer.DeserializeAsync<AiMenuRecommendResponse>(
+        var result = await JsonSerializer.DeserializeAsync<AiMenuRawResponse>(
             stream, _jsonOptions, cancellationToken);
 
         if (result == null)
