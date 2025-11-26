@@ -1,11 +1,20 @@
+using FluentValidation;
+using MediatR;
+using Microsoft.AspNetCore.OData;
+using SMMS.Application.Common.Validators;
 using SMMS.Application.Features.auth.Handlers;
 using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.billing.Handlers;
+using SMMS.Application.Features.foodmenu.Handlers;
 using SMMS.Application.Features.Identity.Interfaces;
+using SMMS.Application.Features.Manager.Handlers;
+using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.school.Handlers;
+using SMMS.Application.Features.Wardens.Handlers;
 using SMMS.Infrastructure.Security;
 using SMMS.Infrastructure.Services;
 using SMMS.Persistence.Service;
+using SMMS.WebAPI.Hubs;
 
 namespace SMMS.WebAPI.Configurations;
 
@@ -30,6 +39,44 @@ public static class SerivceDI
         {
             cfg.RegisterServicesFromAssemblyContaining<ParentProfileHandler>();
         });
+
+        //  mediatr
+        services.AddMediatR(cfg =>
+        {
+            cfg.RegisterServicesFromAssemblyContaining<ManagerAccountHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<ManagerClassHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<ManagerFinanceHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<ManagerParentHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<ManagerHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<WardensFeedbackHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<WardensHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<CloudStorageHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<ManagerPaymentSettingHandler>();
+        });
+
+        services.AddMediatR(cfg =>
+            cfg.RegisterServicesFromAssembly(typeof(SMMS.Application.Features.foodmenu.Queries.GetWeekMenuQuery).Assembly));
+
+        services.AddValidatorsFromAssembly(typeof(WeeklyMenuHandler).Assembly);
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
+        //  cloud
+        services.AddScoped<CloudinaryService>();
+        services.AddScoped<INotificationRealtimeService, NotificationRealtimeService>();
+
+        //  Odata
+        services.AddControllers()
+            .AddOData(opt => opt
+                        .Select()
+                        .Filter()
+                        .OrderBy()
+                        .Expand()
+                        .Count()
+                        .SetMaxTop(100)
+                        .AddRouteComponents("odata",
+                                            ODataConfig.GetEdmModel())
+        );
+
         return services;
     }
 }

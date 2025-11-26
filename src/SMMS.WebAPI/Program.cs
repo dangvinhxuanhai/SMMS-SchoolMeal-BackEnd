@@ -1,54 +1,28 @@
 using System.Security.Claims;
 using System.Text;
-using FluentValidation;
-using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using SMMS.Application.Common.Validators;
-using SMMS.Application.Features.foodmenu.Handlers;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.WebAPI.Configurations;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence;
 using SMMS.Persistence.Data;
-using SMMS.Application.Features.Manager.Interfaces;
-using SMMS.Application.Features.Manager.Handlers;
-using SMMS.Application.Features.Wardens.Handlers;
 using SMMS.Infrastructure.ExternalService.AiMenu;
 using SMMS.WebAPI.Hubs;
-using SMMS.Persistence.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-builder.Services.AddMediatR(cfg =>
-    cfg.RegisterServicesFromAssembly(typeof(SMMS.Application.Features.foodmenu.Queries.GetWeekMenuQuery).Assembly));
-
-builder.Services.AddValidatorsFromAssembly(typeof(WeeklyMenuHandler).Assembly);
-builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-
-builder.Services.AddPersistenceServices();
-
 builder.Services.AddDbContext<EduMealContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlConnection")));
 
-builder.Services.AddControllers()
-    .AddOData(opt => opt
-        .Select()
-        .Filter()
-        .OrderBy()
-        .Expand()
-        .Count()
-        .SetMaxTop(100)
-        .AddRouteComponents("odata", ODataConfig.GetEdmModel())
-    );
 // DI
 builder.Services.AddPrjRepo();
 builder.Services.AddPrjService();
+builder.Services.AddPersistenceServices();
 
 builder.Services.Configure<AiMenuOptions>(
     builder.Configuration.GetSection(AiMenuOptions.SectionName));
@@ -65,9 +39,7 @@ builder.Services.AddHttpClient<IAiMenuAdminClient, AiMenuAdminClient>((sp, http)
     http.BaseAddress = new Uri(opts.BaseUrl);
 });
 
-// =========================
-// 5️⃣ Swagger
-// =========================
+//  swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -98,9 +70,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// =========================
-// 6️⃣ JWT Authentication
-// =========================
+// JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -122,7 +92,7 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
         ),
-        NameClaimType = "UserId", // ✅ ánh xạ claim "UserId"
+        NameClaimType = "UserId",
         RoleClaimType = ClaimTypes.Role
     };
 
@@ -140,22 +110,7 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 builder.Services.Configure<CloudinarySettings>(
     builder.Configuration.GetSection("CloudinarySettings"));
-builder.Services.AddMediatR(cfg =>
-{
-    cfg.RegisterServicesFromAssemblyContaining<ManagerAccountHandler>();
-    cfg.RegisterServicesFromAssemblyContaining<ManagerClassHandler>();
-    cfg.RegisterServicesFromAssemblyContaining<ManagerFinanceHandler>();
-    cfg.RegisterServicesFromAssemblyContaining<ManagerParentHandler>();
-    cfg.RegisterServicesFromAssemblyContaining<ManagerHandler>();
-    cfg.RegisterServicesFromAssemblyContaining<WardensFeedbackHandler>();
-    cfg.RegisterServicesFromAssemblyContaining<WardensHandler>();
-    cfg.RegisterServicesFromAssemblyContaining<CloudStorageHandler>();
-    cfg.RegisterServicesFromAssemblyContaining<ManagerPaymentSettingHandler>();
-});
 
-// Register Application Services
-builder.Services.AddScoped<CloudinaryService>();
-builder.Services.AddScoped<INotificationRealtimeService, NotificationRealtimeService>();
 builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
@@ -174,17 +129,7 @@ if (app.Environment.IsDevelopment())
 }
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.UseHttpsRedirection();
-//var password = "@1";
-//var hashed = PasswordHasher.HashPassword(password);
 
-//Console.ForegroundColor = ConsoleColor.Green;
-//Console.WriteLine("=====================================");
-//Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
-//Console.WriteLine(hashed);
-//Console.WriteLine("=====================================");
-//Console.ResetColor();
-
-// ✅ Thứ tự rất quan trọng:
 app.UseAuthentication();
 app.UseCors("AllowFrontend");
 
