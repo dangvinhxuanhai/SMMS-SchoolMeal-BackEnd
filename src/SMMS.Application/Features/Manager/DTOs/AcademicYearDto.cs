@@ -1,4 +1,4 @@
-﻿namespace SMMS.Application.Features.school.DTOs;
+﻿namespace SMMS.Application.Features.Manager.DTOs;
 
 public class AcademicYearDto
 {

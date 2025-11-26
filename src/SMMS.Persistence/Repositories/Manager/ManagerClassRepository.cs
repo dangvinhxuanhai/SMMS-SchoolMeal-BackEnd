@@ -19,6 +19,7 @@ public class ManagerClassRepository : IManagerClassRepository
 
     // 🧱 Truy cập trực tiếp bảng Classes
     public IQueryable<Class> Classes => _context.Classes.AsQueryable();
+    public IQueryable<AcademicYear> AcademicYears => _context.AcademicYears;
     public IQueryable<Teacher> Teachers => _context.Teachers.AsQueryable();
     // 🔹 Lấy thông tin lớp theo ID
     public async Task<Class?> GetByIdAsync(Guid classId)

@@ -27,11 +27,12 @@ namespace SMMS.Persistence.Repositories.auth
         {
             var user = await _dbContext.Users
                 .Include(u => u.Students)
-                    .ThenInclude(s => s.StudentAllergens)
-                    .ThenInclude(sa => sa.Allergen)
+                .ThenInclude(s => s.StudentAllergens)
+                .ThenInclude(sa => sa.Allergen)
                 .Include(u => u.Students)
-                    .ThenInclude(s => s.StudentClasses)
-                    .ThenInclude(sc => sc.Class)
+                .ThenInclude(s => s.StudentClasses)
+                .ThenInclude(sc => sc.Class)
+                .AsSplitQuery() // <--- THÊM DÒNG NÀY: Giúp đảm bảo load đủ data từ các bảng con
                 .FirstOrDefaultAsync(u => u.UserId == userId);
 
             if (user == null)
@@ -47,7 +48,7 @@ namespace SMMS.Persistence.Repositories.auth
                     .ToList() ?? new List<string>();
 
                 var className = student.StudentClasses?
-                    .Where(sc => sc.LeftDate == null)
+                    .Where(sc => sc.LeftDate == null || sc.LeftDate > DateOnly.FromDateTime(DateTime.Now))
                     .FirstOrDefault()?.Class?.ClassName;
 
                 childrenWithAllergies.Add(new ChildProfileResponseDto
@@ -57,7 +58,9 @@ namespace SMMS.Persistence.Repositories.auth
                     AvatarUrl = student.AvatarUrl,
                     Relation = student.RelationName,
                     AllergyFoods = allergenNames,
-                    ClassName = className,
+                    ClassName = className ?? "",
+                    Gender = student.Gender,
+                    DateOfBirth = student.DateOfBirth
                 });
             }
 
@@ -68,7 +71,7 @@ namespace SMMS.Persistence.Repositories.auth
                 Phone = user.Phone,
                 DateOfBirth = user.DateOfBirth,
                 AvatarUrl = user.AvatarUrl,
-                Gender = user.Gender ? "Nam" : "Nữ",
+                Gender = user.Gender ? "M" : "F",
                 Children = childrenWithAllergies
             };
         }
@@ -164,6 +167,14 @@ namespace SMMS.Persistence.Repositories.auth
 
                 if (!string.IsNullOrEmpty(childDto.Relation))
                     student.RelationName = childDto.Relation;
+
+                if (childDto.DateOfBirth.HasValue)
+                    student.DateOfBirth = childDto.DateOfBirth.Value;
+
+                if (!string.IsNullOrEmpty(childDto.Gender))
+                {
+                    student.Gender = childDto.Gender;
+                }
 
                 if (childDto.AvatarFile != null)
                     student.AvatarUrl = await UploadChildAvatarAsync(childDto.AvatarFile, student.StudentId);
