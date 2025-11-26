@@ -12,14 +12,17 @@ using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Manager.DTOs;
 
 namespace SMMS.Application.Features.Manager.Handlers;
+
 public class ManagerClassHandler :
     IRequestHandler<GetAllClassesQuery, List<ClassDto>>,
     IRequestHandler<GetTeacherAssignmentStatusQuery, object>,
     IRequestHandler<CreateClassCommand, ClassDto>,
     IRequestHandler<UpdateClassCommand, ClassDto?>,
-    IRequestHandler<DeleteClassCommand, bool>
+    IRequestHandler<DeleteClassCommand, bool>,
+    IRequestHandler<GetAcademicYearsQuery, List<AcademicYearDto>>
 {
     private readonly IManagerClassRepository _repo;
+
     public ManagerClassHandler(IManagerClassRepository repo)
     {
         _repo = repo;
@@ -28,13 +31,10 @@ public class ManagerClassHandler :
     #region QUERY HANDLERS
 
     // 🟢 Get all classes by school
-    public async Task<List<ClassDto>> Handle(
-        GetAllClassesQuery request,
-        CancellationToken cancellationToken)
+    public async Task<List<ClassDto>> Handle(GetAllClassesQuery request, CancellationToken cancellationToken)
     {
         return await _repo.Classes
-            .Include(c => c.Teacher)
-            .ThenInclude(t => t.TeacherNavigation)
+            .Include(c => c.Teacher).ThenInclude(t => t.TeacherNavigation)
             .Where(c => c.SchoolId == request.SchoolId)
             .OrderByDescending(c => c.CreatedAt)
             .Select(c => new ClassDto
@@ -44,52 +44,40 @@ public class ManagerClassHandler :
                 SchoolId = c.SchoolId,
                 YearId = c.YearId,
                 TeacherId = c.TeacherId,
-                TeacherName = c.Teacher != null
-                    ? c.Teacher.TeacherNavigation.FullName
-                    : "(Chưa phân công)",
+                TeacherName = c.Teacher != null ? c.Teacher.TeacherNavigation.FullName : "(Chưa phân công)",
                 IsActive = c.IsActive,
                 CreatedAt = c.CreatedAt
-            })
-            .ToListAsync(cancellationToken);
+            }).ToListAsync(cancellationToken);
     }
 
     // 🟣 Lấy trạng thái phân công giáo viên
-    public async Task<object> Handle(
-        GetTeacherAssignmentStatusQuery request,
-        CancellationToken cancellationToken)
+    public async Task<object> Handle(GetTeacherAssignmentStatusQuery request, CancellationToken cancellationToken)
     {
-        // 🟢 Lấy toàn bộ giáo viên trong school
         var allTeachers = await _repo.Teachers
             .Include(t => t.TeacherNavigation)
             .Where(t => t.TeacherNavigation.SchoolId == request.SchoolId)
-            .Select(t => new
-            {
-                t.TeacherId,
-                FullName = t.TeacherNavigation.FullName
-            })
+            .Select(t => new { t.TeacherId, FullName = t.TeacherNavigation.FullName })
             .ToListAsync(cancellationToken);
 
-        // 🟡 Lấy danh sách giáo viên đã được phân lớp
         var assignedTeachers = await _repo.Classes
-            .Where(c => c.TeacherId != null)
-            .Select(c => c.TeacherId!.Value)
+            .Where(c => c.TeacherId != null).Select(c => c.TeacherId!.Value)
             .ToListAsync(cancellationToken);
 
-        // 🟣 Phân loại
-        var teachersWithClass = allTeachers
-            .Where(t => assignedTeachers.Contains(t.TeacherId))
-            .ToList();
-
-        var teachersWithoutClass = allTeachers
-            .Where(t => !assignedTeachers.Contains(t.TeacherId))
-            .ToList();
-
-        // 🔹 Trả kết quả (giữ object + anonymous type giống service cũ)
         return new
         {
-            TeachersWithClass = teachersWithClass,
-            TeachersWithoutClass = teachersWithoutClass
+            TeachersWithClass = allTeachers.Where(t => assignedTeachers.Contains(t.TeacherId)).ToList(),
+            TeachersWithoutClass = allTeachers.Where(t => !assignedTeachers.Contains(t.TeacherId)).ToList()
         };
+    }
+
+    // 📅 Lấy danh sách niên khóa
+    public async Task<List<AcademicYearDto>> Handle(GetAcademicYearsQuery request, CancellationToken cancellationToken)
+    {
+        return await _repo.AcademicYears
+            .Where(y => y.SchoolId == request.SchoolId)
+            .OrderByDescending(y => y.YearName) // Sắp xếp năm mới nhất lên đầu
+            .Select(y => new AcademicYearDto { YearId = y.YearId, YearName = y.YearName })
+            .ToListAsync(cancellationToken);
     }
 
     #endregion
@@ -97,20 +85,30 @@ public class ManagerClassHandler :
     #region COMMAND HANDLERS
 
     // 🟡 Create
-    public async Task<ClassDto> Handle(
-        CreateClassCommand command,
-        CancellationToken cancellationToken)
+    public async Task<ClassDto> Handle(CreateClassCommand command, CancellationToken cancellationToken)
     {
         var request = command.Request;
 
-        // 🔹 Kiểm tra trùng giáo viên
+        var yearExists = await _repo.AcademicYears
+            .AnyAsync(y => y.YearId == request.YearId && y.SchoolId == request.SchoolId, cancellationToken);
+
+        if (!yearExists)
+            throw new InvalidOperationException($"Niên khóa (ID: {request.YearId}) không tồn tại.");
+
+        var isDuplicateName = await _repo.Classes.AnyAsync(
+            c => c.SchoolId == request.SchoolId && c.YearId == request.YearId &&
+                 c.ClassName.ToLower() == request.ClassName.Trim().ToLower() && c.IsActive, cancellationToken);
+
+        if (isDuplicateName)
+        {
+            throw new InvalidOperationException($"Lớp tên '{request.ClassName}' đã tồn tại trong niên khóa này rồi!");
+        }
+
         if (request.TeacherId.HasValue)
         {
-            bool teacherAssigned = await _repo.Classes
-                .AnyAsync(c => c.TeacherId == request.TeacherId, cancellationToken);
-
-            if (teacherAssigned)
-                throw new InvalidOperationException("Giáo viên này đã được gán cho một lớp khác.");
+            var isTeacherBusy =
+                await _repo.Classes.AnyAsync(c => c.TeacherId == request.TeacherId && c.IsActive, cancellationToken);
+            if (isTeacherBusy) throw new InvalidOperationException("Giáo viên này đang chủ nhiệm lớp khác!");
         }
 
         var newClass = new Class
@@ -122,7 +120,6 @@ public class ManagerClassHandler :
             TeacherId = request.TeacherId,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
-            // logic cũ của bạn, giữ nguyên
             UpdatedBy = request.CreatedBy.HasValue ? (int?)0 : null
         };
 
@@ -141,23 +138,27 @@ public class ManagerClassHandler :
     }
 
     // 🟠 Update
-    public async Task<ClassDto?> Handle(
-        UpdateClassCommand command,
-        CancellationToken cancellationToken)
+    public async Task<ClassDto?> Handle(UpdateClassCommand command, CancellationToken cancellationToken)
     {
         var request = command.Request;
         var entity = await _repo.GetByIdAsync(command.ClassId);
         if (entity == null) return null;
 
-        if (!string.IsNullOrWhiteSpace(request.ClassName))
-            entity.ClassName = request.ClassName.Trim();
+        if (!string.IsNullOrWhiteSpace(request.ClassName)) entity.ClassName = request.ClassName.Trim();
 
         if (request.TeacherId.HasValue)
+        {
+            if (entity.TeacherId != request.TeacherId)
+            {
+                var isTeacherBusy = await _repo.Classes.AnyAsync(c => c.TeacherId == request.TeacherId && c.IsActive,
+                    cancellationToken);
+                if (isTeacherBusy) throw new InvalidOperationException("Giáo viên này đang chủ nhiệm lớp khác!");
+            }
+
             entity.TeacherId = request.TeacherId;
+        }
 
-        if (request.IsActive.HasValue)
-            entity.IsActive = request.IsActive.Value;
-
+        if (request.IsActive.HasValue) entity.IsActive = request.IsActive.Value;
         entity.UpdatedAt = DateTime.UtcNow;
         entity.UpdatedBy = request.UpdatedBy.HasValue ? (int?)0 : null;
 
@@ -176,14 +177,10 @@ public class ManagerClassHandler :
     }
 
     // 🔴 Delete
-    public async Task<bool> Handle(
-        DeleteClassCommand command,
-        CancellationToken cancellationToken)
+    public async Task<bool> Handle(DeleteClassCommand command, CancellationToken cancellationToken)
     {
         var entity = await _repo.GetByIdAsync(command.ClassId);
-        if (entity == null)
-            return false;
-
+        if (entity == null) return false;
         await _repo.DeleteAsync(entity);
         return true;
     }

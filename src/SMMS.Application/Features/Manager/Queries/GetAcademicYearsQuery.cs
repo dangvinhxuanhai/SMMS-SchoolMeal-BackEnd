@@ -1,6 +1,7 @@
-﻿namespace SMMS.Application.Features.Manager.Queries;
+﻿using MediatR;
+using SMMS.Application.Features.Manager.DTOs;
 
-public class GetAcademicYearsQuery
-{
-    
-}
+namespace SMMS.Application.Features.Manager.Queries;
+
+// 👇 Xóa class bao ngoài, chỉ để lại dòng này thôi
+public record GetAcademicYearsQuery(Guid SchoolId) : IRequest<List<AcademicYearDto>>;
