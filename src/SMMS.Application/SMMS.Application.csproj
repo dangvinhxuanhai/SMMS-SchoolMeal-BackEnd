@@ -32,24 +32,14 @@
     <Folder Include="Common\Exceptions\" />
     <Folder Include="Common\Validators\" />
     <Folder Include="Features\Skeleton\Interface\" />
-    <Folder Include="Features\Inventory\Commands\" />
-    <Folder Include="Features\Inventory\DTOs\" />
-    <Folder Include="Features\Inventory\Interfaces\" />
-    <Folder Include="Features\Inventory\Handlers\" />
-    <Folder Include="Features\Inventory\Service\" />
-    <Folder Include="Features\Inventory\Validators\" />
-    <Folder Include="Features\Inventory\Queries\" />
-    <Folder Include="Features\Meal\" />
     <Folder Include="Features\Menu\Interfaces\" />
     <Folder Include="Features\Menu\Search\" />
-    <Folder Include="Features\Notifications\" />
-    <Folder Include="Features\Payment\" />
-    <Folder Include="Features\Plan\" />
     <Folder Include="Features\Skeleton\Service\" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.0.0" />
+    <PackageReference Include="MediatR" Version="13.1.0" />
   </ItemGroup>
 
   <ItemGroup>

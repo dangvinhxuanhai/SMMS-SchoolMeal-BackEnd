@@ -7,6 +7,7 @@ using SMMS.Infrastructure.Security;
 using System;
 using System.Threading.Tasks;
 using SMMS.Application.Common.Interfaces;
+using SMMS.Persistence.Data;
 
 namespace SMMS.Infrastructure.Service
 {

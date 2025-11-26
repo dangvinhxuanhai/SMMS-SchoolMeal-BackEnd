@@ -58,9 +58,9 @@ namespace SMMS.Persistence.Repositories.auth
                     AvatarUrl = student.AvatarUrl,
                     Relation = student.RelationName,
                     AllergyFoods = allergenNames,
-                    ClassName = className ?? "",
+                    ClassName = className,
+                    DateOfBirth = student.DateOfBirth,
                     Gender = student.Gender,
-                    DateOfBirth = student.DateOfBirth
                 });
             }
 
@@ -69,9 +69,9 @@ namespace SMMS.Persistence.Repositories.auth
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
-                DateOfBirth = user.DateOfBirth,
-                AvatarUrl = user.AvatarUrl,
-                Gender = user.Gender ? "M" : "F",
+                DateOfBirth = user.DateOfBirth.ToString(),
+                // FIX: Thêm prefix vào avatar cha
+                AvatarUrl =user.AvatarUrl,
                 Children = childrenWithAllergies
             };
         }
@@ -86,10 +86,6 @@ namespace SMMS.Persistence.Repositories.auth
             user.Email = dto.Email;
             user.Phone = dto.Phone;
             user.DateOfBirth = dto.DateOfBirth;
-            if (!string.IsNullOrEmpty(dto.Gender))
-            {
-                user.Gender = dto.Gender.Trim().ToLower() == "nam";
-            }
             if (dto.AvatarFile != null)
             {
                 user.AvatarUrl = await UploadUserAvatarAsync(dto.AvatarFile, userId);
@@ -154,41 +150,55 @@ namespace SMMS.Persistence.Repositories.auth
         }
 
 
-        public async Task<bool> UpdateChildInfoAsync(Guid parentId, ChildProfileDto childDto)
+        public async Task<ChildProfileResponseDto> UpdateChildInfoAsync(Guid parentId, ChildProfileDto childDto)
         {
             var student = await _dbContext.Students
                 .Include(s => s.StudentAllergens)
+                .Include(s => s.StudentClasses)
+                .ThenInclude(sc => sc.Class)
                 .FirstOrDefaultAsync(s => s.StudentId == childDto.StudentId && s.ParentId == parentId);
 
-            if (student != null)
+            if (student == null) return null;
+            if (!string.IsNullOrEmpty(childDto.FullName))
+                student.FullName = childDto.FullName;
+
+            if (!string.IsNullOrEmpty(childDto.Relation))
+                student.RelationName = childDto.Relation;
+
+            if (childDto.DateOfBirth.HasValue)
             {
-                if (!string.IsNullOrEmpty(childDto.FullName))
-                    student.FullName = childDto.FullName;
-
-                if (!string.IsNullOrEmpty(childDto.Relation))
-                    student.RelationName = childDto.Relation;
-
-                if (childDto.DateOfBirth.HasValue)
-                    student.DateOfBirth = childDto.DateOfBirth.Value;
-
-                if (!string.IsNullOrEmpty(childDto.Gender))
-                {
-                    student.Gender = childDto.Gender;
-                }
-
-                if (childDto.AvatarFile != null)
-                    student.AvatarUrl = await UploadChildAvatarAsync(childDto.AvatarFile, student.StudentId);
-
-                await UpdateChildAllergiesAsync(student, childDto.AllergyFoods);
-
-                student.UpdatedAt = DateTime.UtcNow;
-                await _dbContext.SaveChangesAsync();
-                return true;
+                student.DateOfBirth = childDto.DateOfBirth.Value;
             }
 
-            return false;
-        }
+            if (!string.IsNullOrEmpty(childDto.Gender))
+            {
+                student.Gender = childDto.Gender;
+            }
 
+            if (childDto.AvatarFile != null)
+            {
+                student.AvatarUrl = await UploadChildAvatarAsync(childDto.AvatarFile, student.StudentId);
+            }
+
+            await UpdateChildAllergiesAsync(student, childDto.AllergyFoods);
+
+            student.UpdatedAt = DateTime.UtcNow;
+            await _dbContext.SaveChangesAsync();
+            var className = student.StudentClasses?
+                .Where(sc => sc.LeftDate == null || sc.LeftDate > DateOnly.FromDateTime(DateTime.Now))
+                .FirstOrDefault()?.Class?.ClassName;
+            return new ChildProfileResponseDto
+            {
+                StudentId = student.StudentId,
+                FullName = student.FullName,
+                AvatarUrl = student.AvatarUrl,
+                Relation = student.RelationName,
+                AllergyFoods = childDto.AllergyFoods ?? new List<string>(),
+                DateOfBirth = student.DateOfBirth,
+                Gender = student.Gender,
+                ClassName = className // ✅ Gán giá trị className vào response trả về
+            };;
+        }
         private async Task UpdateChildAllergiesAsync(Student student, List<string> allergyFoods)
         {
             var existingAllergies = await _dbContext.StudentAllergens

@@ -15,5 +15,4 @@ public interface IManagerClassRepository
     Task AddAsync(Class entity);
     Task UpdateAsync(Class entity);
     Task DeleteAsync(Class entity);
-    IQueryable<AcademicYear> AcademicYears { get; }
 }
