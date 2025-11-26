@@ -1,46 +1,29 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.billing.Interfaces;
-using SMMS.Application.Features.Identity.Interfaces; // Namespace chứa IFileStorageService
 using SMMS.Domain.Entities.billing;
 using SMMS.Persistence.Data;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using SMMS.Persistence;
+using SMMS.Persistence.Service;
+
+namespace SMMS.Persistence.Repositories.billing;
 
 public class SchoolRevenueRepository : ISchoolRevenueRepository
 {
     private readonly EduMealContext _context;
-    private readonly IFileStorageService _fileStorageService; // Sửa: Dùng Interface
+    private readonly CloudinaryService _cloudinary;
 
-    // Sửa: Inject IFileStorageService thay vì CloudinaryService
-    public SchoolRevenueRepository(EduMealContext ctx, IFileStorageService fileStorageService)
+    public SchoolRevenueRepository(EduMealContext ctx, CloudinaryService cloud)
     {
         _context = ctx;
-        _fileStorageService = fileStorageService;
+        _cloudinary = cloud;
     }
 
     public async Task<long> CreateAsync(SchoolRevenue revenue, IFormFile? file)
     {
-        if (file != null && file.Length > 0)
+        if (file != null)
         {
-            // 1. Đọc file thành byte[]
-            using var ms = new MemoryStream();
-            await file.CopyToAsync(ms);
-            var fileData = ms.ToArray();
-
-            // 2. Tạo tên file mới (để tránh trùng)
-            var fileExtension = Path.GetExtension(file.FileName);
-            var newFileName = $"contract_{revenue.SchoolId}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
-
-            // 3. Gọi hàm SaveFileAsync (đã khớp với Interface)
-            revenue.ContractFileUrl = await _fileStorageService.SaveFileAsync(
-                file.FileName,
-                fileData,
-                "edu-meal/school-contracts", // Đặt tên folder riêng cho hợp đồng
-                newFileName
-            );
+            revenue.ContractFileUrl = await _cloudinary.UploadImageAsync(file);
         }
 
         revenue.CreatedAt = DateTime.UtcNow;
@@ -53,22 +36,9 @@ public class SchoolRevenueRepository : ISchoolRevenueRepository
 
     public async Task UpdateAsync(SchoolRevenue revenue, IFormFile? file)
     {
-        if (file != null && file.Length > 0)
+        if (file != null)
         {
-            // Logic tương tự như CreateAsync
-            using var ms = new MemoryStream();
-            await file.CopyToAsync(ms);
-            var fileData = ms.ToArray();
-
-            var fileExtension = Path.GetExtension(file.FileName);
-            var newFileName = $"contract_{revenue.SchoolId}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
-
-            revenue.ContractFileUrl = await _fileStorageService.SaveFileAsync(
-                file.FileName,
-                fileData,
-                "edu-meal/school-contracts",
-                newFileName
-            );
+            revenue.ContractFileUrl = await _cloudinary.UploadImageAsync(file);
         }
 
         revenue.UpdatedAt = DateTime.UtcNow;
@@ -82,11 +52,6 @@ public class SchoolRevenueRepository : ISchoolRevenueRepository
         var entity = await _context.SchoolRevenues.FindAsync(id);
         if (entity != null)
         {
-            // (Tuỳ chọn) Nếu muốn xóa file trên Cloudinary khi xóa record DB
-            // if (!string.IsNullOrEmpty(entity.ContractFileUrl)) {
-            //     await _fileStorageService.DeleteFileAsync(entity.ContractFileUrl);
-            // }
-
             _context.SchoolRevenues.Remove(entity);
             await _context.SaveChangesAsync();
         }

@@ -5,6 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SMMS.Persistence;
-internal class GenericRepository
+public class GenericRepository
 {
 }
