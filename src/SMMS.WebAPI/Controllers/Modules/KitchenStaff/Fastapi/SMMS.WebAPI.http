@@ -1,5 +1,41 @@
 @SMMS.WebAPI_HostAddress = http://localhost:56578
 
+### Delete by id (uses same ids)
+DELETE {{SMMS.WebAPI_HostAddress}}/api/v1/MenuDayFoodItems/2/5
+Accept: application/json
+Content-Type: application/json
+
+
+### Update by id (uses same ids)
+PUT {{SMMS.WebAPI_HostAddress}}/api/v1/MenuDayFoodItems/2/5
+Accept: application/json
+Content-Type: application/json
+
+{
+  "sortOrder": 2
+}
+
+### Get by id (uses ids from the Create response)
+GET {{SMMS.WebAPI_HostAddress}}/api/v1/MenuDayFoodItems/2/5
+Accept: application/json
+Content-Type: application/json
+
+### Create (replace menuDayId + foodId with existing IDs)
+POST {{SMMS.WebAPI_HostAddress}}/api/v1/MenuDayFoodItems
+Accept: application/json
+Content-Type: application/json
+
+{
+  "menuDayId": 2,
+  "foodId": 5,
+  "sortOrder": 1
+}
+
+### Get all
+GET {{SMMS.WebAPI_HostAddress}}/api/v1/MenuDayFoodItems
+Accept: application/json
+Content-Type: application/json
+
 ### Delete by id (using same id)
 DELETE {{SMMS.WebAPI_HostAddress}}/api/v1/MenuDays/1005
 Accept: application/json
