@@ -1,0 +1,69 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Features\Identity\**" />
+    <Compile Remove="Features\Meal\**" />
+    <Compile Remove="Features\Notifications\**" />
+    <Compile Remove="Features\Payment\**" />
+    <Compile Remove="Features\Plan\**" />
+    <Compile Remove="Features\Skeleton\Interface\**" />
+    <EmbeddedResource Remove="Features\Identity\**" />
+    <EmbeddedResource Remove="Features\Meal\**" />
+    <EmbeddedResource Remove="Features\Notifications\**" />
+    <EmbeddedResource Remove="Features\Payment\**" />
+    <EmbeddedResource Remove="Features\Plan\**" />
+    <EmbeddedResource Remove="Features\Skeleton\Interface\**" />
+    <None Remove="Features\Identity\**" />
+    <None Remove="Features\Meal\**" />
+    <None Remove="Features\Notifications\**" />
+    <None Remove="Features\Payment\**" />
+    <None Remove="Features\Plan\**" />
+    <None Remove="Features\Skeleton\Interface\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Common\Behaviors\" />
+    <Folder Include="Common\Exceptions\" />
+    <Folder Include="Common\Validators\" />
+    <Folder Include="Features\Inventory\Commands\" />
+    <Folder Include="Features\Inventory\DTOs\" />
+    <Folder Include="Features\Inventory\Interfaces\" />
+    <Folder Include="Features\Inventory\Handlers\" />
+    <Folder Include="Features\Inventory\Service\" />
+    <Folder Include="Features\Inventory\Validators\" />
+    <Folder Include="Features\Inventory\Queries\" />
+    <Folder Include="Features\Meal\" />
+    <Folder Include="Features\Menu\Interfaces\" />
+    <Folder Include="Features\Menu\Search\" />
+    <Folder Include="Features\Notifications\" />
+    <Folder Include="Features\Payment\" />
+    <Folder Include="Features\Plan\" />
+    <Folder Include="Features\Skeleton\Service\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
+    <PackageReference Include="MediatR" Version="13.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="CloudinaryDotNet" Version="1.20.0" />
+    <PackageReference Include="ExcelDataReader" Version="3.8.0" />
+    <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.20" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="8.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SMMS.Domain\SMMS.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

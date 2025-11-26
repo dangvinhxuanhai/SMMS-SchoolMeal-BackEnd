@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>5ac233bf-685a-40c2-b978-c665bce4ab3c</UserSecretsId>
+    <DockerDefaultTargetOS>Windows</DockerDefaultTargetOS>
+    <DockerfileContext>..\..</DockerfileContext>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Controllers\Modules\Identity\**" />
+    <Compile Remove="Controllers\Modules\Inventory\**" />
+    <Compile Remove="Controllers\Modules\Meal\**" />
+    <Compile Remove="Controllers\Modules\Notifications\**" />
+    <Content Remove="Controllers\Modules\Identity\**" />
+    <Content Remove="Controllers\Modules\Inventory\**" />
+    <Content Remove="Controllers\Modules\Meal\**" />
+    <Content Remove="Controllers\Modules\Notifications\**" />
+    <EmbeddedResource Remove="Controllers\Modules\Identity\**" />
+    <EmbeddedResource Remove="Controllers\Modules\Inventory\**" />
+    <EmbeddedResource Remove="Controllers\Modules\Meal\**" />
+    <EmbeddedResource Remove="Controllers\Modules\Notifications\**" />
+    <None Remove="Controllers\Modules\Identity\**" />
+    <None Remove="Controllers\Modules\Inventory\**" />
+    <None Remove="Controllers\Modules\Meal\**" />
+    <None Remove="Controllers\Modules\Notifications\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.0.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
+    <PackageReference Include="MediatR" Version="13.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.20" />
+    <PackageReference Include="Microsoft.AspNetCore.OData" Version="8.3.1" />
+    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.0" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="5.0.17" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.11">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="8.0.7" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Controllers\Modules\Wardens\" />
+    <Folder Include="Middlewares\" />
+    <Folder Include="Extensions\" />
+    <Folder Include="Filters\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SMMS.Application\SMMS.Application.csproj" />
+    <ProjectReference Include="..\SMMS.Domain\SMMS.Domain.csproj" />
+    <ProjectReference Include="..\SMMS.Infrastructure\SMMS.Infrastructure.csproj" />
+    <ProjectReference Include="..\SMMS.Persistence\SMMS.Persistence.csproj" />
+    <ProjectReference Include="..\SMMS.SharedKernel\SMMS.SharedKernel.csproj" />
+  </ItemGroup>
+
+</Project>

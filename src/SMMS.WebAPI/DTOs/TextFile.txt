@@ -1,0 +1,19 @@
+→ MyApp.Application
+│
+├── Features/
+│   ├── Movies/
+│   │   ├── Commands/
+│   │   │   └── CreateMovieCommand.cs
+│   │   └── Queries/
+│   │       └── GetMovieByIdQuery.cs
+│   │
+│   └── Dtos/            <-- Chứa DTO logic cho CQRS (output chính)
+│
+MyApp.Api
+│
+├── Dtos/                <-- Chứa DTO chuyên biệt cho HTTP request/response
+│   ├── MovieRequestDto.cs
+│   └── MovieResponseDto.cs
+└── Controllers/
+
+=> có thể là request resposne cho SPA ? <single page application>

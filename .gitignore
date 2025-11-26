@@ -97,8 +97,6 @@ publish/
 **/dist/
 **/build/
 **/temp/
-**/logs/
-logs/
 *.log
 *.pid
 
@@ -628,3 +626,5 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+SMMS-SchoolMeal-BackEnd\src\SMMS.WebAPI\appsettings.json
