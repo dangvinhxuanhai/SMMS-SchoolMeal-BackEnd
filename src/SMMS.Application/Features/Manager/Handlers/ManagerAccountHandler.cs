@@ -11,6 +11,7 @@ using SMMS.Application.Features.Manager.Queries;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.school;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 namespace SMMS.Application.Features.Manager.Handlers;
 public class ManagerAccountHandler :
     // Queries
@@ -24,10 +25,11 @@ public class ManagerAccountHandler :
     IRequestHandler<DeleteAccountCommand, bool>
 {
     private readonly IManagerAccountRepository _repo;
-
+    private readonly PasswordHasher<User> _passwordHasher;
     public ManagerAccountHandler(IManagerAccountRepository repo)
     {
         _repo = repo;
+        _passwordHasher = new PasswordHasher<User>();
     }
 
     #region QUERY HANDLERS
@@ -150,7 +152,6 @@ public class ManagerAccountHandler :
             FullName = request.FullName.Trim(),
             Email = request.Email?.Trim().ToLower(),
             Phone = request.Phone.Trim(),
-            PasswordHash = request.Password, // TODO: mã hóa
             RoleId = role.RoleId,
             LanguagePref = "vi",
             SchoolId = request.SchoolId,
@@ -158,7 +159,8 @@ public class ManagerAccountHandler :
             CreatedAt = DateTime.UtcNow,
             CreatedBy = request.CreatedBy
         };
-
+        // ✅ Hash password bằng Identity
+        user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
         // 🔄 sử dụng đúng method trong IManagerAccountRepository
         await _repo.AddAsync(user);
 
@@ -213,7 +215,10 @@ public class ManagerAccountHandler :
             user.Phone = request.Phone.Trim();
 
         if (!string.IsNullOrWhiteSpace(request.Password))
-            user.PasswordHash = request.Password; // TODO: hash
+        {
+            // ✅ Hash lại password nếu có đổi
+            user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Role))
         {

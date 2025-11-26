@@ -50,6 +50,7 @@ public class ManagerParentController : ControllerBase
 
     // 🟡 Tạo tài khoản phụ huynh + con + gán lớp
     [HttpPost]
+    [Route("create-parent")]
     public async Task<IActionResult> Create([FromBody] CreateParentRequest request)
     {
         if (!ModelState.IsValid)

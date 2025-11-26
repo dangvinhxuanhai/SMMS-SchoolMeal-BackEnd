@@ -70,6 +70,7 @@ public class ManagerClassHandler :
         };
     }
 
+    // 👇 ĐÂY LÀ HÀM BẠN ĐANG THIẾU, HÃY THÊM NÓ VÀO 👇
     // 📅 Lấy danh sách niên khóa
     public async Task<List<AcademicYearDto>> Handle(GetAcademicYearsQuery request, CancellationToken cancellationToken)
     {
@@ -89,6 +90,7 @@ public class ManagerClassHandler :
     {
         var request = command.Request;
 
+        // Check Niên khóa tồn tại không (Tránh lỗi tạo lớp vào năm học ma)
         var yearExists = await _repo.AcademicYears
             .AnyAsync(y => y.YearId == request.YearId && y.SchoolId == request.SchoolId, cancellationToken);
 
@@ -104,6 +106,7 @@ public class ManagerClassHandler :
             throw new InvalidOperationException($"Lớp tên '{request.ClassName}' đã tồn tại trong niên khóa này rồi!");
         }
 
+        // Check trùng giáo viên
         if (request.TeacherId.HasValue)
         {
             var isTeacherBusy =

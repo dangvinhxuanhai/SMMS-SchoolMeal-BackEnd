@@ -9,6 +9,7 @@ namespace SMMS.Application.Features.Manager.Interfaces;
 public interface IManagerClassRepository
 {
     IQueryable<Class> Classes { get; }
+    IQueryable<AcademicYear> AcademicYears { get; }
     IQueryable<Teacher> Teachers { get; }
     Task<Class?> GetByIdAsync(Guid classId);
     Task AddAsync(Class entity);

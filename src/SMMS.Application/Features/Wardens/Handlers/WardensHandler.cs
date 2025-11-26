@@ -398,12 +398,13 @@ public class WardensHandler :
     #region 8️⃣ GetNotificationsAsync
 
     public async Task<IEnumerable<NotificationDto>> Handle(
-        GetWardenNotificationsQuery request,
-        CancellationToken cancellationToken)
+         GetWardenNotificationsQuery request,
+         CancellationToken cancellationToken)
     {
-        return await (
-            from nr in _repo.NotificationRecipients
-            join n in _repo.Notifications on nr.NotificationId equals n.NotificationId
+        var query =
+            from nr in _repo.NotificationRecipients      // phải là IQueryable<NotificationRecipient>
+            join n in _repo.Notifications                // IQueryable<Notification>
+                on nr.NotificationId equals n.NotificationId
             where nr.UserId == request.WardenId
             orderby n.CreatedAt descending
             select new NotificationDto
@@ -414,7 +415,9 @@ public class WardensHandler :
                 CreatedAt = n.CreatedAt,
                 IsRead = nr.IsRead,
                 SendType = n.SendType
-            })
+            };
+
+        return await query
             .Take(10)
             .ToListAsync(cancellationToken);
     }

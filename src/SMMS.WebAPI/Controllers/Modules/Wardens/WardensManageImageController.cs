@@ -26,6 +26,7 @@ public class WardensManageImageController : ControllerBase
     }
 
     // 🟢 Upload ảnh học sinh
+    // 🟢 Upload ảnh học sinh cho 1 lớp (tự chọn student đầu tiên trong lớp)
     [HttpPost("upload-student-image")]
     [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadStudentImage([FromForm] UploadStudentImageRequest request)
@@ -33,39 +34,47 @@ public class WardensManageImageController : ControllerBase
         if (request.File == null || request.File.Length == 0)
             return BadRequest(new { message = "Vui lòng chọn ảnh để upload." });
 
+        if (request.ClassId == Guid.Empty)
+            return BadRequest(new { message = "ClassId không hợp lệ." });
+
         try
         {
-            // 🔹 Kiểm tra tồn tại học sinh & người upload
-            var studentExists = await _context.Students
-                .AnyAsync(s => s.StudentId == request.StudentId);
+            // 🔹 Kiểm tra người upload có tồn tại không
             var uploaderExists = await _context.Users
                 .AnyAsync(u => u.UserId == request.UploaderId);
-
-            if (!studentExists)
-                return BadRequest(new { message = "Không tìm thấy học sinh trong hệ thống." });
 
             if (!uploaderExists)
                 return BadRequest(new { message = "Người tải lên không tồn tại trong hệ thống." });
 
-            // 🔹 Kiểm tra định dạng file
+            // 🔹 Kiểm tra định dạng file (OPTIONAL, trùng với handler nhưng giúp báo lỗi sớm)
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
             var ext = Path.GetExtension(request.File.FileName).ToLowerInvariant();
             if (!allowedExtensions.Contains(ext))
                 return BadRequest(new { message = "Chỉ hỗ trợ các định dạng: .jpg, .jpeg, .png, .gif, .webp" });
 
-            // 1️⃣ Gửi command upload ảnh (tự xử lý Cloudinary + folder)
+            // 🔹 Lấy học sinh đầu tiên của lớp (đã đăng ký)
+            var studentId = await _context.StudentClasses
+                .Where(sc => sc.ClassId == request.ClassId && sc.RegistStatus == true)
+                .OrderBy(sc => sc.JoinedDate)
+                .Select(sc => sc.StudentId)
+                .FirstOrDefaultAsync();
+
+            if (studentId == Guid.Empty)
+                return BadRequest(new { message = "Lớp này chưa có học sinh nào đăng ký." });
+
+            // 1️⃣ Gửi command upload ảnh (handler tự dùng ClassId để build folder Cloudinary)
             var uploadResult = await _mediator.Send(
-                new UploadStudentImageCommand(request)
+                new UploadStudentImageCommand(request) // BaseFolder dùng default "student_images"
             );
 
             if (string.IsNullOrWhiteSpace(uploadResult.Url))
                 return StatusCode(500, new { message = "Upload ảnh thất bại." });
 
-            // 2️⃣ Lưu metadata vào DB
+            // 2️⃣ Lưu metadata vào DB (gắn với student đầu tiên của lớp)
             var entity = new StudentImage
             {
                 ImageId = Guid.NewGuid(),
-                StudentId = request.StudentId,
+                StudentId = studentId,
                 UploadedBy = request.UploaderId,
                 ImageUrl = uploadResult.Url,
                 Caption = request.Caption ?? Path.GetFileNameWithoutExtension(request.File.FileName),
@@ -100,75 +109,38 @@ public class WardensManageImageController : ControllerBase
         }
     }
 
-    // 🟡 Lấy ảnh theo lớp (Cloudinary)
+    // 🟡 Lấy tất cả ảnh theo lớp (Cloudinary folder)
     [HttpGet("class/{classId:guid}/images")]
-    public async Task<IActionResult> GetImagesByClass(Guid classId)
+    public async Task<IActionResult> GetImagesByClass(Guid classId, [FromQuery] int maxResults = 100)
     {
         if (classId == Guid.Empty)
-            return BadRequest(new { message = "Thiếu mã lớp (classId)." });
+            return BadRequest(new { message = "ClassId không hợp lệ." });
 
         try
         {
-            var images = await _mediator.Send(new GetImagesByClassQuery(classId));
+            // kiểm tra lớp có tồn tại không
+            var exists = await _context.Classes.AnyAsync(c => c.ClassId == classId);
+            if (!exists)
+                return NotFound(new { message = "Không tìm thấy lớp học." });
 
-            if (images == null || !images.Any())
-                return Ok(new
-                {
-                    message = "Không có ảnh nào trong lớp này.",
-                    count = 0,
-                    data = new List<object>()
-                });
+            // Gửi query → Handler tự lấy SchoolName / YearName / ClassName và scan folder Cloudinary
+            var images = await _mediator.Send(
+                new GetImagesByClassQuery(classId, maxResults)
+            );
 
             return Ok(new
             {
-                message = "Lấy danh sách ảnh thành công.",
-                count = images.Count,
-                data = images.Select(x => new
-                {
-                    url = x.Url,
-                    publicId = x.PublicId,
-                    createdAt = x.CreatedAt.ToString("yyyy-MM-dd HH:mm:ss")
-                })
+                message = $"Tìm thấy {images.Count} ảnh cho lớp {classId}.",
+                data = images
             });
-        }
-        catch (InvalidOperationException invEx)
-        {
-            return NotFound(new { message = invEx.Message });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { message = $"Lỗi khi lấy ảnh lớp: {ex.Message}" });
-        }
-    }
-
-    // 🟣 Lấy ảnh của một học sinh (từ DB metadata)
-    [HttpGet("student/{studentId:guid}")]
-    public async Task<IActionResult> GetStudentImages(Guid studentId)
-    {
-        var exists = await _context.Students.AnyAsync(s => s.StudentId == studentId);
-        if (!exists)
-            return NotFound(new { message = "Không tìm thấy học sinh." });
-
-        var images = await _context.StudentImages
-            .Where(i => i.StudentId == studentId)
-            .OrderByDescending(i => i.CreatedAt)
-            .Select(i => new
+            return StatusCode(500, new
             {
-                i.ImageId,
-                i.ImageUrl,
-                i.Caption,
-                i.CreatedAt
-            })
-            .ToListAsync();
-
-        if (images.Count == 0)
-            return NotFound(new { message = "Học sinh này chưa có ảnh nào được upload." });
-
-        return Ok(new
-        {
-            message = $"Tìm thấy {images.Count} ảnh cho học sinh {studentId}.",
-            data = images
-        });
+                message = $"Lỗi khi lấy ảnh theo lớp: {ex.Message}"
+            });
+        }
     }
 
     // 🗑️ Xóa ảnh theo ImageId (xóa Cloudinary + DB)
