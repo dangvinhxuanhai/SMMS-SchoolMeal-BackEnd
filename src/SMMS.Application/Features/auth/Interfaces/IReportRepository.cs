@@ -11,5 +11,8 @@ namespace SMMS.Application.Features.auth.Interfaces
     {
         Task<List<UserReportDto>> GetUserReportAsync(ReportFilterDto filter);
         Task<List<UserReportDto>> GetAllUserReportAsync();
+        Task<List<FinanceReportDto>> GetFinanceReportAsync(FinanceReportFilterDto filter);
+        Task<List<FinanceReportDto>> GetAllFinanceReportAsync();
+
     }
 }

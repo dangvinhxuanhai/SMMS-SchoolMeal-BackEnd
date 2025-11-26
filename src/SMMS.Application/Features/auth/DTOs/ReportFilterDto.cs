@@ -22,4 +22,18 @@ namespace SMMS.Application.Features.auth.DTOs
         public int ActiveUsers { get; set; }
         public int InactiveUsers { get; set; }
     }
+    public class FinanceReportDto
+    {
+        public string SchoolName { get; set; }
+        public decimal TotalRevenue { get; set; }
+        public int RevenueCount { get; set; }
+    }
+    public class FinanceReportFilterDto
+    {
+        public Guid? SchoolId { get; set; }
+        public string? Scope { get; set; } = "TatCa"; // TatCa | TheoTruong
+        public DateOnly? FromDate { get; set; }
+        public DateOnly? ToDate { get; set; }
+    }
+
 }

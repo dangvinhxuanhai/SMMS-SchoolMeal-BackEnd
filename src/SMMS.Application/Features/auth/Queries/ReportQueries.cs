@@ -13,4 +13,6 @@ namespace SMMS.Application.Features.auth.Queries
 
     // ✅ Lấy toàn bộ báo cáo người dùng (không lọc)
     public record GetAllUserReportQuery() : IRequest<List<UserReportDto>>;
+    public record GetFinanceReportQuery(FinanceReportFilterDto Filter) : IRequest<List<FinanceReportDto>>;
+    public record GetAllFinanceReportQuery() : IRequest<List<FinanceReportDto>>;
 }

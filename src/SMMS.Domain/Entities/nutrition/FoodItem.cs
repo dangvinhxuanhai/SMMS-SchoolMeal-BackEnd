@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.foodmenu;
 using SMMS.Domain.Entities.fridge;
+using SMMS.Domain.Entities.rag;
 using SMMS.Domain.Entities.school;
 
 namespace SMMS.Domain.Entities.nutrition;
@@ -34,6 +35,8 @@ public partial class FoodItem
 
     public Guid SchoolId { get; set; }
 
+    public bool IsMainDish { get; set; }
+
     public bool IsActive { get; set; }
 
     [ForeignKey("CreatedBy")]
@@ -51,6 +54,9 @@ public partial class FoodItem
 
     [InverseProperty("Food")]
     public virtual ICollection<MenuFoodItem> MenuFoodItems { get; set; } = new List<MenuFoodItem>();
+
+    [InverseProperty("Food")]
+    public virtual ICollection<MenuRecommendResult> MenuRecommendResults { get; set; } = new List<MenuRecommendResult>();
 
     [ForeignKey("SchoolId")]
     [InverseProperty("FoodItems")]

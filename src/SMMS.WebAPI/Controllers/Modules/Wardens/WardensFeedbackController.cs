@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.Wardens.Commands;
@@ -9,6 +11,7 @@ using SMMS.Application.Features.Wardens.Queries;
 namespace SMMS.WebAPI.Controllers.Modules.Wardens;
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Teacher")]
 public class WardensFeedbackController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -17,14 +20,22 @@ public class WardensFeedbackController : ControllerBase
     {
         _mediator = mediator;
     }
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null)
+            throw new UnauthorizedAccessException("Không tìm thấy ID người dùng trong token.");
 
+        return Guid.Parse(userIdClaim.Value);
+    }
     // 🟢 Lấy danh sách feedback của giám thị
     // GET: /api/WardensFeedback/{wardenId}/list
     [HttpGet("{wardenId:guid}/list")]
-    public async Task<IActionResult> GetFeedbacks(Guid wardenId)
+    public async Task<IActionResult> GetFeedbacks()
     {
         try
         {
+            var wardenId = GetCurrentUserId();
             var feedbacks = await _mediator.Send(new GetWardenFeedbacksQuery(wardenId));
 
             if (!feedbacks.Any())

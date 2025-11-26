@@ -2,14 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 using SMMS.Domain.Entities.auth;
+using SMMS.Domain.Entities.billing;
 using SMMS.Domain.Entities.foodmenu;
 using SMMS.Domain.Entities.fridge;
 using SMMS.Domain.Entities.inventory;
 using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.purchasing;
-using SMMS.Domain.Entities.rag;
 
 namespace SMMS.Domain.Entities.school;
 
@@ -27,8 +26,6 @@ public partial class School
 
     [StringLength(20)]
     public string? Hotline { get; set; }
-
-    public string? SchoolContract { get; set; }
 
     [StringLength(200)]
     public string? SchoolAddress { get; set; }
@@ -71,22 +68,13 @@ public partial class School
     public virtual ICollection<PurchaseOrder> PurchaseOrders { get; set; } = new List<PurchaseOrder>();
 
     [InverseProperty("School")]
-    public virtual ICollection<RagRequestAllergen> RagRequestAllergens { get; set; } = new List<RagRequestAllergen>();
-
-    [InverseProperty("School")]
-    public virtual ICollection<RagRequestInput> RagRequestInputs { get; set; } = new List<RagRequestInput>();
-
-    [InverseProperty("School")]
-    public virtual ICollection<RagSuggestedFoodItemIngredient> RagSuggestedFoodItemIngredients { get; set; } = new List<RagSuggestedFoodItemIngredient>();
-
-    [InverseProperty("School")]
-    public virtual ICollection<RagSuggestedFoodItem> RagSuggestedFoodItems { get; set; } = new List<RagSuggestedFoodItem>();
-
-    [InverseProperty("School")]
-    public virtual ICollection<RagSuggestedIngredient> RagSuggestedIngredients { get; set; } = new List<RagSuggestedIngredient>();
-
-    [InverseProperty("School")]
     public virtual ICollection<ScheduleMeal> ScheduleMeals { get; set; } = new List<ScheduleMeal>();
+
+    [InverseProperty("School")]
+    public virtual ICollection<SchoolPaymentSetting> SchoolPaymentSettings { get; set; } = new List<SchoolPaymentSetting>();
+
+    [InverseProperty("School")]
+    public virtual ICollection<SchoolRevenue> SchoolRevenues { get; set; } = new List<SchoolRevenue>();
 
     [InverseProperty("School")]
     public virtual ICollection<Student> Students { get; set; } = new List<Student>();

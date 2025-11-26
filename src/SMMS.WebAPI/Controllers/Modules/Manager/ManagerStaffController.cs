@@ -1,4 +1,5 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.Manager.Commands;
@@ -10,6 +11,7 @@ using SMMS.Application.Features.Manager.Queries;
 namespace SMMS.WebAPI.Controllers.Modules.Manager;
 [Route("api/[controller]")]
 [ApiController]
+[Authorize(Roles = "Manager")]
 public class ManagerStaffController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -18,11 +20,19 @@ public class ManagerStaffController : ControllerBase
     {
         _mediator = mediator;
     }
+    private Guid GetSchoolIdFromToken()
+    {
+        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        if (string.IsNullOrEmpty(schoolIdClaim))
+            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
 
+        return Guid.Parse(schoolIdClaim);
+    }
     // 🔍 Search account
     [HttpGet("search")]
-    public async Task<IActionResult> SearchAccounts(Guid schoolId, [FromQuery] string keyword)
+    public async Task<IActionResult> SearchAccounts([FromQuery] string keyword)
     {
+        var schoolId = GetSchoolIdFromToken();
         var result = await _mediator.Send(new SearchAccountsQuery(schoolId, keyword));
 
         return Ok(new
@@ -34,8 +44,9 @@ public class ManagerStaffController : ControllerBase
 
     // 🟢 GET: Lấy danh sách tài khoản staff (teacher + warden + kitchenStaff)
     [HttpGet("staff")]
-    public async Task<IActionResult> GetAllStaff(Guid schoolId)
+    public async Task<IActionResult> GetAllStaff()
     {
+        var schoolId = GetSchoolIdFromToken();
         var result = await _mediator.Send(new GetAllStaffQuery(schoolId));
 
         return Ok(new
@@ -47,8 +58,9 @@ public class ManagerStaffController : ControllerBase
 
     /// 🧪 Filter by role
     [HttpGet("filter-by-role")]
-    public async Task<IActionResult> FilterByRole(Guid schoolId, [FromQuery] string role)
+    public async Task<IActionResult> FilterByRole([FromQuery] string role)
     {
+        var schoolId = GetSchoolIdFromToken();
         if (string.IsNullOrWhiteSpace(role))
             return BadRequest(new { message = "Role không được để trống." });
 
