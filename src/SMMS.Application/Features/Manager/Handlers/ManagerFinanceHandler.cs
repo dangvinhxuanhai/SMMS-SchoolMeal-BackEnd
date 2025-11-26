@@ -5,8 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SMMS.Application.Features.Manager.Handlers;
-using ClosedXML.Excel;
 
+using ClosedXML.Excel;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Manager.DTOs;
@@ -39,8 +39,8 @@ public class ManagerFinanceHandler :
     {
         var query = _repo.Invoices
             .Include(i => i.Student)
-                .ThenInclude(s => s.StudentClasses)
-                .ThenInclude(sc => sc.Class)
+            .ThenInclude(s => s.StudentClasses)
+            .ThenInclude(sc => sc.Class)
             .Where(i => i.Student.StudentClasses.Any(sc => sc.Class.SchoolId == request.SchoolId))
             .AsQueryable();
 
@@ -83,15 +83,34 @@ public class ManagerFinanceHandler :
     {
         var query = _repo.Invoices
             .Include(i => i.Student)
-                .ThenInclude(s => s.StudentClasses)
-                .ThenInclude(sc => sc.Class)
+            .ThenInclude(s => s.StudentClasses)
+            .ThenInclude(sc => sc.Class)
             .Where(i => i.Student.StudentClasses.Any(sc => sc.Class.SchoolId == request.SchoolId))
             .AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(request.Status))
+        if (!string.IsNullOrWhiteSpace(request.Status) && request.Status != "all")
         {
             var status = request.Status.ToLower().Trim();
-            query = query.Where(i => i.Status.ToLower() == status);
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            switch (status)
+            {
+                case "paid":
+                    // ✅ Đã thanh toán
+                    query = query.Where(i => i.Status == "Paid");
+                    break;
+
+                case "overdue":
+                    query = query.Where(i => (i.Status == "Unpaid" || i.Status == "Pending") && i.DateTo < today);
+                    break;
+
+                case "pending":
+                    query = query.Where(i => (i.Status == "Unpaid" || i.Status == "Pending") && i.DateTo >= today);
+                    break;
+
+                default:
+                    query = query.Where(i => i.Status.ToLower() == status);
+                    break;
+            }
         }
 
         var invoices = await query
@@ -109,8 +128,15 @@ public class ManagerFinanceHandler :
             DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
             DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
             AbsentDay = inv.AbsentDay,
-            Status = inv.Status
+            Status = GetDisplayStatus(inv.Status, inv.DateTo)
         }).ToList();
+    }
+
+    private string GetDisplayStatus(string dbStatus, DateOnly dateTo)
+    {
+        if (dbStatus == "Paid") return "Paid";
+        if (dateTo < DateOnly.FromDateTime(DateTime.Now)) return "Overdue";
+        return "Pending";
     }
 
     #endregion
@@ -144,22 +170,14 @@ public class ManagerFinanceHandler :
             where po.SchoolId == schoolId
                   && po.OrderDate.Month == month
                   && po.OrderDate.Year == year
-            select new
-            {
-                po.SupplierName,
-                Amount = (pol.UnitPrice ?? 0m) * (pol.QuantityGram / 1000m)
-            }
+            select new { po.SupplierName, Amount = (pol.UnitPrice ?? 0m) * (pol.QuantityGram / 1000m) }
         ).ToListAsync(cancellationToken);
 
         decimal totalPurchaseCost = purchases.Sum(p => p.Amount);
 
         var supplierBreakdown = purchases
             .GroupBy(p => p.SupplierName)
-            .Select(g => new SupplierExpenseDto
-            {
-                Supplier = g.Key,
-                Total = g.Sum(x => x.Amount)
-            })
+            .Select(g => new SupplierExpenseDto { Supplier = g.Key, Total = g.Sum(x => x.Amount) })
             .ToList();
 
         return new FinanceSummaryDto
@@ -272,7 +290,7 @@ public class ManagerFinanceHandler :
     {
         var order = await _repo.PurchaseOrders
             .Include(po => po.PurchaseOrderLines)
-                .ThenInclude(line => line.Ingredient)
+            .ThenInclude(line => line.Ingredient)
             .FirstOrDefaultAsync(po => po.OrderId == request.OrderId, cancellationToken);
 
         if (order == null)
@@ -319,8 +337,8 @@ public class ManagerFinanceHandler :
 
         var invoices = await _repo.Invoices
             .Include(i => i.Student)
-                .ThenInclude(s => s.StudentClasses)
-                .ThenInclude(sc => sc.Class)
+            .ThenInclude(s => s.StudentClasses)
+            .ThenInclude(sc => sc.Class)
             .Include(i => i.Payments)
             .Where(i => i.Student.StudentClasses.Any(sc => sc.Class.SchoolId == schoolId))
             .Where(i => isYearly
@@ -396,11 +414,11 @@ public class ManagerFinanceHandler :
 
         var purchaseOrders = await _repo.PurchaseOrders
             .Include(po => po.PurchaseOrderLines)
-                .ThenInclude(line => line.Ingredient)
+            .ThenInclude(line => line.Ingredient)
             .Where(po => po.SchoolId == schoolId &&
                          (isYearly
-                            ? po.OrderDate.Year == year
-                            : po.OrderDate.Month == month && po.OrderDate.Year == year))
+                             ? po.OrderDate.Year == year
+                             : po.OrderDate.Month == month && po.OrderDate.Year == year))
             .ToListAsync(cancellationToken);
 
         using var workbook = new XLWorkbook();

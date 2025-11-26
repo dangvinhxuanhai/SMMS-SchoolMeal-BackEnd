@@ -7,13 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="ExternalService\Email\" />
-    <Folder Include="FileStorage\" />
-    <Folder Include="ExternalService\Google\" />
-    <Folder Include="ExternalService\SMS\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
   <ItemGroup>

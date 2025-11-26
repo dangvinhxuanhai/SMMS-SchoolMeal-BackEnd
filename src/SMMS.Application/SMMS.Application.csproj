@@ -44,12 +44,12 @@
     <Folder Include="Features\Notifications\" />
     <Folder Include="Features\Payment\" />
     <Folder Include="Features\Plan\" />
+    <Folder Include="Features\Skeleton\Interface\" />
     <Folder Include="Features\Skeleton\Service\" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.0.0" />
-    <PackageReference Include="MediatR" Version="13.0.0" />
   </ItemGroup>
 
   <ItemGroup>

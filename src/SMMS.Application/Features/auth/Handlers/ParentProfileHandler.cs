@@ -1,7 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using SMMS.Application.Features.auth.Commands;
@@ -13,7 +10,7 @@ namespace SMMS.Application.Features.auth.Handlers
 {
     public class ParentProfileHandler :
         IRequestHandler<GetParentProfileQuery, UserProfileResponseDto>,
-        IRequestHandler<UpdateParentProfileCommand, bool>,
+        IRequestHandler<UpdateParentProfileCommand, bool>, // FIX: Sửa lại thành bool
         IRequestHandler<UploadChildAvatarCommand, string>,
         IRequestHandler<UploadParentAvatarCommand, string>
     {
@@ -29,6 +26,7 @@ namespace SMMS.Application.Features.auth.Handlers
             return await _userProfileRepository.GetUserProfileAsync(request.ParentId);
         }
 
+        // FIX: Sửa return type thành bool
         public async Task<bool> Handle(UpdateParentProfileCommand request, CancellationToken cancellationToken)
         {
             return await _userProfileRepository.UpdateUserProfileAsync(request.ParentId, request.Dto);
@@ -38,13 +36,16 @@ namespace SMMS.Application.Features.auth.Handlers
         {
             return await _userProfileRepository.UploadChildAvatarAsync(request.File, request.StudentId);
         }
+
         public async Task<string> Handle(UploadParentAvatarCommand request, CancellationToken cancellationToken)
         {
             return await _userProfileRepository.UploadUserAvatarAsync(request.File, request.ParentId);
         }
     }
+
+    // FIX: Handler cho Child trả về ChildProfileResponseDto?
     public class ChildProfileHandler :
-        IRequestHandler<UpdateChildProfileCommand, bool>
+        IRequestHandler<UpdateChildProfileCommand, ChildProfileResponseDto?>
     {
         private readonly IUserProfileRepository _userProfileRepository;
 
@@ -53,7 +54,7 @@ namespace SMMS.Application.Features.auth.Handlers
             _userProfileRepository = userProfileRepository;
         }
 
-        public async Task<bool> Handle(UpdateChildProfileCommand request, CancellationToken cancellationToken)
+        public async Task<ChildProfileResponseDto?> Handle(UpdateChildProfileCommand request, CancellationToken cancellationToken)
         {
             return await _userProfileRepository.UpdateChildInfoAsync(
                 request.ParentId,
@@ -62,4 +63,3 @@ namespace SMMS.Application.Features.auth.Handlers
         }
     }
 }
-

@@ -6,6 +6,16 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.WebAPI.Configurations;
+using SMMS.Application.Features.notification.Interfaces;
+using SMMS.Infrastructure.Repositories.Implementations;
+using SMMS.Persistence.Repositories.foodmenu;
+using SMMS.Persistence.Repositories.Schools;
+using SMMS.Persistence.Repositories.auth;
+using SMMS.Application.Features.school.Handlers;
+using SMMS.Application.Features.billing.Handlers;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
+using SMMS.Application.Common.Interfaces;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence;
 using SMMS.Persistence.Data;
@@ -61,25 +71,24 @@ builder.Services.AddSwaggerGen(options =>
             {
                 Reference = new Microsoft.OpenApi.Models.OpenApiReference
                 {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "Bearer"
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme, Id = "Bearer"
                 }
             },
-            new string[] {}
+            new string[] { }
         }
     });
 });
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
 
     options.TokenValidationParameters = new TokenValidationParameters
     {
@@ -117,11 +126,18 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend", policy =>
     {
         policy.WithOrigins("http://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 var app = builder.Build();
+var uploadFolderPath = Path.Combine(builder.Environment.ContentRootPath, "edu-meal");
+if (!Directory.Exists(uploadFolderPath))
+{
+    Directory.CreateDirectory(uploadFolderPath);
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -133,9 +149,15 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseCors("AllowFrontend");
 
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadFolderPath),
+    RequestPath = "/uploads"
+});
+
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
-
