@@ -21,6 +21,7 @@ public class ManagerFinanceController : ControllerBase
     private Guid GetSchoolIdFromToken()
     {
         var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+
         if (string.IsNullOrEmpty(schoolIdClaim))
             throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
 

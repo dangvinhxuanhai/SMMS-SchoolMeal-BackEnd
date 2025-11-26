@@ -1,14 +1,11 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using SMMS.Application.Features.auth.DTOs;
 
 namespace SMMS.Application.Features.auth.Commands
 {
+    // FIX: Cập nhật Parent thì trả về bool (hoặc UserProfileResponseDto), KHÔNG trả về ChildProfileResponseDto
     public class UpdateParentProfileCommand : IRequest<bool>
     {
         public Guid ParentId { get; set; }
@@ -20,6 +17,7 @@ namespace SMMS.Application.Features.auth.Commands
             Dto = dto;
         }
     }
+
     public class UploadChildAvatarCommand : IRequest<string>
     {
         public Guid ParentId { get; set; }
@@ -33,6 +31,7 @@ namespace SMMS.Application.Features.auth.Commands
             File = file;
         }
     }
+
     public class UploadParentAvatarCommand : IRequest<string>
     {
         public Guid ParentId { get; set; }
@@ -44,7 +43,9 @@ namespace SMMS.Application.Features.auth.Commands
             File = file;
         }
     }
-    public class UpdateChildProfileCommand : IRequest<bool>
+
+    // FIX: Thêm dấu ? để cho phép null (nếu không tìm thấy student)
+    public class UpdateChildProfileCommand : IRequest<ChildProfileResponseDto?>
     {
         public Guid ParentId { get; }
         public ChildProfileDto Dto { get; }

@@ -20,7 +20,6 @@ public class ManagerClassHandler :
     IRequestHandler<DeleteClassCommand, bool>
 {
     private readonly IManagerClassRepository _repo;
-
     public ManagerClassHandler(IManagerClassRepository repo)
     {
         _repo = repo;

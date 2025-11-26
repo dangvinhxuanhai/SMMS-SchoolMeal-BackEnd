@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.auth.DTOs;
@@ -8,7 +7,8 @@ using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.school;
 using SMMS.Persistence.Data;
-using  SMMS.Persistence.Repositories.Skeleton;
+using SMMS.Persistence.Repositories.Skeleton;
+
 namespace SMMS.Persistence.Repositories.auth
 {
     public class UserProfileRepository : Repository<User>, IUserProfileRepository
@@ -58,6 +58,8 @@ namespace SMMS.Persistence.Repositories.auth
                     Relation = student.RelationName,
                     AllergyFoods = allergenNames,
                     ClassName = className,
+                    DateOfBirth = student.DateOfBirth,
+                    Gender = student.Gender,
                 });
             }
 
@@ -66,9 +68,9 @@ namespace SMMS.Persistence.Repositories.auth
                 FullName = user.FullName,
                 Email = user.Email,
                 Phone = user.Phone,
-                DateOfBirth = user.DateOfBirth,
-                AvatarUrl = user.AvatarUrl,
-                Gender = user.Gender ? "Nam" : "Nữ",
+                DateOfBirth = user.DateOfBirth.ToString(),
+                // FIX: Thêm prefix vào avatar cha
+                AvatarUrl =user.AvatarUrl,
                 Children = childrenWithAllergies
             };
         }
@@ -83,40 +85,38 @@ namespace SMMS.Persistence.Repositories.auth
             user.Email = dto.Email;
             user.Phone = dto.Phone;
             user.DateOfBirth = dto.DateOfBirth;
-            if (!string.IsNullOrEmpty(dto.Gender))
-            {
-                user.Gender = dto.Gender.Trim().ToLower() == "nam";
-            }
+
             if (dto.AvatarFile != null)
             {
                 user.AvatarUrl = await UploadUserAvatarAsync(dto.AvatarFile, userId);
             }
-            user.UpdatedAt = DateTime.UtcNow;
 
+            user.UpdatedAt = DateTime.UtcNow;
             await _dbContext.SaveChangesAsync();
             return true;
         }
+
         public async Task<string> UploadUserAvatarAsync(IFormFile file, Guid userId)
         {
-            if (file == null || file.Length == 0)
-                return null;
-            // Lấy thông tin file
+            if (file == null || file.Length == 0) return null;
+
             var fileName = file.FileName;
+            var fileExtension = Path.GetExtension(fileName);
+
             using var ms = new MemoryStream();
             await file.CopyToAsync(ms);
             var fileData = ms.ToArray();
-            // Tạo tên file mới để tránh trùng
-            var newFileName = $"user_{userId}_{DateTime.UtcNow:yyyyMMddHHmmss}";
-            // Upload lên storage
+
+            var newFileName = $"user_{userId}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
+
             var avatarUrl = await _fileStorageService.SaveFileAsync(
                 fileName,
                 fileData,
-                "edu-meal/user-avatars", // folder lưu avatar user
+                "edu-meal/user-avatars",
                 newFileName
             );
 
-            // Cập nhật URL avatar vào DB
-            var user = await _dbContext.Users.FindAsync(userId); // hoặc table Parent nếu riêng
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.UserId == userId);
             if (user != null)
             {
                 user.AvatarUrl = avatarUrl;
@@ -129,53 +129,78 @@ namespace SMMS.Persistence.Repositories.auth
 
         public async Task<string> UploadChildAvatarAsync(IFormFile file, Guid studentId)
         {
-            if (file == null || file.Length == 0)
-                return null;
+            if (file == null || file.Length == 0) return null;
 
             var fileName = file.FileName;
+            // FIX: Lấy đuôi file
+            var fileExtension = Path.GetExtension(fileName);
+
             using var ms = new MemoryStream();
             await file.CopyToAsync(ms);
             var fileData = ms.ToArray();
 
-            var newFileName = $"student_{studentId}_{DateTime.UtcNow:yyyyMMddHHmmss}";
+            var newFileName = $"student_{studentId}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
 
-            var url = await _fileStorageService.SaveFileAsync(
+            var avatarUrl = await _fileStorageService.SaveFileAsync(
                 fileName,
                 fileData,
                 "edu-meal/student-avatars",
                 newFileName
             );
 
-            // Chỉ trả URL, không SaveChangesAsync() ở đây
-            return url;
+            var student = await _dbContext.Students.FirstOrDefaultAsync(s => s.StudentId == studentId);
+            if (student != null)
+            {
+                student.AvatarUrl = avatarUrl;
+                student.UpdatedAt = DateTime.UtcNow;
+                await  _dbContext.SaveChangesAsync();
+            }
+
+            return avatarUrl;
         }
 
-
-        public async Task<bool> UpdateChildInfoAsync(Guid parentId, ChildProfileDto childDto)
+        public async Task<ChildProfileResponseDto> UpdateChildInfoAsync(Guid parentId, ChildProfileDto childDto)
         {
             var student = await _dbContext.Students
                 .Include(s => s.StudentAllergens)
                 .FirstOrDefaultAsync(s => s.StudentId == childDto.StudentId && s.ParentId == parentId);
 
-            if (student != null)
-            {
+            if (student == null) return null;
                 if (!string.IsNullOrEmpty(childDto.FullName))
                     student.FullName = childDto.FullName;
 
                 if (!string.IsNullOrEmpty(childDto.Relation))
                     student.RelationName = childDto.Relation;
 
+                if (childDto.DateOfBirth.HasValue)
+                {
+                    student.DateOfBirth = childDto.DateOfBirth.Value;
+                }
+
+                if (!string.IsNullOrEmpty(childDto.Gender))
+                {
+                    student.Gender = childDto.Gender;
+                }
+
                 if (childDto.AvatarFile != null)
+                {
                     student.AvatarUrl = await UploadChildAvatarAsync(childDto.AvatarFile, student.StudentId);
+                }
 
                 await UpdateChildAllergiesAsync(student, childDto.AllergyFoods);
 
                 student.UpdatedAt = DateTime.UtcNow;
                 await _dbContext.SaveChangesAsync();
-                return true;
-            }
-
-            return false;
+                return new ChildProfileResponseDto
+                {
+                    StudentId = student.StudentId,
+                    FullName = student.FullName,
+                    AvatarUrl = student.AvatarUrl,
+                    Relation = student.RelationName,
+                    AllergyFoods = childDto.AllergyFoods ?? new List<string>(),
+                    DateOfBirth = student.DateOfBirth,
+                    Gender = student.Gender
+                };;
         }
 
         private async Task UpdateChildAllergiesAsync(Student student, List<string> allergyFoods)
@@ -188,6 +213,8 @@ namespace SMMS.Persistence.Repositories.auth
             {
                 _dbContext.StudentAllergens.RemoveRange(existingAllergies);
             }
+
+            if (allergyFoods == null) return;
 
             foreach (var foodName in allergyFoods.Where(f => !string.IsNullOrWhiteSpace(f)))
             {
@@ -208,11 +235,11 @@ namespace SMMS.Persistence.Repositories.auth
 
         private async Task<Allergen> FindOrCreateAllergenAsync(string allergenName, Guid schoolId)
         {
+            // Logic giữ nguyên như cũ
             var existingAllergen = await _dbContext.Allergens
                 .FirstOrDefaultAsync(a => a.AllergenName == allergenName && a.SchoolId == schoolId);
 
-            if (existingAllergen != null)
-                return existingAllergen;
+            if (existingAllergen != null) return existingAllergen;
 
             try
             {
@@ -222,21 +249,14 @@ namespace SMMS.Persistence.Repositories.auth
                     SchoolId = schoolId,
                     CreatedAt = DateTime.UtcNow
                 };
-
                 await _dbContext.Allergens.AddAsync(newAllergen);
                 await _dbContext.SaveChangesAsync();
-
                 return newAllergen;
             }
-            catch (DbUpdateException ex)
+            catch (DbUpdateException)
             {
-                var duplicateAllergen = await _dbContext.Allergens
+                return await _dbContext.Allergens
                     .FirstOrDefaultAsync(a => a.AllergenName == allergenName && a.SchoolId == schoolId);
-
-                if (duplicateAllergen != null)
-                    return duplicateAllergen;
-
-                throw new Exception($"Không thể tạo allergen mới: {ex.Message}");
             }
         }
     }
