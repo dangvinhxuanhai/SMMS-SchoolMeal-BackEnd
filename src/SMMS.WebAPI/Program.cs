@@ -4,10 +4,12 @@ using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using SMMS.Application.Common.Interfaces;
 using SMMS.Application.Common.Validators;
 using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.billing.Handlers;
@@ -41,6 +43,7 @@ using SMMS.Infrastructure.Services;
 using SMMS.Persistence.Repositories.Manager;
 using SMMS.Persistence;
 using SMMS.Application.Features.auth.Handlers;
+using SMMS.Domain.Entities.auth;
 using SMMS.WebAPI.Hubs;
 using SMMS.Persistence.Repositories.billing;
 using SMMS.Persistence.Service;
@@ -212,6 +215,7 @@ builder.Services.AddMediatR(cfg =>
 // Register Application Services
 builder.Services.AddScoped<IWardensRepository, WardensRepository>();
 builder.Services.AddScoped<IManagerRepository, ManagerRepository>();
+builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IManagerAccountRepository, ManagerAccountRepository>();
 builder.Services.AddScoped<IWardensFeedbackRepository, WardensFeedbackRepository>();
 builder.Services.AddScoped<IManagerClassRepository, ManagerClassRepository>();
