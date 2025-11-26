@@ -56,7 +56,7 @@ public static class RepositoryDI
         services.AddScoped<IIngredientRepository, IngredientRepository>();
         services.AddScoped<IFoodItemIngredientRepository, FoodItemIngredientRepository>();
         services.AddScoped<IFeedbackRepository, FeedbackRepository>();
-
+        services.AddScoped<IWardensHealthRepository, WardensHealthRepository>();
         return services;
     }
 }
