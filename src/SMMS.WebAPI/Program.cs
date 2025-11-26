@@ -184,7 +184,7 @@ builder.Services.AddAuthentication(options =>
     };
 
     // Đó test lại r em mở comment cái dòng dưới hình như cần để phía be allow nhận token từ cookie
-   /* options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+    /*options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
