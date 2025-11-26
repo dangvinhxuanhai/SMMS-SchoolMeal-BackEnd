@@ -11,7 +11,7 @@ namespace SMMS.Application.Features.foodmenu.Interfaces;
 /// </summary>
 public interface IAiMenuClient
 {
-    Task<AiMenuRecommendResponse> RecommendAsync(
+    Task<AiMenuRawResponse> RecommendAsync(
         AiMenuRecommendRequest request,
         CancellationToken cancellationToken = default);
 }

@@ -89,6 +89,8 @@ namespace SMMS.Persistence.Repositories.Schools
             });
         }
 
+
+
         // ✅ Hàm tính BMI
         private static decimal CalculateBMI(decimal heightCm, decimal weightKg)
         {
@@ -105,6 +107,64 @@ namespace SMMS.Persistence.Repositories.Schools
             if (bmi < 25m) return "Bình thường";
             if (bmi < 30m) return "Thừa cân";
             return "Béo phì";
+        }
+
+        public async Task<double?> GetAverageBmiForFirstClassAsync(
+            Guid schoolId,
+            CancellationToken cancellationToken = default)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Today);
+
+            // 1. Lấy class đầu tiên của school
+            var firstClass = await _dbContext.Classes
+                .Where(c => c.SchoolId == schoolId && c.IsActive)
+                .OrderBy(c => c.ClassName)     // hoặc CreatedAt nếu anh có
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (firstClass == null)
+                return null;
+
+            // 2. Lấy các StudentId còn đang học lớp đó
+            var studentIds = await _dbContext.StudentClasses
+                .Where(sc => sc.ClassId == firstClass.ClassId &&
+                             (sc.LeftDate == null || sc.LeftDate > today))
+                .Select(sc => sc.StudentId)
+                .ToListAsync(cancellationToken);
+
+            if (!studentIds.Any())
+                return null;
+
+            // 3. Lấy health record mới nhất cho từng học sinh
+            var latestRecords = await _dbContext.StudentHealthRecords
+                .Where(r => studentIds.Contains(r.StudentId) &&
+                            r.HeightCm.HasValue &&
+                            r.WeightKg.HasValue)
+                .GroupBy(r => r.StudentId)
+                .Select(g => g
+                    .OrderByDescending(x => x.RecordAt)
+                    .FirstOrDefault()!)
+                .ToListAsync(cancellationToken);
+
+            if (!latestRecords.Any())
+                return null;
+
+            // 4. Tính BMI từng học sinh
+            var bmiList = latestRecords
+                .Select(r =>
+                {
+                    var h = (double)r.HeightCm!.Value / 100.0; // m
+                    var w = (double)r.WeightKg!.Value;         // kg
+                    if (h <= 0 || w <= 0) return (double?)null;
+                    return w / (h * h);
+                })
+                .Where(b => b.HasValue)
+                .Select(b => b!.Value)
+                .ToList();
+
+            if (!bmiList.Any())
+                return null;
+
+            return bmiList.Average();
         }
     }
 }

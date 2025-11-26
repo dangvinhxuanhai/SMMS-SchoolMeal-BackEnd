@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.foodmenu.Interfaces;
+using SMMS.Domain.Entities.rag;
 using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.foodmenu;
@@ -47,5 +48,11 @@ public class MenuRecommendResultRepository : IMenuRecommendResultRepository
                 new object[] { pSessionId, pFoodId, pIsMain, pNow },
                 cancellationToken);
         }
+    }
+
+    public async Task AddRangeAsync(IEnumerable<MenuRecommendResult> results, CancellationToken ct = default)
+    {
+        await _db.MenuRecommendResults.AddRangeAsync(results, ct);
+        await _db.SaveChangesAsync(ct);
     }
 }
