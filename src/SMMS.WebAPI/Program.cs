@@ -182,6 +182,16 @@ builder.Services.AddAuthentication(options =>
         NameClaimType = "UserId", // ✅ ánh xạ claim "UserId"
         RoleClaimType = ClaimTypes.Role
     };
+
+    // Đó test lại r em mở comment cái dòng dưới hình như cần để phía be allow nhận token từ cookie
+   /* options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            context.Token = context.Request.Cookies["jwt"];
+            return Task.CompletedTask;
+        }
+    };*/
 });
 
 builder.Services.AddAuthorization();
