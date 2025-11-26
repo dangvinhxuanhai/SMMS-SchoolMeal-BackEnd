@@ -4,6 +4,7 @@ using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -33,12 +34,12 @@ using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.Manager.Handlers;
 using SMMS.Application.Features.Wardens.Handlers;
 using SMMS.Infrastructure.ExternalService.AiMenu;
-using SMMS.Infrastructure.Service;
 using SMMS.Infrastructure.Services;
 using SMMS.Persistence.Repositories.Manager;
 using SMMS.Persistence.Service;
 using SMMS.Application.Features.auth.Handlers;
 using SMMS.WebAPI.Hubs;
+using SMMS.Domain.Entities.auth; // Namespace chứa class User của bạn
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,6 +73,8 @@ builder.Services.AddControllers()
         .SetMaxTop(100)
         .AddRouteComponents("odata", ODataConfig.GetEdmModel())
     );
+
+
 // =========================
 // 4️⃣ Dependency Injection (Services)
 // =========================
@@ -87,6 +90,7 @@ builder.Services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>(
 builder.Services.AddScoped<ISchoolRepository, SchoolRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IReportRepository, ReportRepository>();
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
 builder.Services.AddScoped<IManagerPaymentSettingRepository, ManagerPaymentSettingRepository>();
 builder.Services.AddScoped<ISchoolRevenueRepository, SchoolRevenueRepository>();
@@ -209,7 +213,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("http://localhost:3000")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 var app = builder.Build();
@@ -220,20 +225,19 @@ if (app.Environment.IsDevelopment())
 }
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.UseHttpsRedirection();
-//var password = "@1";
-//var hashed = PasswordHasher.HashPassword(password);
+// var password = "@1";
+// var hashed = PasswordHasher.HashPassword(password);
+//
+// Console.ForegroundColor = ConsoleColor.Green;
+// Console.WriteLine("=====================================");
+// Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
+// Console.WriteLine(hashed);
+// Console.WriteLine("=====================================");
+// Console.ResetColor();
 
-//Console.ForegroundColor = ConsoleColor.Green;
-//Console.WriteLine("=====================================");
-//Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
-//Console.WriteLine(hashed);
-//Console.WriteLine("=====================================");
-//Console.ResetColor();
-
-// ✅ Thứ tự rất quan trọng:
-app.UseAuthentication();
 app.UseCors("AllowFrontend");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

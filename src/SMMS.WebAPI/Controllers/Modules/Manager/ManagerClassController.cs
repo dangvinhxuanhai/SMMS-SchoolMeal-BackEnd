@@ -43,9 +43,21 @@ public class ManagerClassController : ControllerBase
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
+        request.SchoolId = GetSchoolIdFromToken();
 
-        var result = await _mediator.Send(new CreateClassCommand(request));
-        return Ok(result);
+        try
+        {
+            var result = await _mediator.Send(new CreateClassCommand(request));
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi hệ thống: {ex.Message}" });
+        }
     }
 
     // 🟠 PUT: /api/ManagerClass/{id}
@@ -83,6 +95,20 @@ public class ManagerClassController : ControllerBase
         catch (Exception ex)
         {
             return StatusCode(500, new { message = $"Lỗi khi lấy danh sách giáo viên: {ex.Message}" });
+        }
+    }
+    [HttpGet("academic-years")]
+    public async Task<IActionResult> GetAcademicYears()
+    {
+        try
+        {
+            var schoolId = GetSchoolIdFromToken();
+            var result = await _mediator.Send(new GetAcademicYearsQuery(schoolId));
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi lấy danh sách niên khóa: {ex.Message}" });
         }
     }
 }
