@@ -42,7 +42,7 @@ public class ManagerParentHandler :
         _repo = repo;
         _logger = logger;
         _passwordHasher = passwordHasher;
-        _passwordHasher = new PasswordHasher<User>();
+        //_passwordHasher = new PasswordHasher<User>();
     }
 
     #region 🔍 SearchAsync

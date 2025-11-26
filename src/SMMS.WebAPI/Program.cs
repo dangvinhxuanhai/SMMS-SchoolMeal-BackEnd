@@ -6,16 +6,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.WebAPI.Configurations;
-using SMMS.Application.Features.notification.Interfaces;
-using SMMS.Infrastructure.Repositories.Implementations;
-using SMMS.Persistence.Repositories.foodmenu;
-using SMMS.Persistence.Repositories.Schools;
-using SMMS.Persistence.Repositories.auth;
-using SMMS.Application.Features.school.Handlers;
-using SMMS.Application.Features.billing.Handlers;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-using SMMS.Application.Common.Interfaces;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence;
 using SMMS.Persistence.Data;
@@ -25,7 +16,6 @@ using SMMS.WebAPI.Hubs;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-
 builder.Services.AddDbContext<EduMealContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlConnection")));
 
@@ -54,7 +44,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
     // ✅ Thêm cấu hình để Swagger nhập JWT token
-    /*options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
         Description = "Nhập token JWT vào đây (ví dụ: Bearer abcdef12345)",
@@ -62,7 +52,7 @@ builder.Services.AddSwaggerGen(options =>
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
         BearerFormat = "JWT",
         Scheme = "Bearer"
-    });*/
+    });
 
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {

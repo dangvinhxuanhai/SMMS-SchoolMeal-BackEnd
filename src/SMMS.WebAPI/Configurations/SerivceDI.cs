@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.OData;
+using SMMS.Application.Common.Interfaces;
 using SMMS.Application.Common.Validators;
 using SMMS.Application.Features.auth.Handlers;
 using SMMS.Application.Features.auth.Interfaces;
@@ -63,6 +64,7 @@ public static class SerivceDI
         //  cloud
         services.AddScoped<CloudinaryService>();
         services.AddScoped<INotificationRealtimeService, NotificationRealtimeService>();
+        services.AddScoped<IPasswordHasher, PasswordHasher>();
 
         //  Odata
         services.AddControllers()
