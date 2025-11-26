@@ -130,7 +130,7 @@ public class FeedbackRepository : IFeedbackRepository
             };
 
             _context.Feedbacks.Add(entity);
-            await _db.SaveChangesAsync(ct);
+            await _context.SaveChangesAsync(ct);
 
             return new FeedbackDto(
                 entity.FeedbackId,
@@ -145,7 +145,7 @@ public class FeedbackRepository : IFeedbackRepository
 
         public async Task<IReadOnlyList<FeedbackDto>> GetBySenderAsync(Guid senderId, CancellationToken ct)
         {
-            return await _db.Feedbacks
+            return await _context.Feedbacks
                 .AsNoTracking()
                 .Where(f => f.SenderId == senderId)
                 .OrderByDescending(f => f.CreatedAt)

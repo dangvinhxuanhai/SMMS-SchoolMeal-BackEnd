@@ -28,6 +28,8 @@ using SMMS.Persistence.Repositories.Wardens;
 using SMMS.Persistence;
 using SMMS.Persistence.Repositories.nutrition;
 using SMMS.WebAPI.Configurations;
+using SMMS.WebAPI.Hubs;
+using SMMS.Application.Features.school.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -121,14 +123,6 @@ builder.Services.AddAuthentication(options =>
         }
     };*/
 });
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<IClassStudentRepository, ClassStudentRepository>();
-builder.Services.AddScoped<IMenuRecommendSessionRepository, MenuRecommendSessionRepository>();
-builder.Services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
-builder.Services.AddScoped<IFoodItemRepository, FoodItemRepository>();
-builder.Services.AddScoped<IIngredientRepository, IngredientRepository>();
-builder.Services.AddScoped<IFoodItemIngredientRepository, FoodItemIngredientRepository>();
-builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
 
 builder.Services.AddAuthorization();
 builder.Services.Configure<CloudinarySettings>(

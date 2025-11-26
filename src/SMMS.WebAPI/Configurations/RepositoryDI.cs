@@ -15,6 +15,10 @@ using SMMS.Persistence.Repositories.schools;
 using SMMS.Persistence.Repositories.Schools;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence.Repositories.Wardens;
+using SMMS.Application.Abstractions;
+using SMMS.Application.Features.nutrition.Interfaces;
+using SMMS.Persistence.Repositories.nutrition;
+using SMMS.Persistence;
 
 namespace SMMS.WebAPI.Configurations;
 
@@ -44,6 +48,14 @@ public static class RepositoryDI
         services.AddScoped<IManagerFinanceRepository, ManagerFinanceRepository>();
         services.AddScoped<ICloudStorageRepository, CloudStorageRepository>();
         services.AddScoped<IManagerNotificationRepository, ManagerNotificationRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IClassStudentRepository, ClassStudentRepository>();
+        services.AddScoped<IMenuRecommendSessionRepository, MenuRecommendSessionRepository>();
+        services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
+        services.AddScoped<IFoodItemRepository, FoodItemRepository>();
+        services.AddScoped<IIngredientRepository, IngredientRepository>();
+        services.AddScoped<IFoodItemIngredientRepository, FoodItemIngredientRepository>();
+        services.AddScoped<IFeedbackRepository, FeedbackRepository>();
 
         return services;
     }
