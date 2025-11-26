@@ -31,7 +31,8 @@ namespace SMMS.Infrastructure.Security
                 new Claim(ClaimTypes.Email, user.Email ?? ""),
                 new Claim(ClaimTypes.Name, user.FullName),
                 new Claim(ClaimTypes.Role, roleName),
-                new Claim("SchoolId", user.SchoolId?.ToString() ?? "")
+                new Claim("SchoolId", user.SchoolId?.ToString() ?? ""),
+                new Claim("SchoolName", user.School?.SchoolName ?? "")
             };
 
             var tokenDescriptor = new SecurityTokenDescriptor
