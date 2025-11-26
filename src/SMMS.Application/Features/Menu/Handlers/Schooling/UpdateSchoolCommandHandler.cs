@@ -35,7 +35,7 @@ public sealed class UpdateSchoolCommandHandler : IRequestHandler<UpdateSchoolCom
         entity.SchoolName = dto.SchoolName.Trim();
         entity.ContactEmail = dto.ContactEmail;
         entity.Hotline = dto.Hotline;
-        entity.SchoolContract = dto.SchoolContract;
+        //entity.SchoolContract = dto.SchoolContract;
         entity.SchoolAddress = dto.SchoolAddress;
         entity.IsActive = dto.IsActive;
         entity.UpdatedBy = dto.UpdatedBy;

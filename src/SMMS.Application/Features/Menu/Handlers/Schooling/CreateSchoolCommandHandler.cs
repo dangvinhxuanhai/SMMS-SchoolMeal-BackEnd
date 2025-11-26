@@ -28,7 +28,7 @@ public sealed class CreateSchoolCommandHandler : IRequestHandler<CreateSchoolCom
             SchoolName = dto.SchoolName.Trim(),
             ContactEmail = dto.ContactEmail,
             Hotline = dto.Hotline,
-            SchoolContract = dto.SchoolContract,
+            //SchoolContract = dto.SchoolContract,
             SchoolAddress = dto.SchoolAddress,
             IsActive = dto.IsActive,
             CreatedBy = dto.CreatedBy,

@@ -85,7 +85,7 @@ public class SchoolsController : ControllerBase
             SchoolName = dto.SchoolName,
             ContactEmail = dto.ContactEmail,
             Hotline = dto.Hotline,
-            SchoolContract = dto.SchoolContract,
+            //SchoolContract = dto.SchoolContract,
             SchoolAddress = dto.SchoolAddress,
             IsActive = dto.IsActive,
             CreatedBy = dto.CreatedBy,

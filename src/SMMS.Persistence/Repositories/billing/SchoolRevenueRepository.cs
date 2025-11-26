@@ -3,7 +3,10 @@ using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Domain.Entities.billing;
 using SMMS.Persistence.Data;
+using SMMS.Persistence;
 using SMMS.Persistence.Service;
+
+namespace SMMS.Persistence.Repositories.billing;
 
 public class SchoolRevenueRepository : ISchoolRevenueRepository
 {

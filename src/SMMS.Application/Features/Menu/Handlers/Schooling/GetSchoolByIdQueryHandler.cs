@@ -35,7 +35,7 @@ public sealed class GetSchoolByIdQueryHandler : IRequestHandler<GetSchoolByIdQue
             SchoolName = entity.SchoolName,
             ContactEmail = entity.ContactEmail,
             Hotline = entity.Hotline,
-            SchoolContract = entity.SchoolContract,
+            //SchoolContract = entity.SchoolContract,
             SchoolAddress = entity.SchoolAddress,
             IsActive = entity.IsActive,
             CreatedAt = entity.CreatedAt,

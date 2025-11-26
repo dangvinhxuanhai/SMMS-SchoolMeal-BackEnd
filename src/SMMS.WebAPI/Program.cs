@@ -39,9 +39,11 @@ using SMMS.Infrastructure.ExternalService.AiMenu;
 using SMMS.Infrastructure.Service;
 using SMMS.Infrastructure.Services;
 using SMMS.Persistence.Repositories.Manager;
-using SMMS.Persistence.Service;
+using SMMS.Persistence;
 using SMMS.Application.Features.auth.Handlers;
 using SMMS.WebAPI.Hubs;
+using SMMS.Persistence.Repositories.billing;
+using SMMS.Persistence.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
