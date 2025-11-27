@@ -230,7 +230,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins("http://localhost:3000")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 var app = builder.Build();
@@ -239,7 +240,6 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-app.MapHub<NotificationHub>("/hubs/notifications");
 app.UseHttpsRedirection();
 //var password = "@1";
 //var hashed = PasswordHasher.HashPassword(password);
@@ -251,11 +251,12 @@ app.UseHttpsRedirection();
 //Console.WriteLine("=====================================");
 //Console.ResetColor();
 
-// ✅ Thứ tự rất quan trọng:
-app.UseAuthentication();
 app.UseCors("AllowFrontend");
 
+app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.MapControllers();
 
