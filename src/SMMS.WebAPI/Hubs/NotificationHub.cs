@@ -15,6 +15,11 @@ public class NotificationHub : Hub
         if (!string.IsNullOrEmpty(userId))
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"user-{userId}");
+            Console.WriteLine($"✅ User {userId} connected via SignalR");
+        }
+        else
+        {
+            Console.WriteLine("⚠️ SignalR connected but no UserId found in token");
         }
 
         await base.OnConnectedAsync();

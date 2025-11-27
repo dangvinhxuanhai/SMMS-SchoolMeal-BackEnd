@@ -27,7 +27,7 @@ public class WardensHealthController : ControllerBase
     {
         try
         {
-            var healthData = await _mediator.Send(new GetHealthRecordsQuery(classId));
+            var healthData = await _mediator.Send(new GetStudentsHealthQuery(classId));
             return Ok(healthData);
         }
         catch (Exception ex)

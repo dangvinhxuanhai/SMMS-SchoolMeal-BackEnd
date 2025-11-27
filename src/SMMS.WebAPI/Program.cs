@@ -154,7 +154,6 @@ if (app.Environment.IsDevelopment())
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
 app.UseCors("AllowFrontend");
 
 app.UseStaticFiles(new StaticFileOptions
