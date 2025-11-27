@@ -7,7 +7,6 @@ using Microsoft.Extensions.DependencyInjection;
 using SMMS.Application.Common.Interfaces;
 using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.foodmenu.Interfaces;
-using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Application.Features.school.Interfaces;
 using SMMS.Infrastructure.Repositories.Implementations;
 using SMMS.Infrastructure.Repositories;
