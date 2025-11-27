@@ -22,7 +22,6 @@ public class ManagerClassHandler :
     IRequestHandler<GetAcademicYearsQuery, List<AcademicYearDto>>
 {
     private readonly IManagerClassRepository _repo;
-
     public ManagerClassHandler(IManagerClassRepository repo)
     {
         _repo = repo;

@@ -42,7 +42,7 @@ public class ManagerStaffController : ControllerBase
         });
     }
 
-    // 🟢 GET: Lấy danh sách tài khoản staff (teacher + warden + kitchenStaff)
+    // 🟢 GET: Lấy danh sách tài khoản staff (warden + kitchenStaff)
     [HttpGet("staff")]
     public async Task<IActionResult> GetAllStaff()
     {
@@ -82,6 +82,14 @@ public class ManagerStaffController : ControllerBase
 
         try
         {
+            var schoolId =  GetSchoolIdFromToken();
+            request.SchoolId = schoolId;
+
+            var userIdStr = User.FindFirst("UserId")?.Value;
+            if (Guid.TryParse(userIdStr, out var uid))
+            {
+                request.CreatedBy = uid;
+            }
             var account = await _mediator.Send(new CreateAccountCommand(request));
 
             return Ok(new
@@ -92,7 +100,6 @@ public class ManagerStaffController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            // ví dụ: email/phone trùng, role không hợp lệ,...
             return Conflict(new { message = ex.Message });
         }
         catch (Exception ex)

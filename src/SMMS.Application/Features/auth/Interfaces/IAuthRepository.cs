@@ -11,6 +11,5 @@ namespace SMMS.Application.Features.auth.Interfaces
         Task<bool> LogoutAsync(string refreshToken);
         Task ResetFirstPasswordAsync(string email, string currentPassword, string newPassword);
         Task<User?> GetUserByIdAsync(Guid userId);
-
     }
 }

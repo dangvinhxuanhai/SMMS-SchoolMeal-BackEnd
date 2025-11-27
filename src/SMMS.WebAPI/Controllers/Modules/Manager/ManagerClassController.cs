@@ -64,11 +64,22 @@ public class ManagerClassController : ControllerBase
     [HttpPut("{classId:guid}")]
     public async Task<IActionResult> Update(Guid classId, [FromBody] UpdateClassRequest request)
     {
-        var result = await _mediator.Send(new UpdateClassCommand(classId, request));
-        if (result == null)
-            return NotFound(new { message = "Không tìm thấy lớp để cập nhật." });
+        try
+        {
+            var result = await _mediator.Send(new UpdateClassCommand(classId, request));
+            if (result == null)
+                return NotFound(new { message = "Không tìm thấy lớp để cập nhật." });
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi hệ thống." });
+        }
     }
 
     // 🔴 DELETE: /api/ManagerClass/{id}
@@ -112,4 +123,3 @@ public class ManagerClassController : ControllerBase
         }
     }
 }
-

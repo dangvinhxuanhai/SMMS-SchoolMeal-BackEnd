@@ -22,19 +22,19 @@ public class CloudStorageHandler :
 {
     private readonly ICloudStorageRepository _repo;
     private readonly Cloudinary _cloudinary;
-    private readonly CloudinarySettings _settings;
+    private readonly CloudinarySettings _dbSettings;
 
     public CloudStorageHandler(
         ICloudStorageRepository repo,
         IOptions<CloudinarySettings> options)
     {
         _repo = repo;
-        _settings = options.Value;
+        _dbSettings = options.Value;
 
         var account = new Account(
-            _settings.CloudName,
-            _settings.ApiKey,
-            _settings.ApiSecret
+            _dbSettings.CloudName,
+            _dbSettings.ApiKey,
+            _dbSettings.ApiSecret
         );
 
         _cloudinary = new Cloudinary(account);

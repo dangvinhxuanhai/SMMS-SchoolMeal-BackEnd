@@ -34,11 +34,11 @@ public partial class School
 
     public DateTime CreatedAt { get; set; }
 
-    public int? CreatedBy { get; set; }
+    public Guid? CreatedBy { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
 
-    public int? UpdatedBy { get; set; }
+    public Guid? UpdatedBy { get; set; }
 
     [InverseProperty("School")]
     public virtual ICollection<AcademicYear> AcademicYears { get; set; } = new List<AcademicYear>();

@@ -97,8 +97,6 @@ publish/
 **/dist/
 **/build/
 **/temp/
-**/logs/
-logs/
 *.log
 *.pid
 

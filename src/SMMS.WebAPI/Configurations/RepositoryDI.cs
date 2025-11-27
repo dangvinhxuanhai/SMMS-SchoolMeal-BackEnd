@@ -1,0 +1,62 @@
+using SMMS.Application.Features.auth.Interfaces;
+using SMMS.Application.Features.billing.Interfaces;
+using SMMS.Application.Features.foodmenu.Interfaces;
+using SMMS.Application.Features.Manager.Interfaces;
+using SMMS.Application.Features.notification.Interfaces;
+using SMMS.Application.Features.school.Interfaces;
+using SMMS.Infrastructure.Repositories.Implementations;
+using SMMS.Infrastructure.Repositories;
+using SMMS.Infrastructure.Service;
+using SMMS.Persistence.Repositories.auth;
+using SMMS.Persistence.Repositories.billing;
+using SMMS.Persistence.Repositories.foodmenu;
+using SMMS.Persistence.Repositories.Manager;
+using SMMS.Persistence.Repositories.schools;
+using SMMS.Persistence.Repositories.Schools;
+using SMMS.Application.Features.Wardens.Interfaces;
+using SMMS.Persistence.Repositories.Wardens;
+using SMMS.Application.Abstractions;
+using SMMS.Application.Features.nutrition.Interfaces;
+using SMMS.Persistence.Repositories.nutrition;
+using SMMS.Persistence;
+
+namespace SMMS.WebAPI.Configurations;
+
+public static class RepositoryDI
+{
+    public static IServiceCollection AddPrjRepo(this IServiceCollection services)
+    {
+        services.AddScoped<IWeeklyMenuRepository, WeeklyMenuRepository>();
+        services.AddScoped<IUserProfileRepository, UserProfileRepository>();
+        services.AddScoped<IAttendanceRepository, AttendanceRepository>();
+        services.AddScoped<IAuthRepository, AuthRepository>();
+        services.AddScoped<IStudentHealthRepository, StudentHealthRepository>();
+        services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+        services.AddScoped<IAdminDashboardRepository, AdminDashboardRepository>();
+        services.AddScoped<ISchoolRepository, SchoolRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
+        services.AddScoped<IManagerPaymentSettingRepository, ManagerPaymentSettingRepository>();
+        services.AddScoped<ISchoolRevenueRepository, SchoolRevenueRepository>();
+        services.AddScoped<IFeedbackRepository, FeedbackRepository>();
+        services.AddScoped<IWardensRepository, WardensRepository>();
+        services.AddScoped<IManagerRepository, ManagerRepository>();
+        services.AddScoped<IManagerAccountRepository, ManagerAccountRepository>();
+        services.AddScoped<IWardensFeedbackRepository, WardensFeedbackRepository>();
+        services.AddScoped<IManagerClassRepository, ManagerClassRepository>();
+        services.AddScoped<IManagerFinanceRepository, ManagerFinanceRepository>();
+        services.AddScoped<ICloudStorageRepository, CloudStorageRepository>();
+        services.AddScoped<IManagerNotificationRepository, ManagerNotificationRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IClassStudentRepository, ClassStudentRepository>();
+        services.AddScoped<IMenuRecommendSessionRepository, MenuRecommendSessionRepository>();
+        services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
+        services.AddScoped<IFoodItemRepository, FoodItemRepository>();
+        services.AddScoped<IIngredientRepository, IngredientRepository>();
+        services.AddScoped<IFoodItemIngredientRepository, FoodItemIngredientRepository>();
+        services.AddScoped<IFeedbackRepository, FeedbackRepository>();
+        services.AddScoped<IWardensHealthRepository, WardensHealthRepository>();
+        return services;
+    }
+}

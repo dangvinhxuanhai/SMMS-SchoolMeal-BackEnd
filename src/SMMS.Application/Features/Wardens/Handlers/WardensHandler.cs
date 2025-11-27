@@ -16,14 +16,14 @@ public class WardensHandler :
     IRequestHandler<GetClassAttendanceQuery, ClassAttendanceDto>,
     IRequestHandler<ExportAttendanceReportQuery, byte[]>,
     IRequestHandler<GetStudentsInClassQuery, IEnumerable<StudentDto>>,
-    IRequestHandler<GetHealthSummaryQuery, HealthSummaryDto>,
-    IRequestHandler<GetStudentsHealthQuery, IEnumerable<StudentHealthDto>>,
+
     IRequestHandler<GetWardenDashboardQuery, DashboardDto>,
     IRequestHandler<GetWardenNotificationsQuery, IEnumerable<NotificationDto>>,
     IRequestHandler<ExportClassStudentsQuery, byte[]>,
     IRequestHandler<ExportClassHealthQuery, byte[]>,
     IRequestHandler<GetHealthRecordsQuery, object>,
     IRequestHandler<SearchStudentsInClassQuery, object>
+
 {
     private readonly IWardensRepository _repo;
 

@@ -101,3 +101,16 @@ public class NotificationDto
     public bool IsRead { get; set; }
     public string SendType { get; set; } = string.Empty;
 }
+public class CreateBmiRequest
+{
+    public double HeightCm { get; set; }
+    public double WeightKg { get; set; }
+    public DateTime RecordDate { get; set; }
+}
+
+public class UpdateBmiRequest
+{
+    public double HeightCm { get; set; }
+    public double WeightKg { get; set; }
+    public DateTime RecordDate { get; set; }
+}
