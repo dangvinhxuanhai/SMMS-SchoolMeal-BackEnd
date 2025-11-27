@@ -2,7 +2,6 @@ using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Application.Features.Manager.Interfaces;
-using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Application.Features.school.Interfaces;
 using SMMS.Infrastructure.Repositories.Implementations;
 using SMMS.Infrastructure.Repositories;
@@ -19,6 +18,7 @@ using SMMS.Application.Abstractions;
 using SMMS.Application.Features.nutrition.Interfaces;
 using SMMS.Persistence.Repositories.nutrition;
 using SMMS.Persistence;
+using SMMS.WebAPI.Hubs;
 
 namespace SMMS.WebAPI.Configurations;
 
@@ -57,6 +57,7 @@ public static class RepositoryDI
         services.AddScoped<IFoodItemIngredientRepository, FoodItemIngredientRepository>();
         services.AddScoped<IFeedbackRepository, FeedbackRepository>();
         services.AddScoped<IWardensHealthRepository, WardensHealthRepository>();
+        services.AddScoped<INotificationARealtimeService, NotificationARealtimeService>();
         return services;
     }
 }

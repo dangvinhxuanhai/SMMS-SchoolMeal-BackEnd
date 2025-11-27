@@ -8,5 +8,15 @@ using SMMS.Application.Features.billing.DTOs;
 
 namespace SMMS.Application.Features.billing.Commands
 {
-    public record CreateNotificationCommand(CreateNotificationDto Dto, Guid AdminId) : IRequest<string>;
+    public class CreateNotificationCommand : IRequest<AdminNotificationDto>
+    {
+        public CreateNotificationDto Dto { get; set; }
+        public Guid AdminId { get; set; }
+
+        public CreateNotificationCommand(CreateNotificationDto dto, Guid adminId)
+        {
+            Dto = dto;
+            AdminId = adminId;
+        }
+    }
 }
