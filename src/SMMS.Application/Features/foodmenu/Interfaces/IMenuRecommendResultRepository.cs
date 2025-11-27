@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SMMS.Domain.Entities.rag;
 
 namespace SMMS.Application.Features.foodmenu.Interfaces;
 /// <summary>
@@ -15,4 +16,5 @@ public interface IMenuRecommendResultRepository
         long sessionId,
         IEnumerable<(int foodId, bool isMain)> selected,
         CancellationToken cancellationToken = default);
+    Task AddRangeAsync(IEnumerable<MenuRecommendResult> results, CancellationToken ct = default);
 }

@@ -24,15 +24,21 @@ public class AiDishDto
     public double Score { get; set; }
 }
 
-public class AiMenuRecommendResponse
+// 2) Raw response từ Python (KHÔNG có SessionId)
+public class AiMenuRawResponse
 {
-    [JsonPropertyName("session_id")]
-    public long SessionId { get; set; }
-
     [JsonPropertyName("recommended_main")]
     public List<AiDishDto> RecommendedMain { get; set; } = new();
 
     [JsonPropertyName("recommended_side")]
+    public List<AiDishDto> RecommendedSide { get; set; } = new();
+}
+
+// 3) Response trả về FE (CÓ SessionId do .NET sinh ra)
+public class AiMenuRecommendResponse
+{
+    public long SessionId { get; set; }
+    public List<AiDishDto> RecommendedMain { get; set; } = new();
     public List<AiDishDto> RecommendedSide { get; set; } = new();
 }
 

@@ -1,4 +1,4 @@
-﻿namespace SMMS.Application.Common.Interfaces
+namespace SMMS.Application.Common.Interfaces
 {
     public interface IPasswordHasher
     {

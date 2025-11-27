@@ -7,25 +7,12 @@ using Microsoft.Extensions.Options;
 using SMMS.Application.Features.Identity.Interfaces;
 using SMMS.Application.Features.Wardens.Interfaces;
 
-namespace SMMS.Persistence.Service;
-
-public class CloudinaryService
+namespace SMMS.Persistence.Service
 {
-<<<<<<< Updated upstream
     public class CloudinaryService : IFileStorageService
-=======
-    private readonly Cloudinary _cloudinary;
-
-    public CloudinaryService(IOptions<CloudinarySettings> config)
->>>>>>> Stashed changes
     {
-        var acc = new Account(
-            config.Value.CloudName,
-            config.Value.ApiKey,
-            config.Value.ApiSecret
-        );
+        private readonly Cloudinary _cloudinary;
 
-<<<<<<< Updated upstream
         public CloudinaryService(IOptions<CloudinarySettings> config)
         {
             var acc = new Account(
@@ -88,28 +75,23 @@ public class CloudinaryService
                 return false;
             }
         }
-    }
-=======
-        _cloudinary = new Cloudinary(acc);
-    }
 
-    public async Task<string?> UploadImageAsync(IFormFile file)
-    {
-        if (file == null || file.Length == 0) return null;
-
-        using var stream = file.OpenReadStream();
-
-        var uploadParams = new ImageUploadParams
+        // methodc cũ, code trên là các method mới từ nhánh của a Hưng
+        public async Task<string?> UploadImageAsync(IFormFile file)
         {
-            File = new FileDescription(file.FileName, stream),
-            Folder = "school_contracts" // Tạo folder trên Cloudinary
-        };
+            if (file == null || file.Length == 0) return null;
 
-        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+            using var stream = file.OpenReadStream();
 
-        return uploadResult.SecureUrl?.ToString();
+            var uploadParams = new ImageUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = "school_contracts" // Tạo folder trên Cloudinary
+            };
+
+            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+            return uploadResult.SecureUrl?.ToString();
+        }
     }
->>>>>>> Stashed changes
 }
-
-

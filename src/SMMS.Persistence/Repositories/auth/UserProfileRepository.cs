@@ -27,12 +27,11 @@ namespace SMMS.Persistence.Repositories.auth
         {
             var user = await _dbContext.Users
                 .Include(u => u.Students)
-                .ThenInclude(s => s.StudentAllergens)
-                .ThenInclude(sa => sa.Allergen)
+                    .ThenInclude(s => s.StudentAllergens)
+                    .ThenInclude(sa => sa.Allergen)
                 .Include(u => u.Students)
-                .ThenInclude(s => s.StudentClasses)
-                .ThenInclude(sc => sc.Class)
-                .AsSplitQuery() // <--- THÊM DÒNG NÀY: Giúp đảm bảo load đủ data từ các bảng con
+                    .ThenInclude(s => s.StudentClasses)
+                    .ThenInclude(sc => sc.Class)
                 .FirstOrDefaultAsync(u => u.UserId == userId);
 
             if (user == null)
@@ -48,7 +47,7 @@ namespace SMMS.Persistence.Repositories.auth
                     .ToList() ?? new List<string>();
 
                 var className = student.StudentClasses?
-                    .Where(sc => sc.LeftDate == null || sc.LeftDate > DateOnly.FromDateTime(DateTime.Now))
+                    .Where(sc => sc.LeftDate == null)
                     .FirstOrDefault()?.Class?.ClassName;
 
                 childrenWithAllergies.Add(new ChildProfileResponseDto
@@ -169,6 +168,10 @@ namespace SMMS.Persistence.Repositories.auth
             {
                 student.DateOfBirth = childDto.DateOfBirth.Value;
             }
+                if (childDto.DateOfBirth.HasValue)
+                {
+                    student.DateOfBirth = childDto.DateOfBirth.Value;
+                }
 
             if (!string.IsNullOrEmpty(childDto.Gender))
             {

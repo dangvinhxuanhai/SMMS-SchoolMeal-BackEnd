@@ -4,10 +4,10 @@ using SMMS.Application.Features.auth.DTOs;
 using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Domain.Entities.auth;
 using SMMS.Infrastructure.Security;
+using SMMS.Persistence.Data;
 using System;
 using System.Threading.Tasks;
 using SMMS.Application.Common.Interfaces;
-using SMMS.Persistence.Data;
 
 namespace SMMS.Infrastructure.Service
 {
