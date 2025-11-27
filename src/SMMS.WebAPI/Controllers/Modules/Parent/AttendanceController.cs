@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.school.Commands;
 using SMMS.Application.Features.school.DTOs;
 using SMMS.Application.Features.school.Queries;
+using SMMS.Application.Features.Wardens.Queries;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -65,6 +66,22 @@ namespace SMMS.WebAPI.Controllers
                 var query = new GetAttendanceByParentQuery(parentId);
                 var result = await _mediator.Send(query);
                 return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+        [HttpGet("notificationsM")]
+        public async Task<IActionResult> GetNotifications()
+        {
+            try
+            {
+                var parentId = GetCurrentUserId();
+                var notifications = await _mediator.Send(
+                    new GetWardenNotificationsQuery(parentId));
+
+                return Ok(notifications);
             }
             catch (Exception ex)
             {
