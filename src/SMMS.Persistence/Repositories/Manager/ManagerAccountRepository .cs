@@ -21,14 +21,12 @@ public class ManagerAccountRepository : IManagerAccountRepository
 
     public IQueryable<User> Users => _context.Users.AsNoTracking();
     public IQueryable<Role> Roles => _context.Roles.AsNoTracking();
-
     public async Task<User?> GetByIdAsync(Guid userId)
     {
         return await _context.Users
       .Include(u => u.Role)
       .FirstOrDefaultAsync(u => u.UserId == userId);
     }
-
     public async Task AddAsync(User user)
     {
         _context.Users.Add(user);
