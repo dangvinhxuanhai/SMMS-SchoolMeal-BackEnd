@@ -316,6 +316,7 @@ public class WardensHandler :
             where sc.ClassId == request.ClassId
             select new StudentHealthDto
             {
+                RecordId = health != null ? (Guid?)health.RecordId : null,
                 StudentId = s.StudentId,
                 StudentName = s.FullName,
                 HeightCm = health != null ? (double?)health.HeightCm : null,

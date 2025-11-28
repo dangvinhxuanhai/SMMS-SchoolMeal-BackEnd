@@ -55,7 +55,8 @@ namespace SMMS.Persistence.Repositories.Wardens
                 WeightKg = weight,
                 BMI = bmi,
                 BMICategory = GetBmiCategory(bmi),
-                RecordDate = h.RecordAt.ToDateTime(TimeOnly.MinValue)
+                RecordDate = h.RecordAt.ToDateTime(TimeOnly.MinValue),
+                RecordId = h.RecordId
             };
         }
 
@@ -149,7 +150,8 @@ namespace SMMS.Persistence.Repositories.Wardens
                         WeightKg = null,
                         BMI = null,
                         BMICategory = null,
-                        RecordDate = DateTime.MinValue
+                        RecordDate = DateTime.MinValue,
+                        RecordId = Guid.Empty
                     };
                 }
 
