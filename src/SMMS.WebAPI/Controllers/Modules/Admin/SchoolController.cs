@@ -56,8 +56,15 @@ namespace SMMS.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            await _mediator.Send(new DeleteSchoolCommand(id));
-            return NoContent();
+            try
+            {
+                await _mediator.Send(new DeleteSchoolCommand(id));
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

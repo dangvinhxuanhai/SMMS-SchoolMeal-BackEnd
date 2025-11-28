@@ -62,7 +62,10 @@ namespace SMMS.Application.Features.school.Handlers
             var school = await _repo.GetByIdAsync(request.SchoolId);
             if (school == null) throw new KeyNotFoundException("School not found");
 
-            await _repo.DeleteAsync(request.SchoolId);
+            school.IsActive = false;
+            school.UpdatedAt = DateTime.UtcNow;
+
+            await _repo.UpdateAsync(school);
             return Unit.Value;
         }
     }
