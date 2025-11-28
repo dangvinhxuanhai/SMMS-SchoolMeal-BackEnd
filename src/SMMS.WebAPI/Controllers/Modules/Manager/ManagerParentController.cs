@@ -56,8 +56,21 @@ public class ManagerParentController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var result = await _mediator.Send(new CreateParentCommand(request));
-        return Ok(new { message = "Tạo tài khoản phụ huynh thành công!", data = result });
+        try
+        {
+            request.SchoolId = GetSchoolIdFromToken();
+
+            var result = await _mediator.Send(new CreateParentCommand(request));
+            return Ok(new { message = "Tạo tài khoản phụ huynh thành công!", data = result });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi hệ thống: " + ex.Message });
+        }
     }
 
     // 🟠 Cập nhật phụ huynh + con
