@@ -28,6 +28,23 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Features\Plan\Commands\CreatePurchasePlanFromScheduleCommand.cs" />
+    <Compile Include="Features\Plan\Commands\DeletePurchasePlanCommand.cs" />
+    <Compile Include="Features\Plan\Commands\UpdatePurchasePlanCommand.cs" />
+    <Compile Include="Features\Plan\DTOs\PurchasePlanDto.cs" />
+    <Compile Include="Features\Plan\Handlers\CreatePurchasePlanFromScheduleHandler.cs" />
+    <Compile Include="Features\Plan\Handlers\DeletePurchasePlanHandler.cs" />
+    <Compile Include="Features\Plan\Handlers\GetPurchasePlanByDateHandler.cs" />
+    <Compile Include="Features\Plan\Handlers\GetPurchasePlanDetailHandler.cs" />
+    <Compile Include="Features\Plan\Handlers\GetPurchasePlansHandler.cs" />
+    <Compile Include="Features\Plan\Handlers\UpdatePurchasePlanHandler.cs" />
+    <Compile Include="Features\Plan\Interfaces\IPurchasePlanRepository.cs" />
+    <Compile Include="Features\Plan\Queries\GetPurchasePlanByDateQuery.cs" />
+    <Compile Include="Features\Plan\Queries\GetPurchasePlanDetailQuery.cs" />
+    <Compile Include="Features\Plan\Queries\GetPurchasePlansQuery.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Common\Behaviors\" />
     <Folder Include="Common\Exceptions\" />
     <Folder Include="Common\Validators\" />
@@ -44,7 +61,6 @@
     <Folder Include="Features\Notifications\" />
     <Folder Include="Features\nutrition\Validators\" />
     <Folder Include="Features\Payment\" />
-    <Folder Include="Features\Plan\" />
     <Folder Include="Features\Skeleton\Interface\" />
     <Folder Include="Features\Skeleton\Service\" />
   </ItemGroup>

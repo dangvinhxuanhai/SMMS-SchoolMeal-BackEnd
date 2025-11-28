@@ -17,7 +17,6 @@
     <Folder Include="Repositories\fridge\" />
     <Folder Include="Repositories\inventory\" />
     <Folder Include="Repositories\logs\" />
-    <Folder Include="Repositories\purchasing\" />
     <Folder Include="Repositories\rag\" />
   </ItemGroup>
 
