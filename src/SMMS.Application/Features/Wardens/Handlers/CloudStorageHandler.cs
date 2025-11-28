@@ -14,6 +14,7 @@ using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Application.Features.Wardens.Queries;
 using Microsoft.EntityFrameworkCore;
 namespace SMMS.Application.Features.Wardens.Handlers;
+
 public class CloudStorageHandler :
     IRequestHandler<GetAllImagesQuery, List<CloudImageDto>>,
     IRequestHandler<GetImagesByClassQuery, List<CloudImageDto>>,

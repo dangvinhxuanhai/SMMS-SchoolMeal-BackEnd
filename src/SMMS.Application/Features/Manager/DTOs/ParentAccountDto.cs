@@ -14,7 +14,17 @@ public class ParentAccountDto
     public string Role { get; set; } = null!;
     public string? SchoolName { get; set; }
     public string? ClassName { get; set; }
+    public string RelationName { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
-    public List<string>? ChildrenNames { get; set; }
+    public List<ParentStudentDetailDto> Children { get; set; }
+
+    public class ParentStudentDetailDto
+    {
+        public string FullName { get; set; }
+        public string Gender { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+        public Guid? ClassId { get; set; }
+        public string ClassName { get; set; }
+    }
 }
