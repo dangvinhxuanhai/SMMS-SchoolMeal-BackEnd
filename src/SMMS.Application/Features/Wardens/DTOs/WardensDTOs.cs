@@ -73,6 +73,7 @@ public class StudentHealthDto
     public double? BMI { get; set; }
     public string? BMICategory { get; set; }
     public DateTime RecordDate { get; set; }
+    public Guid? RecordId { get; set; }
 }
 
 public class DashboardDto
