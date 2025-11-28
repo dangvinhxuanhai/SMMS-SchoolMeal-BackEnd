@@ -41,4 +41,8 @@ public interface IPurchasePlanRepository
         Guid schoolId,
         DateOnly date,
         CancellationToken cancellationToken);
+
+    Task SoftDeletePlanAsync(
+            int planId,
+            CancellationToken cancellationToken);
 }

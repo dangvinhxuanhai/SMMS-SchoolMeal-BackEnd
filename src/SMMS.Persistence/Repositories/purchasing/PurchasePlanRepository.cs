@@ -368,4 +368,25 @@ public class PurchasePlanRepository : IPurchasePlanRepository
             Lines = lines
         };
     }
+    // ------------------- SoftDeletePlanAsync -------------------
+    public async Task SoftDeletePlanAsync(
+    int planId,
+    CancellationToken cancellationToken)
+    {
+        var plan = await _context.PurchasePlans
+            .FirstOrDefaultAsync(p => p.PlanId == planId, cancellationToken);
+
+        if (plan == null)
+        {
+            // Không tìm thấy thì thôi, không cần throw
+            return;
+        }
+
+        // Nếu đã được đánh dấu trước đó thì thôi
+        if (plan.AskToDelete)
+            return;
+
+        plan.AskToDelete = true;
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

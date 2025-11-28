@@ -84,6 +84,15 @@ public class PurchasePlansController : ControllerBase
     [HttpDelete("{planId:int}")]
     public async Task<IActionResult> Delete(int planId)
     {
+        await _mediator.Send(new SoftDeletePurchasePlanCommand(planId));
+        return NoContent();
+    }
+
+    // CHỈ DÙNG CHO ADMIN: hard delete thật sự
+    [HttpDelete("{planId:int}/hard")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> HardDelete(int planId)
+    {
         await _mediator.Send(new DeletePurchasePlanCommand(planId));
         return NoContent();
     }
