@@ -19,8 +19,6 @@ public partial class PurchasePlan
     [StringLength(20)]
     public string PlanStatus { get; set; } = null!;
 
-    public int MenuId { get; set; }
-
     public Guid StaffId { get; set; }
 
     public Guid? ConfirmedBy { get; set; }
@@ -29,19 +27,21 @@ public partial class PurchasePlan
 
     public bool AskToDelete { get; set; }
 
+    public long? ScheduleMealId { get; set; }
+
     [ForeignKey("ConfirmedBy")]
     [InverseProperty("PurchasePlanConfirmedByNavigations")]
     public virtual User? ConfirmedByNavigation { get; set; }
-
-    [ForeignKey("MenuId")]
-    [InverseProperty("PurchasePlans")]
-    public virtual Menu Menu { get; set; } = null!;
 
     [InverseProperty("Plan")]
     public virtual ICollection<PurchaseOrder> PurchaseOrders { get; set; } = new List<PurchaseOrder>();
 
     [InverseProperty("Plan")]
     public virtual ICollection<PurchasePlanLine> PurchasePlanLines { get; set; } = new List<PurchasePlanLine>();
+
+    [ForeignKey("ScheduleMealId")]
+    [InverseProperty("PurchasePlans")]
+    public virtual ScheduleMeal? ScheduleMeal { get; set; }
 
     [ForeignKey("StaffId")]
     [InverseProperty("PurchasePlanStaffs")]
