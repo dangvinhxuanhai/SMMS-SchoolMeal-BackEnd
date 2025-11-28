@@ -26,6 +26,7 @@ public class CloudImageDto
     public string Url { get; set; } = string.Empty;
     public string PublicId { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public string ImageId { get; set; } = string.Empty;
 }
 
 public class UploadImageResultDto
