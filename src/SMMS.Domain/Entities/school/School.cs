@@ -34,9 +34,18 @@ public partial class School
 
     public DateTime CreatedAt { get; set; }
 
-    public Guid? CreatedBy { get; set; }
-
     public DateTime? UpdatedAt { get; set; }
+
+    [StringLength(30)]
+    public string? SettlementAccountNo { get; set; }
+
+    [StringLength(10)]
+    public string? SettlementBankCode { get; set; }
+
+    [StringLength(100)]
+    public string? SettlementAccountName { get; set; }
+
+    public Guid? CreatedBy { get; set; }
 
     public Guid? UpdatedBy { get; set; }
 

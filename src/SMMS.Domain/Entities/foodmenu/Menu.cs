@@ -45,9 +45,6 @@ public partial class Menu
     public virtual ICollection<MenuDay> MenuDays { get; set; } = new List<MenuDay>();
 
     [InverseProperty("Menu")]
-    public virtual ICollection<PurchasePlan> PurchasePlans { get; set; } = new List<PurchasePlan>();
-
-    [InverseProperty("Menu")]
     public virtual ICollection<ScheduleMeal> ScheduleMeals { get; set; } = new List<ScheduleMeal>();
 
     [ForeignKey("SchoolId")]

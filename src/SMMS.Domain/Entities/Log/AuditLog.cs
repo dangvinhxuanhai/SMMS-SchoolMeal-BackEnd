@@ -11,7 +11,7 @@ namespace SMMS.Domain.Entities.Logs;
 public partial class AuditLog
 {
     [Key]
-    public long LogId { get; set; }
+    public Guid LogId { get; set; }
 
     public Guid UserId { get; set; }
 
@@ -40,3 +40,4 @@ public partial class AuditLog
     [InverseProperty("AuditLogs")]
     public virtual User User { get; set; } = null!;
 }
+
