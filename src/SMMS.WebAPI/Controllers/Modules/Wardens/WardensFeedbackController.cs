@@ -77,5 +77,55 @@ public class WardensFeedbackController : ControllerBase
             return StatusCode(500, new { message = $"Lỗi khi gửi phản hồi: {ex.Message}" });
         }
     }
+    [HttpPut("{feedbackId:int}")]
+    public async Task<IActionResult> UpdateFeedback(
+            int feedbackId,
+            [FromBody] CreateFeedbackRequest request)
+    {
+        try
+        {
+            var result = await _mediator.Send(
+                new UpdateWardenFeedbackCommand(feedbackId, request));
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    [HttpDelete("{feedbackId:int}")]
+    public async Task<IActionResult> DeleteFeedback(
+           int feedbackId,
+           [FromQuery] Guid wardenId)
+    {
+        try
+        {
+            var ok = await _mediator.Send(
+                new DeleteWardenFeedbackCommand(feedbackId, wardenId));
+
+            if (!ok)
+                return NotFound(new { message = "Không tìm thấy phản hồi." });
+
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }
+
 
