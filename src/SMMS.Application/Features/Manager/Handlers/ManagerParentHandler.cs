@@ -60,9 +60,12 @@ public class ManagerParentHandler :
                 u.SchoolId == request.SchoolId &&
                 u.Role.RoleName.ToLower() == "parent" &&
                 (
+                    // Tìm theo thông tin phụ huynh
                     u.FullName.ToLower().Contains(keyword) ||
                     (u.Email != null && u.Email.ToLower().Contains(keyword)) ||
                     (u.Phone != null && u.Phone.ToLower().Contains(keyword)) ||
+
+                    // Tìm theo thông tin con hoặc lớp học của con
                     u.Students.Any(s =>
                         s.FullName.ToLower().Contains(keyword) ||
                         s.StudentClasses.Any(sc => sc.Class.ClassName.ToLower().Contains(keyword))
@@ -81,15 +84,23 @@ public class ManagerParentHandler :
                 IsActive = u.IsActive,
                 CreatedAt = u.CreatedAt,
                 SchoolName = u.School != null ? u.School.SchoolName : "(Chưa gán trường)",
-                ChildrenNames = u.Students
-                    .Select(s => s.FullName)
-                    .ToList(),
-                ClassName = u.Students
-                    .SelectMany(s => s.StudentClasses)
-                    .Where(sc => sc.Class != null)
-                    .Select(sc => sc.Class.ClassName)
-                    .Distinct()
-                    .FirstOrDefault()
+
+                // ✅ Cập nhật: Lấy RelationName giống GetAll
+                RelationName = u.Students.Any() ? u.Students.FirstOrDefault().RelationName : "Phụ huynh",
+
+                // ✅ Cập nhật: Map danh sách con chi tiết giống GetAll
+                Children = u.Students.Select(s => new ParentAccountDto.ParentStudentDetailDto
+                {
+                    FullName = s.FullName,
+                    Gender = s.Gender,
+                    DateOfBirth = s.DateOfBirth.HasValue
+                        ? s.DateOfBirth.Value.ToDateTime(TimeOnly.MinValue)
+                        : null,
+                    ClassId = s.StudentClasses.Any() ? s.StudentClasses.FirstOrDefault().ClassId : (Guid?)null,
+                    ClassName = s.StudentClasses.Any() && s.StudentClasses.FirstOrDefault().Class != null
+                        ? s.StudentClasses.FirstOrDefault().Class.ClassName
+                        : ""
+                }).ToList()
             })
             .ToListAsync(cancellationToken);
     }
@@ -130,15 +141,27 @@ public class ManagerParentHandler :
                 IsActive = u.IsActive,
                 CreatedAt = u.CreatedAt,
                 SchoolName = u.School != null ? u.School.SchoolName : "(Chưa gán trường)",
-                ChildrenNames = u.Students
-                    .Select(s => s.FullName)
-                    .ToList(),
-                ClassName = u.Students
-                    .SelectMany(s => s.StudentClasses)
-                    .Where(sc => sc.Class != null)
-                    .Select(sc => sc.Class.ClassName)
-                    .Distinct()
-                    .FirstOrDefault()
+
+                RelationName = u.Students.Any()
+                    ? (u.Students.FirstOrDefault()!.RelationName ?? "Phụ huynh")
+                    : "Phụ huynh",
+
+                Children = u.Students.Select(s => new ParentAccountDto.ParentStudentDetailDto
+                {
+                    FullName = s.FullName,
+                    Gender = s.Gender,
+                    DateOfBirth = s.DateOfBirth.HasValue
+                        ? s.DateOfBirth.Value.ToDateTime(TimeOnly.MinValue)
+                        : null,
+
+                    ClassId = s.StudentClasses.Any()
+                        ? s.StudentClasses.FirstOrDefault()!.ClassId
+                        : (Guid?)null,
+
+                    ClassName = s.StudentClasses.Any() && s.StudentClasses.FirstOrDefault()!.Class != null
+                        ? s.StudentClasses.FirstOrDefault()!.Class!.ClassName
+                        : "Chưa xếp lớp"
+                }).ToList()
             })
             .ToListAsync(cancellationToken);
     }
