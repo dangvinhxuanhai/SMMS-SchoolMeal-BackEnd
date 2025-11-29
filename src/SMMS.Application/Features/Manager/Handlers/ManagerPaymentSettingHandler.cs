@@ -90,6 +90,32 @@ public class ManagerPaymentSettingHandler
         {
             var r = command.Request;
 
+            // Validate tháng
+            if (r.FromMonth < 1 || r.FromMonth > 12 ||
+                r.ToMonth < 1 || r.ToMonth > 12)
+            {
+                throw new ArgumentException("Tháng phải nằm trong khoảng từ 1 đến 12.");
+            }
+
+            if (r.FromMonth > r.ToMonth)
+            {
+                throw new ArgumentException("Tháng bắt đầu không được lớn hơn tháng kết thúc.");
+            }
+
+            // Check trùng, Create => excludeSettingId = null
+            var isOverlapped = await _repo.HasOverlappedRangeAsync(
+                r.SchoolId,
+                r.FromMonth,
+                r.ToMonth,
+                null,
+                cancellationToken);
+
+            if (isOverlapped)
+            {
+                throw new InvalidOperationException(
+                    "Khoảng tháng này đã trùng với một cấu hình tiền ăn khác của trường.");
+            }
+
             var entity = new SchoolPaymentSetting
             {
                 SchoolId = r.SchoolId,
@@ -105,6 +131,7 @@ public class ManagerPaymentSettingHandler
             return entity.ToDto();
         }
     }
+
 
     public class UpdateSchoolPaymentSettingHandler
         : IRequestHandler<UpdateSchoolPaymentSettingCommand, SchoolPaymentSettingDto?>
@@ -125,6 +152,33 @@ public class ManagerPaymentSettingHandler
 
             var r = command.Request;
 
+            // 1. Validate tháng
+            if (r.FromMonth < 1 || r.FromMonth > 12 ||
+                r.ToMonth < 1 || r.ToMonth > 12)
+            {
+                throw new ArgumentException("Tháng phải nằm trong khoảng từ 1 đến 12.");
+            }
+
+            if (r.FromMonth > r.ToMonth)
+            {
+                throw new ArgumentException("Tháng bắt đầu không được lớn hơn tháng kết thúc.");
+            }
+
+            // 2. Check trùng (bỏ qua chính nó)
+            var isOverlapped = await _repo.HasOverlappedRangeAsync(
+                entity.SchoolId,
+                r.FromMonth,
+                r.ToMonth,
+                entity.SettingId, // excludeSettingId
+                cancellationToken);
+
+            if (isOverlapped)
+            {
+                throw new InvalidOperationException(
+                    "Khoảng tháng này đã trùng với một cấu hình tiền ăn khác của trường.");
+            }
+
+            // 3. Map dữ liệu
             entity.FromMonth = r.FromMonth;
             entity.ToMonth = r.ToMonth;
             entity.TotalAmount = r.TotalAmount;
