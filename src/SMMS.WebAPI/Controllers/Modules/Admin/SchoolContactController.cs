@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -16,6 +17,13 @@ namespace SMMS.WebAPI.Controllers.Modules.Admin
         private readonly IMediator _mediator;
         public SchoolContactController(IMediator mediator) => _mediator = mediator;
 
+        private Guid GetCurrentUserId()
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(idClaim, out var adminId))
+                throw new UnauthorizedAccessException("Token không hợp lệ.");
+            return adminId;
+        }
         [HttpGet]
         public async Task<IActionResult> GetBySchool([FromQuery] Guid schoolId) =>
             Ok(await _mediator.Send(new GetRevenuesBySchoolQuery(schoolId)));
@@ -31,14 +39,16 @@ namespace SMMS.WebAPI.Controllers.Modules.Admin
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] CreateSchoolRevenueDto dto)
         {
-            var revenueId = await _mediator.Send(new CreateSchoolRevenueCommand(dto));
+            var userId = GetCurrentUserId();
+            var revenueId = await _mediator.Send(new CreateSchoolRevenueCommand(dto, userId));
             return CreatedAtAction(nameof(GetById), new { id = revenueId }, null);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(long id, [FromForm] UpdateSchoolRevenueDto dto)
         {
-            await _mediator.Send(new UpdateSchoolRevenueCommand(id, dto));
+            var userId = GetCurrentUserId();
+            await _mediator.Send(new UpdateSchoolRevenueCommand(id, dto, userId));
             return NoContent();
         }
 

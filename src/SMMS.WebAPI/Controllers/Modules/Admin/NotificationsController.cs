@@ -41,7 +41,8 @@ namespace SMMS.API.Controllers
         [HttpGet("history")]
         public async Task<IActionResult> GetHistory()
         {
-            var notifications = await _mediator.Send(new GetNotificationHistoryQuery());
+            var adminId = GetCurrentUserId();
+            var notifications = await _mediator.Send(new GetNotificationHistoryQuery(adminId));
             return Ok(notifications);
         }
 

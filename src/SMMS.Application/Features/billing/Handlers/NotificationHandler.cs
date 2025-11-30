@@ -49,7 +49,9 @@ namespace SMMS.Application.Features.billing.Handlers
 
         public async Task<IEnumerable<NotificationDto>> Handle(GetNotificationHistoryQuery request, CancellationToken cancellationToken)
         {
-            var data = _notificationRepo.GetAllNotifications();
+            var data = _notificationRepo.GetAllNotifications()
+                 .Include(n => n.Sender)
+                .Where(n => n.SenderId == request.adminId); // chỉ lấy thông báo của Admin đang login
 
             return await data
                 .Select(n => new NotificationDto
@@ -61,11 +63,13 @@ namespace SMMS.Application.Features.billing.Handlers
                     SendType = n.SendType,
                     CreatedAt = n.CreatedAt,
                     TotalRecipients = n.NotificationRecipients.Count(),
-                    TotalRead = n.NotificationRecipients.Count(r => r.IsRead)
+                    TotalRead = n.NotificationRecipients.Count(r => r.IsRead),
+                    SenderName = n.Sender != null ? n.Sender.FullName : null
                 })
                 .OrderByDescending(n => n.CreatedAt)
                 .ToListAsync(cancellationToken);
         }
+
 
         public async Task<NotificationDetailDto?> Handle(GetNotificationByIdQuery request, CancellationToken cancellationToken)
         {

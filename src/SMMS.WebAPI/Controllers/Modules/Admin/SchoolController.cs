@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using MediatR;
 using SMMS.Application.Features.school.Commands;
 using SMMS.Application.Features.school.Queries;
+using System.Security.Claims;
 
 namespace SMMS.API.Controllers
 {
@@ -21,7 +22,13 @@ namespace SMMS.API.Controllers
         {
             _mediator = mediator;
         }
-
+        private Guid GetCurrentUserId()
+        {
+            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!Guid.TryParse(idClaim, out var adminId))
+                throw new UnauthorizedAccessException("Token không hợp lệ.");
+            return adminId;
+        }
         [EnableQuery]
         [HttpGet]
         public async Task<IActionResult> Get()
@@ -42,14 +49,16 @@ namespace SMMS.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateSchoolDto dto)
         {
-            var schoolId = await _mediator.Send(new CreateSchoolCommand(dto));
+            var userId = GetCurrentUserId();
+            var schoolId = await _mediator.Send(new CreateSchoolCommand(dto, userId));
             return CreatedAtAction(nameof(GetById), new { id = schoolId }, null);
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSchoolDto dto)
         {
-            await _mediator.Send(new UpdateSchoolCommand(id, dto));
+            var userId = GetCurrentUserId();
+            await _mediator.Send(new UpdateSchoolCommand(id, dto, userId));
             return NoContent();
         }
 
