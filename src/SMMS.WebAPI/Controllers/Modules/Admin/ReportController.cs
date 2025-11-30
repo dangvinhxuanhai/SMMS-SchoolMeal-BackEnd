@@ -5,7 +5,7 @@ using SMMS.Application.Features.auth.DTOs;
 using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.auth.Queries;
 
-namespace SMMS.API.Controllers
+namespace SMMS.WebAPI.Controllers.Modules.Admin
 {
     [ApiController]
     [Route("api/[controller]")]

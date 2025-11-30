@@ -11,7 +11,7 @@ using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.billing;
 using SMMS.Persistence.Data;
 
-namespace SMMS.API.Controllers
+namespace SMMS.WebAPI.Controllers.Modules.Admin
 {
     [Authorize(Roles = "Admin")]
     [ApiController]

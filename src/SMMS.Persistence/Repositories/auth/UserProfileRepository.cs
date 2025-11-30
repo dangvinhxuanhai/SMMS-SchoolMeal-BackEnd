@@ -57,8 +57,8 @@ namespace SMMS.Persistence.Repositories.auth
                     AvatarUrl = student.AvatarUrl,
                     Relation = student.RelationName,
                     AllergyFoods = allergenNames,
-                    ClassName = className,
-                    DateOfBirth = student.DateOfBirth,
+                    ClassName = className ?? "Chưa xếp lớp", // Xử lý null
+                                                             DateOfBirth = student.DateOfBirth,
                     Gender = student.Gender,
                 });
             }
@@ -168,10 +168,6 @@ namespace SMMS.Persistence.Repositories.auth
             {
                 student.DateOfBirth = childDto.DateOfBirth.Value;
             }
-                if (childDto.DateOfBirth.HasValue)
-                {
-                    student.DateOfBirth = childDto.DateOfBirth.Value;
-                }
 
             if (!string.IsNullOrEmpty(childDto.Gender))
             {

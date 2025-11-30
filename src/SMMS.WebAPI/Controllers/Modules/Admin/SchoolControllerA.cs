@@ -8,7 +8,7 @@ using MediatR;
 using SMMS.Application.Features.school.Commands;
 using SMMS.Application.Features.school.Queries;
 
-namespace SMMS.API.Controllers
+namespace SMMS.WebAPI.Controllers.Modules.Admin
 {
     [Route("api/[controller]")]
     [ApiController]
