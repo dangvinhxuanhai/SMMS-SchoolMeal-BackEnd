@@ -15,7 +15,8 @@ namespace SMMS.Application.Features.billing.Handlers
     public class NotificationHandler :
       IRequestHandler<CreateNotificationCommand, string>,
       IRequestHandler<GetNotificationHistoryQuery, IEnumerable<NotificationDto>>,
-      IRequestHandler<GetNotificationByIdQuery, NotificationDetailDto?>
+      IRequestHandler<GetNotificationByIdQuery, NotificationDetailDto?>,
+      IRequestHandler<DeleteNotificationCommand, bool>
     {
         private readonly INotificationRepository _notificationRepo;
 
@@ -91,6 +92,20 @@ namespace SMMS.Application.Features.billing.Handlers
                     ReadAt = r.ReadAt
                 }).ToList()
             };
+        }
+        public async Task<bool> Handle(DeleteNotificationCommand request, CancellationToken cancellationToken)
+        {
+            var notification = await _notificationRepo.GetByIdAsync(request.NotificationId);
+
+            if (notification == null)
+                return false;
+
+            // CHỈ admin tạo ra thông báo mới được xóa
+            if (notification.SenderId != request.AdminId)
+                throw new UnauthorizedAccessException("Bạn không có quyền xóa thông báo này.");
+
+            await _notificationRepo.DeleteNotificationAsync(notification);
+            return true;
         }
     }
 }

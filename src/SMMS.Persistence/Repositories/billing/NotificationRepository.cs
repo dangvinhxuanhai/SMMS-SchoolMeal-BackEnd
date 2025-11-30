@@ -44,5 +44,21 @@ namespace SMMS.Infrastructure.Repositories
             await _context.Notifications.AddAsync(notification);
             await _context.SaveChangesAsync();
         }
+        public async Task DeleteNotificationAsync(Notification notification)
+        {
+            // Load recipients
+            await _context.Entry(notification)
+                .Collection(n => n.NotificationRecipients)
+                .LoadAsync();
+
+            // Xóa recipients trước
+            _context.NotificationRecipients.RemoveRange(notification.NotificationRecipients);
+
+            // Sau đó mới xóa notification
+            _context.Notifications.Remove(notification);
+
+            await _context.SaveChangesAsync();
+        }
+
     }
 }

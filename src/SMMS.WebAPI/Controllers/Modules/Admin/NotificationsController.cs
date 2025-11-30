@@ -55,6 +55,18 @@ namespace SMMS.API.Controllers
 
             return Ok(notification);
         }
+        [HttpDelete("{id:long}")]
+        public async Task<IActionResult> Delete(long id)
+        {
+            var adminId = GetCurrentUserId();
+
+            var isDeleted = await _mediator.Send(new DeleteNotificationCommand(id, adminId));
+
+            if (!isDeleted)
+                return NotFound(new { message = "Không tìm thấy thông báo." });
+
+            return Ok(new { message = "Xóa thông báo thành công." });
+        }
 
         private Guid GetCurrentUserId()
         {
