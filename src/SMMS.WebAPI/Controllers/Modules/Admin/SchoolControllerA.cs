@@ -13,11 +13,11 @@ namespace SMMS.API.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Admin")]
-    public class SchoolsController : ControllerBase
+    public class SchoolsControllerA : ControllerBase
     {
         private readonly IMediator _mediator;
 
-        public SchoolsController(IMediator mediator)
+        public SchoolsControllerA(IMediator mediator)
         {
             _mediator = mediator;
         }
