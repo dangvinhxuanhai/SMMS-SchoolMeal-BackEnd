@@ -4,6 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MediatR;
+using SMMS.Application.Abstractions;
+using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Plan.Commands;
 using SMMS.Application.Features.Plan.DTOs;
 using SMMS.Application.Features.Plan.Interfaces;
@@ -12,39 +14,131 @@ using SMMS.Domain.Entities.purchasing;
 
 namespace SMMS.Application.Features.Plan.Handlers;
 public class PurchaseOrderHandler :
-        IRequestHandler<CreatePurchaseOrderFromPlanCommand, PurchaseOrderDetailDto>,
-        IRequestHandler<UpdatePurchaseOrderHeaderCommand, PurchaseOrderDetailDto>,
+        IRequestHandler<CreatePurchaseOrderFromPlanCommand, KsPurchaseOrderDto>,
+        IRequestHandler<UpdatePurchaseOrderHeaderCommand, KsPurchaseOrderDetailDto>,
         IRequestHandler<DeletePurchaseOrderCommand, Unit>,
-        IRequestHandler<GetPurchaseOrderByIdQuery, PurchaseOrderDetailDto?>,
+        IRequestHandler<GetPurchaseOrderByIdQuery, KsPurchaseOrderDetailDto?>,
         IRequestHandler<GetPurchaseOrdersBySchoolQuery, List<PurchaseOrderSummaryDto>>,
-        IRequestHandler<UpdatePurchaseOrderLinesCommand, List<PurchaseOrderLineDto>>,
+        IRequestHandler<UpdatePurchaseOrderLinesCommand, List<KsPurchaseOrderLineDto>>,
         IRequestHandler<DeletePurchaseOrderLineCommand, Unit>
 {
     private readonly IPurchaseOrderRepository _repository;
-
-    public PurchaseOrderHandler(IPurchaseOrderRepository repository)
+    private readonly IPurchasePlanRepository _planRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    public PurchaseOrderHandler(IPurchaseOrderRepository repository, IUnitOfWork unitOfWork, IPurchasePlanRepository planRepository)
     {
         _repository = repository;
+        _unitOfWork = unitOfWork;
+        _planRepository = planRepository;
     }
 
-    public async Task<PurchaseOrderDetailDto> Handle(
-        CreatePurchaseOrderFromPlanCommand request,
-        CancellationToken cancellationToken)
+    public async Task<KsPurchaseOrderDto> Handle(
+                CreatePurchaseOrderFromPlanCommand request,
+                CancellationToken cancellationToken)
     {
-        var order = await _repository.CreateFromPlanAsync(
-            request.PlanId,
-            request.SchoolId,
-            request.StaffId,
-            request.SupplierName,
-            request.Note,
-            request.OrderDate,
-            request.Status,
-            cancellationToken);
+        if (string.IsNullOrWhiteSpace(request.SupplierName))
+            throw new ArgumentException("SupplierName is required", nameof(request.SupplierName));
 
-        return MapToDetail(order);
+        if (request.Lines == null || request.Lines.Count == 0)
+            throw new ArgumentException("At least one line is required", nameof(request.Lines));
+
+        // 1) Load plan
+        var plan = await _planRepository.GetByIdAsync(request.PlanId, cancellationToken)
+                   ?? throw new KeyNotFoundException($"PurchasePlan {request.PlanId} not found");
+
+        // Optional: chỉ cho phép tạo order từ plan đã Confirmed
+        if (!string.Equals(plan.PlanStatus, "Confirmed", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Purchase plan must be Confirmed before creating purchase order.");
+        }
+
+        // 2) Không cho tạo trùng đơn cho cùng 1 Plan
+        if (await _repository.ExistsForPlanAsync(plan.PlanId, cancellationToken))
+            throw new InvalidOperationException($"Purchase order already exists for Plan {plan.PlanId}");
+
+        // 3) Lấy SchoolId qua ScheduleMeal
+        var schoolId = await _planRepository.GetSchoolIdAsync(plan.PlanId, cancellationToken);
+
+        // 4) Lấy tất cả plan lines
+        var planLines = await _planRepository.GetLinesAsync(plan.PlanId, cancellationToken);
+        if (planLines.Count == 0)
+            throw new InvalidOperationException($"Purchase plan {plan.PlanId} has no lines.");
+
+        // Map request line theo IngredientId để tra nhanh
+        var lineDict = request.Lines
+            .ToDictionary(x => x.IngredientId);
+
+        // 5) Tạo PurchaseOrder + Lines (gắn qua navigation, EF tự set FK)
+        var order = new PurchaseOrder
+        {
+            SchoolId = schoolId,
+            OrderDate = DateTime.UtcNow,
+            PurchaseOrderStatus = "Draft",       // hoặc "Created" tùy convention
+            SupplierName = request.SupplierName.Trim(),
+            Note = request.Note,
+            PlanId = plan.PlanId,
+            StaffInCharged = request.StaffUserId,
+            PurchaseOrderLines = new List<PurchaseOrderLine>()
+        };
+
+        foreach (var pl in planLines)
+        {
+            if (!lineDict.TryGetValue(pl.IngredientId, out var lineCfg))
+            {
+                // Bạn có thể đổi thành "continue" nếu muốn cho phép bỏ qua 1 số Ingredient
+                throw new InvalidOperationException(
+                    $"Missing price info for IngredientId {pl.IngredientId} in request.");
+            }
+
+            var quantity = lineCfg.QuantityOverrideGram ?? pl.RqQuanityGram;
+
+            var orderLine = new PurchaseOrderLine
+            {
+                IngredientId = pl.IngredientId,
+                QuantityGram = quantity,
+                UnitPrice = lineCfg.UnitPrice,
+                BatchNo = lineCfg.BatchNo,
+                Origin = lineCfg.Origin,
+                ExpiryDate = lineCfg.ExpiryDate.HasValue ? DateOnly.FromDateTime(lineCfg.ExpiryDate.Value) : null,
+                UserId = request.StaffUserId
+            };
+
+            order.PurchaseOrderLines.Add(orderLine);
+        }
+
+        // 6) Lưu
+        await _repository.AddAsync(order, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // 7) Map sang DTO trả về
+        var dto = new KsPurchaseOrderDto
+        {
+            OrderId = order.OrderId,
+            SchoolId = order.SchoolId,
+            OrderDate = order.OrderDate,
+            PurchaseOrderStatus = order.PurchaseOrderStatus,
+            SupplierName = order.SupplierName,
+            Note = order.Note,
+            PlanId = order.PlanId,
+            StaffInCharged = order.StaffInCharged,
+            Lines = order.PurchaseOrderLines
+                .Select(l => new KsPurchaseOrderLineDto
+                {
+                    LinesId = l.LinesId,
+                    IngredientId = l.IngredientId,
+                    QuantityGram = l.QuantityGram,
+                    UnitPrice = l.UnitPrice,
+                    BatchNo = l.BatchNo,
+                    Origin = l.Origin,
+                    ExpiryDate = l.ExpiryDate.HasValue ? l.ExpiryDate.Value.ToDateTime(TimeOnly.MinValue) : null
+                })
+                .ToList()
+        };
+
+        return dto;
     }
 
-    public async Task<PurchaseOrderDetailDto> Handle(
+    public async Task<KsPurchaseOrderDetailDto> Handle(
         UpdatePurchaseOrderHeaderCommand request,
         CancellationToken cancellationToken)
     {
@@ -73,7 +167,7 @@ public class PurchaseOrderHandler :
         return Unit.Value;
     }
 
-    public async Task<PurchaseOrderDetailDto?> Handle(
+    public async Task<KsPurchaseOrderDetailDto?> Handle(
         GetPurchaseOrderByIdQuery request,
         CancellationToken cancellationToken)
     {
@@ -93,7 +187,7 @@ public class PurchaseOrderHandler :
         return orders.Select(MapToSummary).ToList();
     }
 
-    public async Task<List<PurchaseOrderLineDto>> Handle(
+    public async Task<List<KsPurchaseOrderLineDto>> Handle(
         UpdatePurchaseOrderLinesCommand request,
         CancellationToken cancellationToken)
     {
@@ -127,9 +221,9 @@ public class PurchaseOrderHandler :
 
     #region Mapping helpers
 
-    private static PurchaseOrderDetailDto MapToDetail(PurchaseOrder order)
+    private static KsPurchaseOrderDetailDto MapToDetail(PurchaseOrder order)
     {
-        return new PurchaseOrderDetailDto
+        return new KsPurchaseOrderDetailDto
         {
             OrderId = order.OrderId,
             SchoolId = order.SchoolId,
@@ -141,7 +235,7 @@ public class PurchaseOrderHandler :
             StaffInCharged = order.StaffInCharged,
             Lines = order.PurchaseOrderLines?
                 .Select(MapToLine)
-                .ToList() ?? new List<PurchaseOrderLineDto>()
+                .ToList() ?? new List<KsPurchaseOrderLineDto>()
         };
     }
 
@@ -162,9 +256,9 @@ public class PurchaseOrderHandler :
         };
     }
 
-    private static PurchaseOrderLineDto MapToLine(PurchaseOrderLine line)
+    private static KsPurchaseOrderLineDto MapToLine(PurchaseOrderLine line)
     {
-        return new PurchaseOrderLineDto
+        return new KsPurchaseOrderLineDto
         {
             LinesId = line.LinesId,
             IngredientId = line.IngredientId,

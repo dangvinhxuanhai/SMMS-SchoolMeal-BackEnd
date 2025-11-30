@@ -20,12 +20,24 @@ public class PurchasePlansController : ControllerBase
         _mediator = mediator;
     }
 
+    private Guid GetSchoolIdFromToken()
+    {
+        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        if (string.IsNullOrEmpty(schoolIdClaim))
+            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
+
+        return Guid.Parse(schoolIdClaim);
+    }
+
     private Guid GetCurrentUserId()
     {
-        // tuỳ hệ thống claim của anh
-        var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                       ?? throw new InvalidOperationException("UserId claim not found.");
-        return Guid.Parse(userIdStr);
+        var userIdString = User.FindFirst("UserId")?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst("sub")?.Value
+                           ?? User.FindFirst("id")?.Value
+                           ?? throw new Exception("Token does not contain UserId.");
+
+        return Guid.Parse(userIdString);
     }
 
     // POST api/purchase-plans/from-schedule?scheduleMealId=123

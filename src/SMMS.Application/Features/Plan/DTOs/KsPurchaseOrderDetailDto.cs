@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SMMS.Application.Features.Plan.DTOs;
-public class PurchaseOrderDetailDto
+public class KsPurchaseOrderDetailDto
 {
     public int OrderId { get; set; }
     public Guid SchoolId { get; set; }
@@ -15,5 +15,5 @@ public class PurchaseOrderDetailDto
     public string? Note { get; set; }
     public int? PlanId { get; set; }
     public Guid? StaffInCharged { get; set; }
-    public List<PurchaseOrderLineDto> Lines { get; set; } = new();
+    public List<KsPurchaseOrderLineDto> Lines { get; set; } = new();
 }
