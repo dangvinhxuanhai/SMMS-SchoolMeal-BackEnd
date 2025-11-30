@@ -63,7 +63,8 @@ public class FoodItemsController : ControllerBase
 
     // POST api/nutrition/fooditems
     [HttpPost]
-    public async Task<ActionResult<FoodItemDto>> Create([FromBody] CreateFoodItemRequest request)
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<FoodItemDto>> Create([FromForm] CreateFoodItemRequest request)
     {
         var schoolId = GetSchoolIdFromToken();
         var userId = GetCurrentUserId();
