@@ -3,15 +3,27 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Domain.Entities.auth;
 using SMMS.Persistence.Data;
 using SMMS.Persistence.Repositories.Skeleton;
 
 namespace SMMS.Persistence.Repositories.auth;
-public class UserService : Repository<User>, IUserRepository
+public class UserRepository : Repository<User>, IUserRepository
 {
-    public UserService(EduMealContext dbContext) : base(dbContext)
+    public UserRepository(EduMealContext dbContext) : base(dbContext)
     {
+    }
+    public async Task<List<Guid>> GetIdsByRoleAsync(string roleName)
+    {
+        var targetRole = roleName.ToLower();
+
+        var query = from user in _dbContext.Users
+            join role in _dbContext.Roles on user.RoleId equals role.RoleId
+            where role.RoleName.ToLower() == targetRole
+            select user.UserId;
+
+        return await query.ToListAsync();
     }
 }

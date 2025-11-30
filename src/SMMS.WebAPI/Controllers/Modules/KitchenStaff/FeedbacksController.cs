@@ -49,7 +49,7 @@ public class FeedbacksController : ControllerBase
         [FromQuery] SearchFeedbacksQuery query)
     {
         query.SchoolId = GetSchoolIdFromToken();
-        query.SenderId = GetCurrentUserId();
+        // query.SenderId = GetCurrentUserId();
         var result = await _mediator.Send(query);
         return Ok(result);
     }

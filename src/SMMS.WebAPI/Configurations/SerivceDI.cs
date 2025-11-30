@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.OData;
+using Microsoft.AspNetCore.SignalR;
 using SMMS.Application.Common.Interfaces;
 using SMMS.Application.Common.Validators;
 using SMMS.Application.Features.auth.Handlers;

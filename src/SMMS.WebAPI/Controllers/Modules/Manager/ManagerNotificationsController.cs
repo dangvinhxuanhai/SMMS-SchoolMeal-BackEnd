@@ -2,9 +2,11 @@ using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.Manager.Commands;
 using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Manager.Queries;
+using SMMS.Application.Features.Manager.Interfaces;
 
 namespace SMMS.WebAPI.Controllers.Modules.Manager;
 
@@ -14,10 +16,15 @@ namespace SMMS.WebAPI.Controllers.Modules.Manager;
 public class ManagerNotificationsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IUserRepository _userRepository;
+    private readonly INotificationRealtimeService _realtimeService;
 
-    public ManagerNotificationsController(IMediator mediator)
+    public ManagerNotificationsController(IMediator mediator, IUserRepository userRepository,
+        INotificationRealtimeService realtimeService)
     {
         _mediator = mediator;
+        _realtimeService = realtimeService;
+        _userRepository = userRepository;
     }
 
     #region Helpers
@@ -54,16 +61,42 @@ public class ManagerNotificationsController : ControllerBase
         var schoolId = GetSchoolIdFromToken();
         var senderId = GetCurrentUserId();
 
-        // KHÔNG còn request.SchoolId, SchoolId được truyền riêng vào command
         var result = await _mediator.Send(
             new CreateManagerNotificationCommand(request, senderId, schoolId));
 
-        return Ok(new
+        try
         {
-            message = "Tạo thông báo thành công!",
-            data = result
-        });
+            var userIdsToNotify = new List<Guid>();
+            if (request.SendToTeachers)
+            {
+                var teacherIds = await _userRepository.GetIdsByRoleAsync("Warden");
+                userIdsToNotify.AddRange(teacherIds);
+            }
+            if (request.SendToParents)
+            {
+                var parentIds = await _userRepository.GetIdsByRoleAsync("Parent");
+                userIdsToNotify.AddRange(parentIds);
+            }
+
+            if (request.SendToKitchenStaff)
+            {
+                var kitchenIds = await _userRepository.GetIdsByRoleAsync("KitchenStaff");
+                userIdsToNotify.AddRange(kitchenIds);
+            }
+            userIdsToNotify = userIdsToNotify.Distinct().ToList();
+            if (userIdsToNotify.Any())
+            {
+                await _realtimeService.SendToUsersAsync(userIdsToNotify, result);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SignalR Error] {ex.Message}");
+        }
+
+        return Ok(new { message = "Tạo thông báo thành công!", data = result });
     }
+
     // 2️⃣ UPDATE: Cập nhật thông báo
     [HttpPut("{notificationId:long}")]
     public async Task<IActionResult> Update(
@@ -73,8 +106,8 @@ public class ManagerNotificationsController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var senderId = GetCurrentUserId();      // lấy từ token
-        var schoolId = GetSchoolIdFromToken();  // lấy từ token
+        var senderId = GetCurrentUserId(); // lấy từ token
+        var schoolId = GetSchoolIdFromToken(); // lấy từ token
 
         var result = await _mediator.Send(
             new UpdateManagerNotificationCommand(
@@ -87,12 +120,9 @@ public class ManagerNotificationsController : ControllerBase
         if (result == null)
             return NotFound(new { message = "Không tìm thấy thông báo cần cập nhật." });
 
-        return Ok(new
-        {
-            message = "Cập nhật thông báo thành công!",
-            data = result
-        });
+        return Ok(new { message = "Cập nhật thông báo thành công!", data = result });
     }
+
     // 3️⃣ DELETE: Xoá thông báo
     [HttpDelete("{notificationId:long}")]
     public async Task<IActionResult> Delete(long notificationId)
@@ -136,12 +166,6 @@ public class ManagerNotificationsController : ControllerBase
         var list = await _mediator.Send(
             new GetManagerNotificationsBySenderQuery(senderId, page, pageSize));
 
-        return Ok(new
-        {
-            page,
-            pageSize,
-            count = list.Count,
-            data = list
-        });
+        return Ok(new { page, pageSize, count = list.Count, data = list });
     }
 }

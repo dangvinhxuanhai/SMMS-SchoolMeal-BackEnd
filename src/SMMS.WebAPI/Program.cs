@@ -114,6 +114,21 @@ builder.Services.AddAuthentication(options =>
         RoleClaimType = ClaimTypes.Role
     };
 
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/hubs")))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
+
     // Đó test lại r em mở comment cái dòng dưới hình như cần để phía be allow nhận token từ cookie
     /*options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
     {
@@ -123,7 +138,7 @@ builder.Services.AddAuthentication(options =>
             return Task.CompletedTask;
         }
     };*/
-});
+    });
 
 builder.Services.AddControllers().AddJsonOptions(x =>
     x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);

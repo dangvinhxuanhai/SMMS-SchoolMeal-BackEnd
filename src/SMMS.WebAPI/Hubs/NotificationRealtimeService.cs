@@ -22,18 +22,26 @@ public class NotificationRealtimeService : INotificationRealtimeService
     /// </summary>
     public async Task SendToUsersAsync(IEnumerable<Guid> userIds, ManagerNotificationDto notification)
     {
-        var userIdStrings = userIds.Select(id => id.ToString()).ToList();
+        // Chuyển ID sang chữ thường
+        var userIdStrings = userIds.Select(id => id.ToString().ToLower()).ToList();
 
-        _logger.LogInformation(
-            "[Realtime] Sending notification {NotificationId} to {Count} users",
-            notification.NotificationId,
-            userIdStrings.Count
-        );
+        _logger.LogInformation($"[Realtime] Sending to Groups: {string.Join(", ", userIdStrings)}");
 
-        await _hub.Clients.Users(userIdStrings)
-            .SendAsync("ReceiveNotification", notification);
+        // 🚀 ĐỔI TỪ Clients.Users SANG Clients.Groups
+        // Vì ở Hub ta đã: Groups.AddToGroupAsync(Context.ConnectionId, userId);
+        foreach (var userId in userIdStrings)
+        {
+            await _hub.Clients.Group(userId).SendAsync("ReceiveNotification", new
+            {
+                notificationId = notification.NotificationId,
+                title = notification.Title,
+                content = notification.Content,
+                createdAt = notification.CreatedAt,
+                isRead = false,
+                sendType = notification.SendType
+            });
+        }
     }
-
     /// <summary>
     /// Broadcast cho toàn bộ client rằng 1 thông báo bị xoá.
     /// </summary>

@@ -41,6 +41,7 @@ public static class RepositoryDI
         services.AddScoped<IManagerPaymentSettingRepository, ManagerPaymentSettingRepository>();
         services.AddScoped<ISchoolRevenueRepository, SchoolRevenueRepository>();
         services.AddScoped<IFeedbackRepository, FeedbackRepository>();
+        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IWardensRepository, WardensRepository>();
         services.AddScoped<IManagerRepository, ManagerRepository>();
         services.AddScoped<IManagerAccountRepository, ManagerAccountRepository>();

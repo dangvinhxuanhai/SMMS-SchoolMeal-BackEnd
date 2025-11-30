@@ -65,7 +65,6 @@
     <Folder Include="Features\nutrition\Validators\" />
     <Folder Include="Features\Menu\Interfaces\" />
     <Folder Include="Features\Menu\Search\" />
-    <Folder Include="Features\Payment\" />
     <Folder Include="Features\Skeleton\Interface\" />
     <Folder Include="Features\Skeleton\Service\" />
   </ItemGroup>
