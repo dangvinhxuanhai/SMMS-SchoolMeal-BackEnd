@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SMMS.Application.Features.Plan.DTOs;
+using SMMS.Domain.Entities.purchasing;
 
 namespace SMMS.Application.Features.Plan.Interfaces;
 public interface IPurchasePlanRepository
@@ -45,4 +46,13 @@ public interface IPurchasePlanRepository
     Task SoftDeletePlanAsync(
             int planId,
             CancellationToken cancellationToken);
+
+    Task<PurchasePlan?> GetByIdAsync(int planId, CancellationToken ct = default);
+
+    Task<IReadOnlyList<PurchasePlanLine>> GetLinesAsync(
+        int planId,
+        CancellationToken ct = default);
+
+    // Lấy SchoolId của plan bằng cách join ScheduleMeal
+    Task<Guid> GetSchoolIdAsync(int planId, CancellationToken ct = default);
 }

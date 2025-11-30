@@ -2,7 +2,9 @@ using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Plan.Commands;
+using SMMS.Application.Features.Plan.DTOs;
 using SMMS.Application.Features.Plan.Queries;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
@@ -19,6 +21,15 @@ public class PurchaseOrdersController : ControllerBase
         _mediator = mediator;
     }
 
+    private Guid GetSchoolIdFromToken()
+    {
+        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        if (string.IsNullOrEmpty(schoolIdClaim))
+            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
+
+        return Guid.Parse(schoolIdClaim);
+    }
+
     private Guid GetCurrentUserId()
     {
         var userIdString = User.FindFirst("UserId")?.Value
@@ -30,34 +41,31 @@ public class PurchaseOrdersController : ControllerBase
         return Guid.Parse(userIdString);
     }
 
-    // POST: tạo PO + Lines từ Plan
+    // POST api/purchasing/PurchaseOrders/from-plan
     [HttpPost("from-plan")]
-    public async Task<IActionResult> CreateFromPlan([FromBody] CreatePurchaseOrderFromPlanCommand body)
+    public async Task<ActionResult<KsPurchaseOrderDto>> CreateFromPlan(
+        [FromBody] CreatePurchaseOrderFromPlanCommand command)
     {
-        var staffId = body.StaffId == Guid.Empty ? GetCurrentUserId() : body.StaffId;
-
-        var cmd = body with { StaffId = staffId };
-        var result = await _mediator.Send(cmd);
-        return Ok(result);
+        var result = await _mediator.Send(command);
+        return CreatedAtAction(nameof(GetById), new { id = result.OrderId }, result);
     }
 
     // GET list
     [HttpGet]
     public async Task<IActionResult> GetList(
-        [FromQuery] Guid schoolId,
         [FromQuery] DateTime? fromDate,
         [FromQuery] DateTime? toDate)
     {
-        var query = new GetPurchaseOrdersBySchoolQuery(schoolId, fromDate, toDate);
+        var query = new GetPurchaseOrdersBySchoolQuery(GetSchoolIdFromToken(), fromDate, toDate);
         var result = await _mediator.Send(query);
         return Ok(result);
     }
 
     // GET detail
     [HttpGet("{orderId:int}")]
-    public async Task<IActionResult> GetById(int orderId, [FromQuery] Guid schoolId)
+    public async Task<IActionResult> GetById(int orderId)
     {
-        var query = new GetPurchaseOrderByIdQuery(orderId, schoolId);
+        var query = new GetPurchaseOrderByIdQuery(orderId, GetSchoolIdFromToken());
         var result = await _mediator.Send(query);
         if (result == null) return NotFound();
         return Ok(result);
@@ -67,19 +75,18 @@ public class PurchaseOrdersController : ControllerBase
     [HttpPut("{orderId:int}")]
     public async Task<IActionResult> UpdateHeader(
         int orderId,
-        [FromQuery] Guid schoolId,
         [FromBody] UpdatePurchaseOrderHeaderCommand body)
     {
-        var cmd = body with { OrderId = orderId, SchoolId = schoolId };
+        var cmd = body with { OrderId = orderId, SchoolId = GetSchoolIdFromToken() };
         var result = await _mediator.Send(cmd);
         return Ok(result);
     }
 
     // DELETE order
     [HttpDelete("{orderId:int}")]
-    public async Task<IActionResult> Delete(int orderId, [FromQuery] Guid schoolId)
+    public async Task<IActionResult> Delete(int orderId)
     {
-        var cmd = new DeletePurchaseOrderCommand(orderId, schoolId);
+        var cmd = new DeletePurchaseOrderCommand(orderId, GetSchoolIdFromToken());
         await _mediator.Send(cmd);
         return NoContent();
     }
@@ -88,12 +95,11 @@ public class PurchaseOrdersController : ControllerBase
     [HttpPut("{orderId:int}/lines")]
     public async Task<IActionResult> UpdateLines(
         int orderId,
-        [FromQuery] Guid schoolId,
         [FromBody] List<SMMS.Application.Features.Plan.DTOs.PurchaseOrderLineUpdateDto> lines)
     {
         var cmd = new UpdatePurchaseOrderLinesCommand(
             orderId,
-            schoolId,
+            GetSchoolIdFromToken(),
             GetCurrentUserId(),
             lines);
 
@@ -105,10 +111,9 @@ public class PurchaseOrdersController : ControllerBase
     [HttpDelete("{orderId:int}/lines/{linesId:int}")]
     public async Task<IActionResult> DeleteLine(
         int orderId,
-        int linesId,
-        [FromQuery] Guid schoolId)
+        int linesId)
     {
-        var cmd = new DeletePurchaseOrderLineCommand(orderId, linesId, schoolId);
+        var cmd = new DeletePurchaseOrderLineCommand(orderId, linesId, GetSchoolIdFromToken());
         await _mediator.Send(cmd);
         return NoContent();
     }

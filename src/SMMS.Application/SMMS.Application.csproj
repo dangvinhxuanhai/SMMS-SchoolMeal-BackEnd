@@ -32,6 +32,8 @@
     <Compile Include="Features\Plan\Commands\DeletePurchasePlanCommand.cs" />
     <Compile Include="Features\Plan\Commands\SoftDeletePurchasePlanCommand.cs" />
     <Compile Include="Features\Plan\Commands\UpdatePurchasePlanCommand.cs" />
+    <Compile Include="Features\Plan\DTOs\CreatePurchaseOrderLineFromPlanDto.cs" />
+    <Compile Include="Features\Plan\DTOs\KsPurchaseOrderDto.cs" />
     <Compile Include="Features\Plan\DTOs\PurchasePlanDto.cs" />
     <Compile Include="Features\Plan\Handlers\CreatePurchasePlanFromScheduleHandler.cs" />
     <Compile Include="Features\Plan\Handlers\DeletePurchasePlanHandler.cs" />
@@ -45,8 +47,8 @@
     <Compile Include="Features\Plan\Queries\GetPurchasePlanDetailQuery.cs" />
     <Compile Include="Features\Plan\Queries\GetPurchasePlansQuery.cs" />
     <Compile Include="Features\Plan\Interfaces\IPurchaseOrderRepository.cs" />
-    <Compile Include="Features\Plan\DTOs\PurchaseOrderDetailDto.cs" />
-    <Compile Include="Features\Plan\DTOs\PurchaseOrderLineDto.cs" />
+    <Compile Include="Features\Plan\DTOs\KsPurchaseOrderDetailDto.cs" />
+    <Compile Include="Features\Plan\DTOs\KsPurchaseOrderLineDto.cs" />
     <Compile Include="Features\Plan\DTOs\PurchaseOrderLineUpdateDto.cs" />
     <Compile Include="Features\Plan\DTOs\PurchaseOrderSummaryDto.cs" />
     <Compile Include="Features\Plan\Commands\CreatePurchaseOrderFromPlanCommand.cs" />

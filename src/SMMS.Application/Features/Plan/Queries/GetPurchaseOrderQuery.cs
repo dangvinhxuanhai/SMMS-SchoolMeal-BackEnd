@@ -11,7 +11,7 @@ namespace SMMS.Application.Features.Plan.Queries;
 public record GetPurchaseOrderByIdQuery(
     int OrderId,
     Guid SchoolId
-) : IRequest<PurchaseOrderDetailDto?>;
+) : IRequest<KsPurchaseOrderDetailDto?>;
 
 // GET: list by school, optional date range
 public record GetPurchaseOrdersBySchoolQuery(

@@ -389,4 +389,37 @@ public class PurchasePlanRepository : IPurchasePlanRepository
         plan.AskToDelete = true;
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+    public Task<PurchasePlan?> GetByIdAsync(int planId, CancellationToken ct = default)
+    {
+        return _context.PurchasePlans
+            .FirstOrDefaultAsync(p => p.PlanId == planId, ct);
+    }
+
+    public async Task<IReadOnlyList<PurchasePlanLine>> GetLinesAsync(
+        int planId,
+        CancellationToken ct = default)
+    {
+        return await _context.PurchasePlanLines
+            .Where(l => l.PlanId == planId)
+            .ToListAsync(ct);
+    }
+
+    public async Task<Guid> GetSchoolIdAsync(int planId, CancellationToken ct = default)
+    {
+        // Plan -> ScheduleMeal -> SchoolId
+        var query =
+            from p in _context.PurchasePlans
+            join s in _context.ScheduleMeals
+                on p.ScheduleMealId equals s.ScheduleMealId
+            where p.PlanId == planId
+            select s.SchoolId;
+
+        var schoolId = await query.SingleOrDefaultAsync(ct);
+
+        if (schoolId == Guid.Empty)
+            throw new InvalidOperationException($"Cannot resolve SchoolId for Plan {planId}");
+
+        return schoolId;
+    }
 }

@@ -202,4 +202,22 @@ public class PurchaseOrderRepository : IPurchaseOrderRepository
         _context.PurchaseOrderLines.Remove(line);
         await _context.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task AddAsync(PurchaseOrder order, CancellationToken ct = default)
+    {
+        await _context.PurchaseOrders.AddAsync(order, ct);
+    }
+
+    public Task<bool> ExistsForPlanAsync(int planId, CancellationToken ct = default)
+    {
+        return _context.PurchaseOrders
+            .AnyAsync(o => o.PlanId == planId, ct);
+    }
+
+    public Task<PurchaseOrder?> GetByIdAsync(int orderId, CancellationToken ct = default)
+    {
+        return _context.PurchaseOrders
+            .Include(o => o.PurchaseOrderLines)
+            .FirstOrDefaultAsync(o => o.OrderId == orderId, ct);
+    }
 }

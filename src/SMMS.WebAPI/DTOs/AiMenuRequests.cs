@@ -3,8 +3,6 @@ using SMMS.Application.Features.foodmenu.DTOs;
 namespace SMMS.WebAPI.DTOs;
 public class SuggestMenuRequest
 {
-    public Guid UserId { get; set; }      // tạm: FE gửi, sau này lấy từ JWT
-    public Guid SchoolId { get; set; }
 
     public List<int>? MainIngredientIds { get; set; }
     public List<int>? SideIngredientIds { get; set; }
@@ -19,7 +17,6 @@ public class SuggestMenuRequest
 
 public class LogAiSelectionRequest
 {
-    public Guid UserId { get; set; }      // tạm: FE gửi, sau này lấy từ JWT
     public long SessionId { get; set; }
 
     // dùng lại SelectedDishDto từ Application

@@ -61,4 +61,10 @@ public interface IPurchaseOrderRepository
         int orderId,
         Guid schoolId,
         CancellationToken cancellationToken);
+    Task AddAsync(PurchaseOrder order, CancellationToken ct = default);
+
+    // Kiểm tra đã có Order nào cho Plan này chưa
+    Task<bool> ExistsForPlanAsync(int planId, CancellationToken ct = default);
+
+    Task<PurchaseOrder?> GetByIdAsync(int orderId, CancellationToken ct = default);
 }

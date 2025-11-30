@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.nutrition.Commands;
@@ -17,13 +18,32 @@ public class FoodItemsController : ControllerBase
         _mediator = mediator;
     }
 
+    private Guid GetSchoolIdFromToken()
+    {
+        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        if (string.IsNullOrEmpty(schoolIdClaim))
+            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
+
+        return Guid.Parse(schoolIdClaim);
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdString = User.FindFirst("UserId")?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst("sub")?.Value
+                           ?? User.FindFirst("id")?.Value
+                           ?? throw new Exception("Token does not contain UserId.");
+
+        return Guid.Parse(userIdString);
+    }
+
     // GET api/nutrition/fooditems?schoolId=...&keyword=...
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<FoodItemDto>>> GetList(
-        [FromQuery] Guid schoolId,
         [FromQuery] string? keyword)
     {
-        var result = await _mediator.Send(new GetFoodItemsQuery(schoolId, keyword));
+        var result = await _mediator.Send(new GetFoodItemsQuery(GetSchoolIdFromToken(), keyword));
         return Ok(result);
     }
 
@@ -40,7 +60,8 @@ public class FoodItemsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<FoodItemDto>> Create([FromBody] CreateFoodItemCommand command)
     {
-        // có thể set SchoolId, CreatedBy từ token tại đây
+        command.SchoolId = GetSchoolIdFromToken();
+        command.CreatedBy = GetCurrentUserId();
         var created = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { id = created.FoodId }, created);
     }
@@ -51,8 +72,6 @@ public class FoodItemsController : ControllerBase
         int id,
         [FromBody] UpdateFoodItemCommand command)
     {
-        if (id != command.FoodId) return BadRequest("Id mismatch");
-
         var updated = await _mediator.Send(command);
         return Ok(updated);
     }
