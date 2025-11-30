@@ -28,6 +28,33 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Features\Plan\Commands\CreatePurchasePlanFromScheduleCommand.cs" />
+    <Compile Include="Features\Plan\Commands\DeletePurchasePlanCommand.cs" />
+    <Compile Include="Features\Plan\Commands\SoftDeletePurchasePlanCommand.cs" />
+    <Compile Include="Features\Plan\Commands\UpdatePurchasePlanCommand.cs" />
+    <Compile Include="Features\Plan\DTOs\PurchasePlanDto.cs" />
+    <Compile Include="Features\Plan\Handlers\CreatePurchasePlanFromScheduleHandler.cs" />
+    <Compile Include="Features\Plan\Handlers\DeletePurchasePlanHandler.cs" />
+    <Compile Include="Features\Plan\Handlers\GetPurchasePlanByDateHandler.cs" />
+    <Compile Include="Features\Plan\Handlers\GetPurchasePlanDetailHandler.cs" />
+    <Compile Include="Features\Plan\Handlers\GetPurchasePlansHandler.cs" />
+    <Compile Include="Features\Plan\Handlers\SoftDeletePurchasePlanHandler.cs" />
+    <Compile Include="Features\Plan\Handlers\UpdatePurchasePlanHandler.cs" />
+    <Compile Include="Features\Plan\Interfaces\IPurchasePlanRepository.cs" />
+    <Compile Include="Features\Plan\Queries\GetPurchasePlanByDateQuery.cs" />
+    <Compile Include="Features\Plan\Queries\GetPurchasePlanDetailQuery.cs" />
+    <Compile Include="Features\Plan\Queries\GetPurchasePlansQuery.cs" />
+    <Compile Include="Features\Plan\Interfaces\IPurchaseOrderRepository.cs" />
+    <Compile Include="Features\Plan\DTOs\PurchaseOrderDetailDto.cs" />
+    <Compile Include="Features\Plan\DTOs\PurchaseOrderLineDto.cs" />
+    <Compile Include="Features\Plan\DTOs\PurchaseOrderLineUpdateDto.cs" />
+    <Compile Include="Features\Plan\DTOs\PurchaseOrderSummaryDto.cs" />
+    <Compile Include="Features\Plan\Commands\CreatePurchaseOrderFromPlanCommand.cs" />
+    <Compile Include="Features\Plan\Handlers\PurchaseOrderHandler.cs" />
+    <Compile Include="Features\Plan\Queries\GetPurchaseOrderQuery.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Common\Behaviors\" />
     <Folder Include="Common\Exceptions\" />
     <Folder Include="Common\Validators\" />
@@ -36,6 +63,9 @@
     <Folder Include="Features\nutrition\Validators\" />
     <Folder Include="Features\Menu\Interfaces\" />
     <Folder Include="Features\Menu\Search\" />
+    <Folder Include="Features\Payment\" />
+    <Folder Include="Features\Skeleton\Interface\" />
+    <Folder Include="Features\Skeleton\Service\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -171,8 +171,9 @@ public partial class EduMealContext : DbContext
 
         modelBuilder.Entity<AuditLog>(entity =>
         {
-            entity.HasKey(e => e.LogId).HasName("PK__AuditLog__5E548648889DF138");
+            entity.HasKey(e => e.LogId).HasName("PK__AuditLog__5E5486484B0B98E3");
 
+            entity.Property(e => e.LogId).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
 
             entity.HasOne(d => d.User).WithMany(p => p.AuditLogs)
@@ -511,9 +512,7 @@ public partial class EduMealContext : DbContext
 
             entity.HasOne(d => d.ConfirmedByNavigation).WithMany(p => p.PurchasePlanConfirmedByNavigations).HasConstraintName("FK_PurchasePlans_ConfirmedBy");
 
-            entity.HasOne(d => d.Menu).WithMany(p => p.PurchasePlans)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_PurchasePlans_Menus");
+            entity.HasOne(d => d.ScheduleMeal).WithMany(p => p.PurchasePlans).HasConstraintName("FK_PurchasePlans_ScheduleMeal");
 
             entity.HasOne(d => d.Staff).WithMany(p => p.PurchasePlanStaffs)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -583,17 +582,12 @@ public partial class EduMealContext : DbContext
 
         modelBuilder.Entity<SchoolPaymentSetting>(entity =>
         {
-            entity.HasKey(e => e.SettingId).HasName("PK__SchoolPa__54372B1D10C021B2");
-
-            entity.ToTable("SchoolPaymentSettings", "billing");
+            entity.HasKey(e => e.SettingId).HasName("PK__SchoolPa__54372B1D80E71C57");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.Property(e => e.Note).HasMaxLength(200);
-            entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 2)");
 
             entity.HasOne(d => d.School).WithMany(p => p.SchoolPaymentSettings)
-                .HasForeignKey(d => d.SchoolId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_SPS_School");
         });

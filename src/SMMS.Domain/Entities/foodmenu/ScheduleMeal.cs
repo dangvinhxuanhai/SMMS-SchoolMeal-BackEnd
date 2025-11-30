@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Domain.Entities.auth;
+using SMMS.Domain.Entities.purchasing;
 using SMMS.Domain.Entities.school;
 
 namespace SMMS.Domain.Entities.foodmenu;
@@ -52,6 +53,9 @@ public partial class ScheduleMeal
     [ForeignKey("MenuId")]
     [InverseProperty("ScheduleMeals")]
     public virtual Menu Menu { get; set; } = null!;
+
+    [InverseProperty("ScheduleMeal")]
+    public virtual ICollection<PurchasePlan> PurchasePlans { get; set; } = new List<PurchasePlan>();
 
     [ForeignKey("SchoolId")]
     [InverseProperty("ScheduleMeals")]
