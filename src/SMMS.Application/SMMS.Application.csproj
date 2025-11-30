@@ -44,6 +44,14 @@
     <Compile Include="Features\Plan\Queries\GetPurchasePlanByDateQuery.cs" />
     <Compile Include="Features\Plan\Queries\GetPurchasePlanDetailQuery.cs" />
     <Compile Include="Features\Plan\Queries\GetPurchasePlansQuery.cs" />
+    <Compile Include="Features\Plan\Interfaces\IPurchaseOrderRepository.cs" />
+    <Compile Include="Features\Plan\DTOs\PurchaseOrderDetailDto.cs" />
+    <Compile Include="Features\Plan\DTOs\PurchaseOrderLineDto.cs" />
+    <Compile Include="Features\Plan\DTOs\PurchaseOrderLineUpdateDto.cs" />
+    <Compile Include="Features\Plan\DTOs\PurchaseOrderSummaryDto.cs" />
+    <Compile Include="Features\Plan\Commands\CreatePurchaseOrderFromPlanCommand.cs" />
+    <Compile Include="Features\Plan\Handlers\PurchaseOrderHandler.cs" />
+    <Compile Include="Features\Plan\Queries\GetPurchaseOrderQuery.cs" />
   </ItemGroup>
 
   <ItemGroup>
