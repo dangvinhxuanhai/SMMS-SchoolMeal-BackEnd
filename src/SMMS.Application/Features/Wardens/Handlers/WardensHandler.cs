@@ -690,16 +690,18 @@ public class WardensHandler :
             return new { Students = new List<object>() };
 
         var keyword = request.Keyword.Trim().ToLower();
+        var words = keyword.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         var students = await (
             from sc in _repo.StudentClasses
             join s in _repo.Students on sc.StudentId equals s.StudentId
             join p in _repo.Users on s.ParentId equals p.UserId into parentJoin
             from parent in parentJoin.DefaultIfEmpty()
-            where sc.ClassId == request.ClassId &&
-                  (
-                      s.FullName.ToLower().Contains(keyword) ||
-                      (parent.FullName != null && parent.FullName.ToLower().Contains(keyword))
+            where sc.ClassId == request.ClassId
+                  &&
+                  words.All(w =>
+                      s.FullName.ToLower().Contains(w)
+                      || (parent.FullName != null && parent.FullName.ToLower().Contains(w))
                   )
             select new
             {

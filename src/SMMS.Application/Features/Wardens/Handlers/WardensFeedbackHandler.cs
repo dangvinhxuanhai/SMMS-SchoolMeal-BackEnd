@@ -162,24 +162,15 @@ public class WardensFeedbackHandler :
             DailyMealId = feedback.DailyMealId
         };
     }
+
     // 🟠 Cập nhật feedback
     public async Task<FeedbackDto> Handle(
         UpdateWardenFeedbackCommand command,
-        CancellationToken cancellationToken)
-    {
+        CancellationToken cancellationToken){
         var request = command.Request;
 
         if (string.IsNullOrWhiteSpace(request.Content))
             throw new ArgumentException("Nội dung phản hồi không được để trống.");
-
-        // Lấy feedback hiện tại
-        var feedback = await _repo.GetFeedbackByIdAsync(command.FeedbackId);
-        if (feedback == null)
-            throw new ArgumentException("Không tìm thấy phản hồi.");
-
-        // Chỉ cho phép giám thị chủ feedback sửa
-        if (feedback.SenderId != request.SenderId)
-            throw new InvalidOperationException("Bạn không có quyền sửa phản hồi này.");
 
         // Kiểm tra giám thị
         var sender = await _repo.Users
@@ -190,7 +181,7 @@ public class WardensFeedbackHandler :
         if (sender == null)
             throw new ArgumentException("Giám thị không tồn tại trong hệ thống.");
 
-        // Lớp mà giám thị đang phụ trách (năm học mới nhất)
+        // Lớp mà giám thị đang phụ trách
         var currentClass = await (
             from c in _repo.Classes
             join t in _repo.Teachers on c.TeacherId equals t.TeacherId
@@ -209,11 +200,10 @@ public class WardensFeedbackHandler :
 
         string className = currentClass?.ClassName ?? "Không xác định";
         string teacherName = currentClass?.TeacherName ?? sender.FullName;
-        string dateNow = feedback.CreatedAt.ToString("dd/MM/yyyy"); // giữ theo ngày tạo ban đầu
+        string dateNow = DateTime.UtcNow.ToString("dd/MM/yyyy");
 
         string title = $"{className} - {teacherName} - {dateNow}";
 
-        // Nếu có DailyMealId thì check tồn tại
         if (request.DailyMealId.HasValue)
         {
             bool mealExists = await _repo.DailyMeals
@@ -223,12 +213,40 @@ public class WardensFeedbackHandler :
                 throw new ArgumentException("Không tìm thấy bữa ăn để phản hồi.");
         }
 
-        // Cập nhật entity
-        feedback.TargetType = request.TargetType;
-        feedback.TargetRef = request.TargetRef;
-        feedback.Content = request.Content.Trim();
-        feedback.DailyMealId = request.DailyMealId;
+        // 🛠️ FIX: Map TargetType từ Frontend sang Role DB
+        string dbTargetType;
+        string reqType = request.TargetType?.ToLower()?.Trim() ?? "";
 
+        switch (reqType)
+        {
+            case "food":
+                dbTargetType = "KitchenStaff";
+                break;
+            case "facility":
+                dbTargetType = "FacilityManager"; // Role quản lý CSVC
+                break;
+            case "health":
+                dbTargetType = "MedicalStaff";    // Role y tế
+                break;
+            case "activity":
+                dbTargetType = "ActivityManager"; // Role hoạt động (hoặc Admin)
+                break;
+            default:
+                dbTargetType = "Admin";           // Mặc định gửi Admin nếu không khớp
+                break;
+        }
+
+        var feedback = new Feedback
+        {
+            SenderId = request.SenderId,
+            TargetType = dbTargetType, // ✅ Đã sửa: dùng biến đã map, không gán cứng
+            TargetRef = request.TargetRef,
+            Content = request.Content.Trim(),
+            DailyMealId = request.DailyMealId,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _repo.AddFeedbackAsync(feedback);
         await _repo.SaveChangesAsync();
 
         return new FeedbackDto
@@ -238,11 +256,13 @@ public class WardensFeedbackHandler :
             SenderName = sender.FullName,
             Content = feedback.Content,
             TargetRef = feedback.TargetRef,
-            TargetType = feedback.TargetType,
+            TargetType = feedback.TargetType, // Trả về đúng loại đã lưu
             CreatedAt = feedback.CreatedAt,
             DailyMealId = feedback.DailyMealId
         };
     }
+
+
     // ❌ Xoá feedback
     public async Task<bool> Handle(
         DeleteWardenFeedbackCommand command,

@@ -23,17 +23,22 @@ public class MenuDayFoodItemsController : ControllerBase
     }
 
     // GET: api/MenuDayFoodItems
+    // Đã sửa: Thêm .Include(x => x.Food) để lấy tên món ăn
     [HttpGet]
     public async Task<ActionResult<IEnumerable<MenuDayFoodItem>>> GetMenuDayFoodItems()
     {
-        return await _context.MenuDayFoodItems.ToListAsync();
+        return await _context.MenuDayFoodItems
+            .Include(x => x.Food) // Quan trọng: Lấy thông tin bảng Food
+            .ToListAsync();
     }
 
-    // GET: api/MenuDayFoodItems/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<MenuDayFoodItem>> GetMenuDayFoodItem(int id)
+    // GET: api/MenuDayFoodItems/5/12
+    [HttpGet("{menuDayId}/{foodId}")]
+    public async Task<ActionResult<MenuDayFoodItem>> GetMenuDayFoodItem(int menuDayId, int foodId)
     {
-        var menuDayFoodItem = await _context.MenuDayFoodItems.FindAsync(id);
+        var menuDayFoodItem = await _context.MenuDayFoodItems
+            .Include(x => x.Food)
+            .FirstOrDefaultAsync(x => x.MenuDayId == menuDayId && x.FoodId == foodId);
 
         if (menuDayFoodItem == null)
         {
@@ -43,14 +48,13 @@ public class MenuDayFoodItemsController : ControllerBase
         return menuDayFoodItem;
     }
 
-    // PUT: api/MenuDayFoodItems/5
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutMenuDayFoodItem(int id, MenuDayFoodItem menuDayFoodItem)
+    // PUT: api/MenuDayFoodItems/5/12
+    [HttpPut("{menuDayId}/{foodId}")]
+    public async Task<IActionResult> PutMenuDayFoodItem(int menuDayId, int foodId, MenuDayFoodItem menuDayFoodItem)
     {
-        if (id != menuDayFoodItem.MenuDayId)
+        if (menuDayId != menuDayFoodItem.MenuDayId || foodId != menuDayFoodItem.FoodId)
         {
-            return BadRequest();
+            return BadRequest("ID mismatch");
         }
 
         _context.Entry(menuDayFoodItem).State = EntityState.Modified;
@@ -61,7 +65,7 @@ public class MenuDayFoodItemsController : ControllerBase
         }
         catch (DbUpdateConcurrencyException)
         {
-            if (!MenuDayFoodItemExists(id))
+            if (!MenuDayFoodItemExists(menuDayId, foodId))
             {
                 return NotFound();
             }
@@ -75,7 +79,6 @@ public class MenuDayFoodItemsController : ControllerBase
     }
 
     // POST: api/MenuDayFoodItems
-    // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
     [HttpPost]
     public async Task<ActionResult<MenuDayFoodItem>> PostMenuDayFoodItem([FromBody] CreateMenuDayFoodItemDto dto)
     {
@@ -86,17 +89,31 @@ public class MenuDayFoodItemsController : ControllerBase
             SortOrder = dto.SortOrder
         };
 
+        // Kiểm tra xem đã tồn tại chưa để tránh lỗi duplicate key
+        if (MenuDayFoodItemExists(entity.MenuDayId, entity.FoodId))
+        {
+            return Conflict("Item already exists in this menu day");
+        }
+
         _context.MenuDayFoodItems.Add(entity);
         await _context.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetMenuDayFoodItem), new { id = entity.MenuDayId }, entity);
+
+        // Load lại entity kèm Food info để trả về cho FE hiển thị ngay lập tức
+        var createdEntity = await _context.MenuDayFoodItems
+            .Include(x => x.Food)
+            .FirstOrDefaultAsync(x => x.MenuDayId == entity.MenuDayId && x.FoodId == entity.FoodId);
+
+        return CreatedAtAction(nameof(GetMenuDayFoodItem), new { menuDayId = entity.MenuDayId, foodId = entity.FoodId }, createdEntity);
     }
 
 
-    // DELETE: api/MenuDayFoodItems/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteMenuDayFoodItem(int id)
+    // DELETE: api/MenuDayFoodItems/5/12
+    [HttpDelete("{menuDayId}/{foodId}")]
+    public async Task<IActionResult> DeleteMenuDayFoodItem(int menuDayId, int foodId)
     {
-        var menuDayFoodItem = await _context.MenuDayFoodItems.FindAsync(id);
+        var menuDayFoodItem = await _context.MenuDayFoodItems
+            .FirstOrDefaultAsync(x => x.MenuDayId == menuDayId && x.FoodId == foodId);
+
         if (menuDayFoodItem == null)
         {
             return NotFound();
@@ -108,8 +125,8 @@ public class MenuDayFoodItemsController : ControllerBase
         return NoContent();
     }
 
-    private bool MenuDayFoodItemExists(int id)
+    private bool MenuDayFoodItemExists(int menuDayId, int foodId)
     {
-        return _context.MenuDayFoodItems.Any(e => e.MenuDayId == id);
+        return _context.MenuDayFoodItems.Any(e => e.MenuDayId == menuDayId && e.FoodId == foodId);
     }
 }

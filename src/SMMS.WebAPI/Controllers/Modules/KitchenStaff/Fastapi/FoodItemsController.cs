@@ -24,9 +24,14 @@ public class FoodItemsController : ControllerBase
 
     // GET: api/FoodItems
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<FoodItem>>> GetFoodItems()
+    public async Task<ActionResult<IEnumerable<FoodItem>>> GetFoodItems([FromQuery] string? type)
     {
-        return await _context.FoodItems.ToListAsync();
+        var query = _context.FoodItems.AsQueryable();
+        if (!string.IsNullOrEmpty(type))
+        {
+            query = query.Where(f => f.FoodType == type);
+        }
+        return await query.ToListAsync();
     }
 
     // GET: api/FoodItems/5

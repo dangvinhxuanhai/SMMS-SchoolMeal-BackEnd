@@ -26,7 +26,9 @@ public class MenuFoodItemsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<MenuFoodItem>>> GetMenuFoodItems()
     {
-        return await _context.MenuFoodItems.ToListAsync();
+        return await _context.MenuFoodItems
+            .Include(x => x.Food)
+            .ToListAsync();
     }
 
     // GET: api/MenuFoodItems/5

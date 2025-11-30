@@ -60,6 +60,7 @@ public class WardensFeedbackController : ControllerBase
     {
         try
         {
+            request.SenderId = GetCurrentUserId();
             var feedback = await _mediator.Send(new CreateWardenFeedbackCommand(request));
 
             return Ok(new
@@ -77,6 +78,7 @@ public class WardensFeedbackController : ControllerBase
             return StatusCode(500, new { message = $"Lỗi khi gửi phản hồi: {ex.Message}" });
         }
     }
+
     [HttpPut("{feedbackId:int}")]
     public async Task<IActionResult> UpdateFeedback(
             int feedbackId,
@@ -102,6 +104,7 @@ public class WardensFeedbackController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+
     [HttpDelete("{feedbackId:int}")]
     public async Task<IActionResult> DeleteFeedback(
            int feedbackId,
