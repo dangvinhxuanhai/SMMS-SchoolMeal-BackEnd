@@ -110,4 +110,11 @@ public class ManagerAccountRepository : IManagerAccountRepository
         _context.Teachers.Add(teacher);
         await _context.SaveChangesAsync();
     }
+
+    public async Task DeleteNotificationRecipientsByUserIdAsync(Guid userId)
+    {
+        var recipients = _context.NotificationRecipients.Where(n => n.UserId == userId);
+        _context.NotificationRecipients.RemoveRange(recipients);
+        await _context.SaveChangesAsync();
+    }
 }

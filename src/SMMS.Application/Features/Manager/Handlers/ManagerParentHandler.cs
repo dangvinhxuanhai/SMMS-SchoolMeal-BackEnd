@@ -413,6 +413,7 @@ public class ManagerParentHandler :
 
             await _repo.DeleteStudentAsync(student);
         }
+        await _repo.DeleteNotificationRecipientsByUserIdAsync(user.UserId);
 
         await _repo.DeleteAsync(user);
         return true;

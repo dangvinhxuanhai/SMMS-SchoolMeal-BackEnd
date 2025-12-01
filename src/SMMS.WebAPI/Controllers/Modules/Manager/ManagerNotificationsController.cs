@@ -7,6 +7,7 @@ using SMMS.Application.Features.Manager.Commands;
 using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Manager.Queries;
 using SMMS.Application.Features.Manager.Interfaces;
+using SMMS.Application.Features.Wardens.Queries;
 
 namespace SMMS.WebAPI.Controllers.Modules.Manager;
 
@@ -167,5 +168,22 @@ public class ManagerNotificationsController : ControllerBase
             new GetManagerNotificationsBySenderQuery(senderId, page, pageSize));
 
         return Ok(new { page, pageSize, count = list.Count, data = list });
+    }
+
+    [HttpGet("notifications")]
+    public async Task<IActionResult> GetNotifications()
+    {
+        try
+        {
+            var managerId = GetCurrentUserId();
+            var notifications = await _mediator.Send(
+                new GetWardenNotificationsQuery(managerId));
+
+            return Ok(notifications);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
 }

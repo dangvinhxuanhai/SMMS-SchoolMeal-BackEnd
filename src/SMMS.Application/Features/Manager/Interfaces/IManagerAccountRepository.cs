@@ -12,7 +12,6 @@ public interface IManagerAccountRepository
     IQueryable<User> Users { get; }
     IQueryable<Role> Roles { get; }
     Task<User?> GetByIdAsync(Guid userId);
-
     Task AddAsync(User user);
     Task UpdateAsync(User user);
     Task DeleteAsync(User user);
@@ -22,5 +21,5 @@ public interface IManagerAccountRepository
     Task DeleteStudentAsync(Student student);
     Task DeleteStudentClassAsync(StudentClass studentClass);
     Task AddTeacherAsync(Teacher teacher);
-
+    Task DeleteNotificationRecipientsByUserIdAsync(Guid userId);
 }
