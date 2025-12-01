@@ -9,54 +9,78 @@ using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Application.Features.foodmenu.Queries;
 
 namespace SMMS.Application.Features.foodmenu.Handlers;
-public class GetWeeklyScheduleByDateQueryHandler
-        : IRequestHandler<GetWeeklyScheduleByDateQuery, WeeklyScheduleDto?>
+public sealed class GetWeeklyScheduleByDateQueryHandler
+    : IRequestHandler<GetWeeklyScheduleByDateQuery, WeeklyScheduleDto?>
 {
-    private readonly IScheduleMealRepository _repository;
+    private readonly IScheduleMealRepository _scheduleRepo;
 
-    public GetWeeklyScheduleByDateQueryHandler(IScheduleMealRepository repository)
+    public GetWeeklyScheduleByDateQueryHandler(IScheduleMealRepository scheduleRepo)
     {
-        _repository = repository;
+        _scheduleRepo = scheduleRepo;
     }
 
     public async Task<WeeklyScheduleDto?> Handle(
         GetWeeklyScheduleByDateQuery request,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
-        var schedule = await _repository.GetForDateAsync(
-            request.SchoolId,
-            request.Date,
-            cancellationToken);
-
+        // 1. Tìm ScheduleMeal theo ngày (WeekStart <= date <= WeekEnd)
+        var schedule = await _scheduleRepo.GetForDateAsync(request.SchoolId, request.Date, ct);
         if (schedule == null)
             return null;
 
-        var dailyMeals = await _repository.GetDailyMealsForScheduleAsync(
-            schedule.ScheduleMealId,
-            cancellationToken);
+        // 2. Lấy DailyMeals của tuần này
+        var dailyMeals = await _scheduleRepo.GetDailyMealsForScheduleAsync(schedule.ScheduleMealId, ct);
+        var dailyMealIds = dailyMeals.Select(d => d.DailyMealId).ToList();
 
-        var dto = new WeeklyScheduleDto
+        // 3. Lấy món cho các DailyMeal
+        var menuFoods = await _scheduleRepo.GetMenuFoodItemsForDailyMealsAsync(dailyMealIds, ct);
+        var menuFoodsByDaily = menuFoods
+            .GroupBy(m => m.DailyMealId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderBy(x => x.SortOrder ?? int.MaxValue).ToList());
+
+        // 4. Map ra DTO
+        var dayDtos = dailyMeals
+            .OrderBy(d => d.MealDate)
+            .ThenBy(d => d.MealType)
+            .Select(dm =>
+            {
+                menuFoodsByDaily.TryGetValue(dm.DailyMealId, out var foodsForDay);
+                var foodDtos = (foodsForDay ?? new List<MenuFoodItemInfo>())
+                    .Select(f => new ScheduledFoodItemDto
+                    {
+                        FoodId = f.FoodId,
+                        FoodName = f.FoodName,
+                        FoodType = f.FoodType,
+                        IsMainDish = f.IsMainDish,
+                        ImageUrl = f.ImageUrl,
+                        FoodDesc = f.FoodDesc,
+                        SortOrder = f.SortOrder
+                    })
+                    .ToList();
+
+                return new DailyMealDto
+                {
+                    DailyMealId = dm.DailyMealId,
+                    MealDate = dm.MealDate.ToDateTime(TimeOnly.MinValue),
+                    MealType = dm.MealType,
+                    Notes = dm.Notes,
+                    FoodItems = foodDtos
+                };
+            })
+            .ToList();
+
+        return new WeeklyScheduleDto
         {
             ScheduleMealId = schedule.ScheduleMealId,
-            SchoolId = schedule.SchoolId,
-            WeekStart = schedule.WeekStart != null ? schedule.WeekStart.ToDateTime(TimeOnly.MinValue) : DateTime.MinValue,
-            WeekEnd = schedule.WeekEnd != null ? schedule.WeekEnd.ToDateTime(TimeOnly.MinValue) : DateTime.MinValue,
+            WeekStart = schedule.WeekStart.ToDateTime(TimeOnly.MinValue),
+            WeekEnd = schedule.WeekEnd.ToDateTime(TimeOnly.MinValue),
             WeekNo = schedule.WeekNo,
             YearNo = schedule.YearNo,
             Status = schedule.Status,
             Notes = schedule.Notes,
-            DailyMeals = dailyMeals
-                .Select(d => new DailyMealDto
-                {
-                    DailyMealId = d.DailyMealId,
-                    MealDate = d.MealDate != null ? d.MealDate.ToDateTime(TimeOnly.MinValue) : DateTime.MinValue,
-                    MealType = d.MealType,
-                    ScheduleMealId = d.ScheduleMealId,
-                    Notes = d.Notes
-                })
-                .ToList()
+            DailyMeals = dayDtos
         };
-
-        return dto;
     }
 }

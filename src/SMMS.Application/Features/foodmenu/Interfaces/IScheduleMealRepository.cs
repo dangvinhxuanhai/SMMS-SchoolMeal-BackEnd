@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.Skeleton.Interfaces;
 using SMMS.Domain.Entities.foodmenu;
 
@@ -36,4 +37,6 @@ public interface IScheduleMealRepository
     CancellationToken ct = default);
 
     Task AddAsync(ScheduleMeal scheduleMeal, CancellationToken ct = default);
+    Task<IReadOnlyList<MenuFoodItemInfo>> GetMenuFoodItemsForDailyMealsAsync(
+        IEnumerable<int> dailyMealIds, CancellationToken ct = default);
 }

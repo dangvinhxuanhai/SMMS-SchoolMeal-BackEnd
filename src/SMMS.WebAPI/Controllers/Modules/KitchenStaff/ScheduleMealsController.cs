@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.foodmenu.Queries;
+using SMMS.Application.Features.Meal.Command;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
@@ -72,6 +73,19 @@ public class ScheduleMealsController : ControllerBase
             throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
 
         return Guid.Parse(schoolIdClaim);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<long>> Create(
+        [FromBody] CreateScheduleMealCommand command,
+        CancellationToken ct)
+    {
+        // Lấy SchoolId & UserId từ token, không tin từ client
+        command.SchoolId = GetSchoolIdFromToken();
+        command.CreatedByUserId = GetCurrentUserId();
+
+        var id = await _mediator.Send(command, ct);
+        return Ok(new { scheduleMealId = id });
     }
 
     private Guid GetCurrentUserId()

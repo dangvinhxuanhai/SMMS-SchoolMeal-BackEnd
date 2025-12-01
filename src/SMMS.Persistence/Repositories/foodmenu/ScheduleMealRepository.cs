@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Domain.Entities.foodmenu;
 using SMMS.Persistence.Data;
@@ -99,5 +100,32 @@ public class ScheduleMealRepository : IScheduleMealRepository
     public async Task AddAsync(ScheduleMeal scheduleMeal, CancellationToken ct = default)
     {
         await _context.ScheduleMeals.AddAsync(scheduleMeal, ct);
+    }
+
+    public async Task<IReadOnlyList<MenuFoodItemInfo>> GetMenuFoodItemsForDailyMealsAsync(
+    IEnumerable<int> dailyMealIds,
+    CancellationToken ct = default)
+    {
+        var ids = dailyMealIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return Array.Empty<MenuFoodItemInfo>();
+
+        return await _context.MenuFoodItems
+            .Where(mf => ids.Contains(mf.DailyMealId))
+            .Select(mf => new MenuFoodItemInfo
+            {
+                DailyMealId = mf.DailyMealId,
+                FoodId = mf.FoodId,
+                SortOrder = mf.SortOrder,
+
+                FoodName = mf.Food.FoodName,
+                FoodType = mf.Food.FoodType,
+                ImageUrl = mf.Food.ImageUrl,
+                FoodDesc = mf.Food.FoodDesc,
+                IsMainDish = mf.Food.IsMainDish
+            })
+            .OrderBy(x => x.DailyMealId)
+            .ThenBy(x => x.SortOrder ?? int.MaxValue)
+            .ToListAsync(ct);
     }
 }
