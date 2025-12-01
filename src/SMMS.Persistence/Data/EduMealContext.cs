@@ -330,6 +330,7 @@ public partial class EduMealContext : DbContext
             entity.HasKey(e => e.ItemId).HasName("PK__Inventor__727E838B486011F9");
 
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.LastUpdated).HasDefaultValueSql("(sysdatetime())");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.InventoryItems).HasConstraintName("FK_InventoryItems_CreatedBy");
@@ -561,10 +562,6 @@ public partial class EduMealContext : DbContext
             entity.Property(e => e.Status).HasDefaultValue("Draft");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.ScheduleMeals).HasConstraintName("FK_ScheduleMeal_User");
-
-            entity.HasOne(d => d.Menu).WithMany(p => p.ScheduleMeals)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ScheduleMeal_Menu");
 
             entity.HasOne(d => d.School).WithMany(p => p.ScheduleMeals)
                 .OnDelete(DeleteBehavior.ClientSetNull)

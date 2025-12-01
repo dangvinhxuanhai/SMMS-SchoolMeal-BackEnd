@@ -39,6 +39,8 @@ public partial class InventoryItem
 
     public Guid SchoolId { get; set; }
 
+    public bool IsActive { get; set; }
+
     [ForeignKey("CreatedBy")]
     [InverseProperty("InventoryItems")]
     public virtual User? CreatedByNavigation { get; set; }

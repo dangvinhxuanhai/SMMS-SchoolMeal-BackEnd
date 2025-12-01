@@ -9,8 +9,8 @@ using SMMS.Domain.Entities.school;
 
 namespace SMMS.Domain.Entities.foodmenu;
 
+
 [Table("ScheduleMeal", Schema = "foodmenu")]
-[Index("MenuId", Name = "IX_ScheduleMeal_Menu")]
 [Index("SchoolId", "WeekStart", "WeekEnd", Name = "IX_ScheduleMeal_SchoolWeek")]
 [Index("SchoolId", "WeekNo", "YearNo", Name = "UQ_ScheduleMeal_School_WeekNoYear", IsUnique = true)]
 [Index("SchoolId", "WeekStart", Name = "UQ_ScheduleMeal_School_WeekStart", IsUnique = true)]
@@ -20,8 +20,6 @@ public partial class ScheduleMeal
     public long ScheduleMealId { get; set; }
 
     public Guid SchoolId { get; set; }
-
-    public int MenuId { get; set; }
 
     public DateOnly WeekStart { get; set; }
 
@@ -49,10 +47,6 @@ public partial class ScheduleMeal
 
     [InverseProperty("ScheduleMeal")]
     public virtual ICollection<DailyMeal> DailyMeals { get; set; } = new List<DailyMeal>();
-
-    [ForeignKey("MenuId")]
-    [InverseProperty("ScheduleMeals")]
-    public virtual Menu Menu { get; set; } = null!;
 
     [InverseProperty("ScheduleMeal")]
     public virtual ICollection<PurchasePlan> PurchasePlans { get; set; } = new List<PurchasePlan>();
