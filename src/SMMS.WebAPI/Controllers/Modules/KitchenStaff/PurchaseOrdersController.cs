@@ -46,10 +46,18 @@ public class PurchaseOrdersController : ControllerBase
     //trigger khi nguoi dung xac nhan da xong don hang purchase plan
     [HttpPost("from-plan")]
     public async Task<ActionResult<KsPurchaseOrderDto>> CreateFromPlan(
-        [FromBody] CreatePurchaseOrderFromPlanCommand command)
+        [FromBody] CreatePurchaseOrderFromPlanDto request)
     {
+        var command = new CreatePurchaseOrderFromPlanCommand
+        {
+            PlanId = request.PlanId,
+            SupplierName = request.SupplierName,
+            Note = request.Note,
+            StaffUserId = GetCurrentUserId(),
+            Lines = request.Lines
+        };
         var result = await _mediator.Send(command);
-        return CreatedAtAction(nameof(GetById), new { id = result.OrderId }, result);
+        return CreatedAtAction(nameof(GetById), new { orderId = result.OrderId }, result);
     }
 
     // GET list

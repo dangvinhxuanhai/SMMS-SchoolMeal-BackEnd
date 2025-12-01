@@ -32,6 +32,7 @@
     <Compile Include="Features\Plan\Commands\DeletePurchasePlanCommand.cs" />
     <Compile Include="Features\Plan\Commands\SoftDeletePurchasePlanCommand.cs" />
     <Compile Include="Features\Plan\Commands\UpdatePurchasePlanCommand.cs" />
+    <Compile Include="Features\Plan\DTOs\CreatePurchaseOrderFromPlanDto.cs" />
     <Compile Include="Features\Plan\DTOs\CreatePurchaseOrderLineFromPlanDto.cs" />
     <Compile Include="Features\Plan\DTOs\KsPurchaseOrderDto.cs" />
     <Compile Include="Features\Plan\DTOs\PurchasePlanDto.cs" />

@@ -130,7 +130,7 @@ public class PurchaseOrderHandler :
 
             // 2) Ghi transaction IN
             await _inventoryRepository.AddInboundTransactionAsync(
-                item.ItemId,
+                item,
                 line.QuantityGram,
                 reference,
                 cancellationToken);

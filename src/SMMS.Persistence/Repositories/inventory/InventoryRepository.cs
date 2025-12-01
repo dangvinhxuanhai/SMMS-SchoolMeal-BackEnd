@@ -112,14 +112,14 @@ public class InventoryRepository : IInventoryRepository
     }
 
     public async Task AddInboundTransactionAsync(
-        int itemId,
+        InventoryItem item,
         decimal quantityGram,
         string reference,
         CancellationToken ct = default)
     {
         var tx = new InventoryTransaction
         {
-            ItemId = itemId,
+            Item = item,
             TransType = "IN",            // nhập kho
             QuantityGram = quantityGram,
             TransDate = DateTime.UtcNow,

@@ -41,7 +41,7 @@ public interface IInventoryRepository
     /// Ghi lại transaction nhập kho (IN).
     /// </summary>
     Task AddInboundTransactionAsync(
-        int itemId,
+        InventoryItem item,
         decimal quantityGram,
         string reference,
         CancellationToken ct = default);
