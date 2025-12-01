@@ -11,6 +11,7 @@ using SMMS.Domain.Entities.school;
 using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.Manager;
+
 public class ManagerAccountRepository : IManagerAccountRepository
 {
     private readonly EduMealContext _context;
@@ -27,9 +28,10 @@ public class ManagerAccountRepository : IManagerAccountRepository
     public async Task<User?> GetByIdAsync(Guid userId)
     {
         return await _context.Users
-      .Include(u => u.Role)
-      .FirstOrDefaultAsync(u => u.UserId == userId);
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.UserId == userId);
     }
+
     public async Task AddAsync(User user)
     {
         _context.Users.Add(user);
@@ -63,9 +65,10 @@ public class ManagerAccountRepository : IManagerAccountRepository
         foreach (var menu in menusConfirmedByUser)
         {
             // chọn 1 trong 2:
-            menu.ConfirmedBy = null;       // nếu cho phép null
-                                           // hoặc menu.ConfirmedBy = someOtherUserId;  // nếu bạn muốn gán cho user khác
+            menu.ConfirmedBy = null; // nếu cho phép null
+            // hoặc menu.ConfirmedBy = someOtherUserId;  // nếu bạn muốn gán cho user khác
         }
+
         _context.Menus.UpdateRange(menusConfirmedByUser);
 
         // 3. Gỡ CreatedBy ở ScheduleMeal
@@ -75,8 +78,9 @@ public class ManagerAccountRepository : IManagerAccountRepository
 
         foreach (var sm in schedulesCreatedByUser)
         {
-            sm.CreatedBy = null;              // hoặc gán user khác
+            sm.CreatedBy = null; // hoặc gán user khác
         }
+
         _context.ScheduleMeals.UpdateRange(schedulesCreatedByUser);
 
         // 2. Xoá teacher nếu có
@@ -94,6 +98,7 @@ public class ManagerAccountRepository : IManagerAccountRepository
             {
                 cls.TeacherId = null;
             }
+
             _context.Classes.UpdateRange(classesOfTeacher);
             _context.Teachers.Remove(teacher);
         }
@@ -103,6 +108,7 @@ public class ManagerAccountRepository : IManagerAccountRepository
 
         await _context.SaveChangesAsync();
     }
+
     public async Task AddStudentAsync(Student student)
     {
         _context.Students.Add(student);
@@ -114,11 +120,22 @@ public class ManagerAccountRepository : IManagerAccountRepository
         _context.StudentClasses.Add(studentClass);
         await _context.SaveChangesAsync();
     }
+
     public async Task UpdateStudentAsync(Student student)
     {
         _context.Students.Update(student);
         await _context.SaveChangesAsync();
     }
+
+    public async Task MarkAllNotificationsAsReadAsync(Guid userId)
+    {
+        await _context.NotificationRecipients
+            .Where(nr => nr.UserId == userId && !nr.IsRead)
+            .ExecuteUpdateAsync(s => s.SetProperty(
+                    nr => nr.IsRead, true)
+                .SetProperty(nr => nr.ReadAt, DateTime.UtcNow));
+    }
+
     public async Task DeleteStudentAsync(Student student)
     {
         var studentId = student.StudentId;
@@ -141,6 +158,7 @@ public class ManagerAccountRepository : IManagerAccountRepository
         {
             _context.StudentAllergens.RemoveRange(allergenRecords);
         }
+
         // 3. Xoá images
         var imageRecords = await _context.StudentImages
             .Where(i => i.StudentId == studentId)
@@ -150,11 +168,12 @@ public class ManagerAccountRepository : IManagerAccountRepository
         {
             _context.StudentImages.RemoveRange(imageRecords);
         }
+
         // 4. Xử lý billing
         // 4.1. Lấy danh sách invoiceId của student này
         var invoiceIds = await _context.Invoices
             .Where(inv => inv.StudentId == studentId)
-            .Select(inv => inv.InvoiceId)   // đúng tên key của bạn
+            .Select(inv => inv.InvoiceId) // đúng tên key của bạn
             .ToListAsync();
 
         if (invoiceIds.Any())
@@ -171,8 +190,9 @@ public class ManagerAccountRepository : IManagerAccountRepository
                 .ToListAsync();
             _context.Invoices.RemoveRange(invoices);
         }
+
         // 5. Xoá attendance
-        var attendances = await _context.Attendances   // hoặc Attendances, tuỳ DbSet
+        var attendances = await _context.Attendances // hoặc Attendances, tuỳ DbSet
             .Where(a => a.StudentId == studentId)
             .ToListAsync();
         _context.Attendances.RemoveRange(attendances);
@@ -189,6 +209,7 @@ public class ManagerAccountRepository : IManagerAccountRepository
         _context.StudentClasses.Remove(studentClass);
         await _context.SaveChangesAsync();
     }
+
     public async Task AddTeacherAsync(Teacher teacher)
     {
         _context.Teachers.Add(teacher);

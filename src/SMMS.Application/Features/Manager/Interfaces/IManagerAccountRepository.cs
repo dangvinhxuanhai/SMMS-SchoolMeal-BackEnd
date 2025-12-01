@@ -24,4 +24,5 @@ public interface IManagerAccountRepository
     Task DeleteStudentClassAsync(StudentClass studentClass);
     Task AddTeacherAsync(Teacher teacher);
     Task DeleteNotificationRecipientsByUserIdAsync(Guid userId);
+    Task MarkAllNotificationsAsReadAsync(Guid userId);
 }

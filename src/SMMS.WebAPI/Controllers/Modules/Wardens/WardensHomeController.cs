@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.Manager.Commands;
 using SMMS.Application.Features.Wardens.DTOs;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Application.Features.Wardens.Queries;
@@ -95,6 +96,22 @@ public class WardensHomeController : ControllerBase
                 new GetWardenNotificationsQuery(wardenId));
 
             return Ok(notifications);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPut("read-all")]
+    public async Task<IActionResult> MarkAllAsRead()
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            await _mediator.Send(new MarkAllNotificationsAsReadCommand(userId));
+
+            return Ok(new { message = "Đã đánh dấu tất cả là đã đọc." });
         }
         catch (Exception ex)
         {
