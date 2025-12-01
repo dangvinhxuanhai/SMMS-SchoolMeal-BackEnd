@@ -19,6 +19,8 @@ namespace SMMS.Application.Features.billing.DTOs
         public long NotificationId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Content { get; set; } = string.Empty;
+        public string? AttachmentUrl { get; set; }
+
         public string SendType { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public int TotalRecipients { get; set; }
@@ -36,7 +38,7 @@ namespace SMMS.Application.Features.billing.DTOs
         public List<RecipientDto> Recipients { get; set; } = new();
 
     }
-  
+
     public class RecipientDto
     {
         public Guid UserId { get; set; }
