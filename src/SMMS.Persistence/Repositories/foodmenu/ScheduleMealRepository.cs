@@ -3,15 +3,101 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Domain.Entities.foodmenu;
 using SMMS.Persistence.Data;
 using SMMS.Persistence.Repositories.Skeleton;
 
 namespace SMMS.Persistence.Repositories.foodmenu;
-public class ScheduleMealRepository : Repository<ScheduleMeal>, IScheduleMealRepository
+public class ScheduleMealRepository : IScheduleMealRepository
 {
-    public ScheduleMealRepository(EduMealContext dbContext) : base(dbContext)
+    private readonly EduMealContext _context;
+
+    public ScheduleMealRepository(EduMealContext context)
     {
+        _context = context;
+    }
+
+    public Task<int> CountBySchoolAsync(Guid schoolId, CancellationToken ct = default)
+    {
+        return _context.ScheduleMeals
+            .Where(x => x.SchoolId == schoolId)
+            .CountAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<ScheduleMeal>> GetPagedBySchoolAsync(
+        Guid schoolId,
+        int pageIndex,
+        int pageSize,
+        CancellationToken ct = default)
+    {
+        var skip = (pageIndex - 1) * pageSize;
+
+        return await _context.ScheduleMeals
+            .Where(x => x.SchoolId == schoolId)
+            .OrderByDescending(x => x.WeekStart) // tuần mới nhất trước
+            .Skip(skip)
+            .Take(pageSize)
+            .ToListAsync(ct);
+    }
+
+    public Task<ScheduleMeal?> GetForDateAsync(
+    Guid schoolId,
+    DateTime date,
+    CancellationToken ct = default)
+    {
+        var d = DateOnly.FromDateTime(date);
+
+        return _context.ScheduleMeals
+            .FirstOrDefaultAsync(
+                x => x.SchoolId == schoolId
+                  && x.WeekStart <= d
+                  && x.WeekEnd >= d,
+                ct);
+    }
+
+    public async Task<IReadOnlyList<DailyMeal>> GetDailyMealsForSchedulesAsync(
+        IEnumerable<long> scheduleMealIds,
+        CancellationToken ct = default)
+    {
+        var ids = scheduleMealIds.ToList();
+        if (ids.Count == 0)
+            return Array.Empty<DailyMeal>();
+
+        return await _context.DailyMeals
+            .Where(d => ids.Contains(d.ScheduleMealId))
+            .OrderBy(d => d.MealDate)
+            .ThenBy(d => d.MealType)
+            .ToListAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<DailyMeal>> GetDailyMealsForScheduleAsync(
+        long scheduleMealId,
+        CancellationToken ct = default)
+    {
+        return await _context.DailyMeals
+            .Where(d => d.ScheduleMealId == scheduleMealId)
+            .OrderBy(d => d.MealDate)
+            .ThenBy(d => d.MealType)
+            .ToListAsync(ct)!;
+    }
+
+    public async Task<ScheduleMeal?> FindBySchoolAndWeekAsync(
+    Guid schoolId,
+    DateTime weekStart,
+    CancellationToken ct = default)
+    {
+        var weekStartDateOnly = DateOnly.FromDateTime(weekStart);
+        return await _context.ScheduleMeals
+            .Include(s => s.DailyMeals)
+                .ThenInclude(d => d.MenuFoodItems)
+            .FirstOrDefaultAsync(s => s.SchoolId == schoolId
+                                   && s.WeekStart == weekStartDateOnly, ct);
+    }
+
+    public async Task AddAsync(ScheduleMeal scheduleMeal, CancellationToken ct = default)
+    {
+        await _context.ScheduleMeals.AddAsync(scheduleMeal, ct);
     }
 }

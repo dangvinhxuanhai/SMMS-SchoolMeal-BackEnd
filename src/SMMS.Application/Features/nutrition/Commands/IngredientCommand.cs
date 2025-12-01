@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using MediatR;
 using SMMS.Application.Features.nutrition.DTOs;
@@ -9,12 +10,15 @@ using SMMS.Application.Features.nutrition.DTOs;
 namespace SMMS.Application.Features.nutrition.Commands;
 public class CreateIngredientCommand : UpsertIngredientRequest, IRequest<IngredientDto>
 {
+    [JsonIgnore]
     public Guid SchoolId { get; set; }
+    [JsonIgnore]
     public Guid? CreatedBy { get; set; }
 }
 
 public class UpdateIngredientCommand : UpsertIngredientRequest, IRequest<IngredientDto>
 {
+    [JsonIgnore]
     public int IngredientId { get; set; }
 }
 
