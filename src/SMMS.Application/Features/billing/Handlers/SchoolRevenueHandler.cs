@@ -40,7 +40,7 @@ namespace SMMS.Application.Features.billing.Handlers
                 ContractNote = dto.ContractNote,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
-                CreatedBy = dto.CreatedBy
+                CreatedBy = request.CreatedBy
             };
 
             // Upload contract file nếu có
@@ -60,7 +60,7 @@ namespace SMMS.Application.Features.billing.Handlers
             existing.ContractCode = dto.ContractCode;
             existing.ContractNote = dto.ContractNote;
             existing.UpdatedAt = DateTime.UtcNow;
-            existing.UpdatedBy = dto.UpdatedBy;
+            existing.UpdatedBy = request.UpdatedBy;
 
             await _repo.UpdateAsync(existing, dto.ContractFile);
             return Unit.Value;

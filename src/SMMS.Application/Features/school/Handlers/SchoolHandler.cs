@@ -36,8 +36,10 @@ namespace SMMS.Application.Features.school.Handlers
                 Hotline = dto.Hotline,
                 SchoolAddress = dto.SchoolAddress,
                 IsActive = dto.IsActive,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = request.CreatedBy
             };
+            await _repo.AddAsync(school);
             return school.SchoolId;
         }
 
@@ -54,6 +56,8 @@ namespace SMMS.Application.Features.school.Handlers
             existing.SchoolAddress = dto.SchoolAddress;
             existing.IsActive = dto.IsActive;
             existing.UpdatedAt = DateTime.UtcNow;
+            existing.UpdatedBy = request.UpdatedBy;
+            await _repo.UpdateAsync(existing);
             return Unit.Value;
         }
 

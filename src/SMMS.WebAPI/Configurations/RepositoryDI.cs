@@ -3,6 +3,7 @@ using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Application.Features.Manager.Interfaces;
+using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Application.Features.nutrition.Interfaces;
 using SMMS.Application.Features.Plan.Interfaces;
 using SMMS.Application.Features.school.Interfaces;

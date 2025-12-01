@@ -49,7 +49,8 @@ namespace SMMS.WebAPI.Controllers.Modules.Admin
         [HttpGet("history")]
         public async Task<IActionResult> GetHistory()
         {
-            var notifications = await _mediator.Send(new GetNotificationHistoryQuery());
+            var adminId = GetCurrentUserId();
+            var notifications = await _mediator.Send(new GetNotificationHistoryQuery(adminId));
             return Ok(notifications);
         }
 
@@ -64,6 +65,18 @@ namespace SMMS.WebAPI.Controllers.Modules.Admin
                 return NotFound(new { message = "Không tìm thấy thông báo." });
 
             return Ok(notification);
+        }
+        [HttpDelete("{id:long}")]
+        public async Task<IActionResult> Delete(long id)
+        {
+            var adminId = GetCurrentUserId();
+
+            var isDeleted = await _mediator.Send(new DeleteNotificationCommand(id, adminId));
+
+            if (!isDeleted)
+                return NotFound(new { message = "Không tìm thấy thông báo." });
+
+            return Ok(new { message = "Xóa thông báo thành công." });
         }
 
         /// <summary>

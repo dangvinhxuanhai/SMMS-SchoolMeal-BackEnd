@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using SMMS.Application.Features.billing.Interfaces;
+using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Domain.Entities.billing;
 using SMMS.Persistence.Data;
 
@@ -31,14 +31,34 @@ namespace SMMS.Infrastructure.Repositories
 
         public async Task AddNotificationAsync(Notification notification)
         {
+            var users = await _context.Users.ToListAsync();
+            foreach (var user in users)
+            {
+                notification.NotificationRecipients.Add(new NotificationRecipient
+                {
+                    UserId = user.UserId,
+                    IsRead = false
+                });
+            }
+
             await _context.Notifications.AddAsync(notification);
             await _context.SaveChangesAsync();
         }
-        public async Task<List<Guid>> GetAllRecipientsUserIdsAsync()
+        public async Task DeleteNotificationAsync(Notification notification)
         {
-            return await _context.Users
-                .Select(u => u.UserId)
-                .ToListAsync();
+            // Load recipients
+            await _context.Entry(notification)
+                .Collection(n => n.NotificationRecipients)
+                .LoadAsync();
+
+            // Xóa recipients trước
+            _context.NotificationRecipients.RemoveRange(notification.NotificationRecipients);
+
+            // Sau đó mới xóa notification
+            _context.Notifications.Remove(notification);
+
+            await _context.SaveChangesAsync();
         }
+
     }
 }
