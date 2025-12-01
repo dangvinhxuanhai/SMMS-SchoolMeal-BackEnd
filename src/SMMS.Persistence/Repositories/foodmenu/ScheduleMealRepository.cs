@@ -82,4 +82,22 @@ public class ScheduleMealRepository : IScheduleMealRepository
             .ThenBy(d => d.MealType)
             .ToListAsync(ct)!;
     }
+
+    public async Task<ScheduleMeal?> FindBySchoolAndWeekAsync(
+    Guid schoolId,
+    DateTime weekStart,
+    CancellationToken ct = default)
+    {
+        var weekStartDateOnly = DateOnly.FromDateTime(weekStart);
+        return await _context.ScheduleMeals
+            .Include(s => s.DailyMeals)
+                .ThenInclude(d => d.MenuFoodItems)
+            .FirstOrDefaultAsync(s => s.SchoolId == schoolId
+                                   && s.WeekStart == weekStartDateOnly, ct);
+    }
+
+    public async Task AddAsync(ScheduleMeal scheduleMeal, CancellationToken ct = default)
+    {
+        await _context.ScheduleMeals.AddAsync(scheduleMeal, ct);
+    }
 }

@@ -29,4 +29,11 @@ public interface IScheduleMealRepository
     Task<IReadOnlyList<DailyMeal>> GetDailyMealsForScheduleAsync(
         long scheduleMealId,
         CancellationToken ct = default);
+
+    Task<ScheduleMeal?> FindBySchoolAndWeekAsync(
+    Guid schoolId,
+    DateTime weekStart,
+    CancellationToken ct = default);
+
+    Task AddAsync(ScheduleMeal scheduleMeal, CancellationToken ct = default);
 }

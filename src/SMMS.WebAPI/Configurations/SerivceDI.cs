@@ -62,7 +62,7 @@ public static class SerivceDI
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
         //  cloud
-        services.AddScoped<CloudinaryService>();
+        services.AddScoped<CloudinaryService>(); 
         services.AddScoped<INotificationRealtimeService, NotificationRealtimeService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
 

@@ -4,6 +4,7 @@ using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Application.Features.Inventory.Interfaces;
 using SMMS.Application.Features.Manager.Interfaces;
+using SMMS.Application.Features.Meal.Interfaces;
 using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Application.Features.nutrition.Interfaces;
 using SMMS.Application.Features.Plan.Interfaces;
@@ -18,6 +19,7 @@ using SMMS.Persistence.Repositories.billing;
 using SMMS.Persistence.Repositories.foodmenu;
 using SMMS.Persistence.Repositories.inventory;
 using SMMS.Persistence.Repositories.Manager;
+using SMMS.Persistence.Repositories.Meal;
 using SMMS.Persistence.Repositories.nutrition;
 using SMMS.Persistence.Repositories.purchasing;
 using SMMS.Persistence.Repositories.schools;
@@ -65,7 +67,8 @@ public static class RepositoryDI
         services.AddScoped<IScheduleMealRepository, ScheduleMealRepository>(); 
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
-
+        services.AddScoped<IMenuRepository, MenuRepository>();
+        
         return services;
     }
 }
