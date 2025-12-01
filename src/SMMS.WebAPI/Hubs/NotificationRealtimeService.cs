@@ -38,7 +38,8 @@ public class NotificationRealtimeService : INotificationRealtimeService
                 content = notification.Content,
                 createdAt = notification.CreatedAt,
                 isRead = false,
-                sendType = notification.SendType
+                sendType = notification.SendType,
+                attachmentUrl = notification.AttachmentUrl
             });
         }
     }
