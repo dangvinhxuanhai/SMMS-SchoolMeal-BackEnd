@@ -62,7 +62,6 @@
     <Folder Include="Common\Validators\" />
     <Folder Include="Features\Inventory\Commands\" />
     <Folder Include="Features\Inventory\DTOs\" />
-    <Folder Include="Features\Inventory\Interfaces\" />
     <Folder Include="Features\Inventory\Handlers\" />
     <Folder Include="Features\Inventory\Service\" />
     <Folder Include="Features\Inventory\Validators\" />

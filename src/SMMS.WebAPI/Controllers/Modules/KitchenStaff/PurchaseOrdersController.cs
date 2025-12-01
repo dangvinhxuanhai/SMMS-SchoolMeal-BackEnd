@@ -42,6 +42,8 @@ public class PurchaseOrdersController : ControllerBase
     }
 
     // POST api/purchasing/PurchaseOrders/from-plan
+    //api nay se tao purchase order de xem bill dong thoi cung update inventory,
+    //trigger khi nguoi dung xac nhan da xong don hang purchase plan
     [HttpPost("from-plan")]
     public async Task<ActionResult<KsPurchaseOrderDto>> CreateFromPlan(
         [FromBody] CreatePurchaseOrderFromPlanCommand command)

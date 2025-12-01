@@ -2,6 +2,7 @@ using SMMS.Application.Abstractions;
 using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Application.Features.foodmenu.Interfaces;
+using SMMS.Application.Features.Inventory.Interfaces;
 using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Application.Features.nutrition.Interfaces;
@@ -15,6 +16,7 @@ using SMMS.Persistence;
 using SMMS.Persistence.Repositories.auth;
 using SMMS.Persistence.Repositories.billing;
 using SMMS.Persistence.Repositories.foodmenu;
+using SMMS.Persistence.Repositories.inventory;
 using SMMS.Persistence.Repositories.Manager;
 using SMMS.Persistence.Repositories.nutrition;
 using SMMS.Persistence.Repositories.purchasing;
@@ -62,6 +64,7 @@ public static class RepositoryDI
         services.AddScoped<IPurchasePlanRepository, PurchasePlanRepository>();
         services.AddScoped<IScheduleMealRepository, ScheduleMealRepository>(); 
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
+        services.AddScoped<IInventoryRepository, InventoryRepository>();
 
         return services;
     }

@@ -1,0 +1,95 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using SMMS.Application.Features.Inventory.Interfaces;
+using SMMS.Domain.Entities.inventory;
+using SMMS.Persistence.Data;
+
+namespace SMMS.Persistence.Repositories.inventory;
+public class InventoryRepository : IInventoryRepository
+{
+    private readonly EduMealContext _context;
+
+    public InventoryRepository(EduMealContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<InventoryItem> AddOrIncreaseAsync(
+        Guid schoolId,
+        int ingredientId,
+        decimal quantityGram,
+        DateOnly? expirationDate,
+        string? batchNo,
+        string? origin,
+        Guid? createdBy,
+        CancellationToken ct = default)
+    {
+        // Tìm 1 lô hàng trong kho theo Ingredient + ExpirationDate + BatchNo
+        var query = _context.InventoryItems
+            .Where(x => x.SchoolId == schoolId && x.IngredientId == ingredientId);
+
+        if (expirationDate.HasValue)
+        {
+            query = query.Where(x => x.ExpirationDate == expirationDate.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(batchNo))
+        {
+            query = query.Where(x => x.BatchNo == batchNo);
+        }
+
+        var item = await query.FirstOrDefaultAsync(ct);
+
+        var now = DateTime.UtcNow;
+
+        if (item == null)
+        {
+            item = new InventoryItem
+            {
+                SchoolId = schoolId,
+                IngredientId = ingredientId,
+                ItemName = null, // có thể set sau bằng tên nguyên liệu
+                QuantityGram = quantityGram,
+                ExpirationDate = expirationDate,
+                BatchNo = batchNo,
+                Origin = origin,
+                CreatedBy = createdBy,
+                CreatedAt = now,
+                LastUpdated = now
+            };
+
+            await _context.InventoryItems.AddAsync(item, ct);
+        }
+        else
+        {
+            item.QuantityGram += quantityGram;
+            item.LastUpdated = now;
+
+            _context.InventoryItems.Update(item);
+        }
+
+        return item;
+    }
+
+    public async Task AddInboundTransactionAsync(
+        int itemId,
+        decimal quantityGram,
+        string reference,
+        CancellationToken ct = default)
+    {
+        var tx = new InventoryTransaction
+        {
+            ItemId = itemId,
+            TransType = "IN",            // nhập kho
+            QuantityGram = quantityGram,
+            TransDate = DateTime.UtcNow,
+            Reference = reference
+        };
+
+        await _context.InventoryTransactions.AddAsync(tx, ct);
+    }
+}
