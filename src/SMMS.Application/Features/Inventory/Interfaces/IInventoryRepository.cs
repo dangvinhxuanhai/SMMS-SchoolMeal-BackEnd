@@ -8,6 +8,21 @@ using SMMS.Domain.Entities.inventory;
 namespace SMMS.Application.Features.Inventory.Interfaces;
 public interface IInventoryRepository
 {
+    Task<InventoryItem?> GetByIdAsync(
+    int itemId,
+    Guid schoolId,
+    CancellationToken ct = default);
+
+    Task<int> CountBySchoolAsync(
+        Guid schoolId,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyList<InventoryItem>> GetPagedBySchoolAsync(
+        Guid schoolId,
+        int pageIndex,
+        int pageSize,
+        CancellationToken ct = default);
+
     /// <summary>
     /// Tìm item kho theo lô (Ingredient + ExpirationDate + BatchNo) trong 1 trường.
     /// Nếu tìm thấy thì cộng dồn QuantityGram, nếu không thì tạo mới.
@@ -30,4 +45,6 @@ public interface IInventoryRepository
         decimal quantityGram,
         string reference,
         CancellationToken ct = default);
+
+    Task UpdateAsync(InventoryItem item, CancellationToken ct = default);
 }

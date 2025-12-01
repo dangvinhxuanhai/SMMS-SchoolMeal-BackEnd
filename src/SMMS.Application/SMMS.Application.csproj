@@ -60,12 +60,8 @@
     <Folder Include="Common\Behaviors\" />
     <Folder Include="Common\Exceptions\" />
     <Folder Include="Common\Validators\" />
-    <Folder Include="Features\Inventory\Commands\" />
-    <Folder Include="Features\Inventory\DTOs\" />
-    <Folder Include="Features\Inventory\Handlers\" />
     <Folder Include="Features\Inventory\Service\" />
     <Folder Include="Features\Inventory\Validators\" />
-    <Folder Include="Features\Inventory\Queries\" />
     <Folder Include="Features\Meal\" />
     <Folder Include="Features\Menu\Interfaces\" />
     <Folder Include="Features\Menu\Search\" />

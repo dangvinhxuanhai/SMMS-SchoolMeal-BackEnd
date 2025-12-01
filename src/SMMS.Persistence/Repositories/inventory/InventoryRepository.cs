@@ -18,6 +18,42 @@ public class InventoryRepository : IInventoryRepository
         _context = context;
     }
 
+    public Task<InventoryItem?> GetByIdAsync(
+            int itemId,
+            Guid schoolId,
+            CancellationToken ct = default)
+    {
+        return _context.InventoryItems
+            .Include(i => i.Ingredient) // nếu entity có navigation
+            .FirstOrDefaultAsync(
+                x => x.ItemId == itemId && x.SchoolId == schoolId,
+                ct);
+    }
+
+    public Task<int> CountBySchoolAsync(Guid schoolId, CancellationToken ct = default)
+    {
+        return _context.InventoryItems
+            .Where(x => x.SchoolId == schoolId)
+            .CountAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<InventoryItem>> GetPagedBySchoolAsync(
+        Guid schoolId,
+        int pageIndex,
+        int pageSize,
+        CancellationToken ct = default)
+    {
+        var skip = (pageIndex - 1) * pageSize;
+
+        return await _context.InventoryItems
+            .Include(i => i.Ingredient)
+            .Where(x => x.SchoolId == schoolId)
+            .OrderBy(x => x.ItemId)
+            .Skip(skip)
+            .Take(pageSize)
+            .ToListAsync(ct);
+    }
+
     public async Task<InventoryItem> AddOrIncreaseAsync(
         Guid schoolId,
         int ingredientId,
@@ -91,5 +127,10 @@ public class InventoryRepository : IInventoryRepository
         };
 
         await _context.InventoryTransactions.AddAsync(tx, ct);
+    }
+    public Task UpdateAsync(InventoryItem item, CancellationToken ct = default)
+    {
+        _context.InventoryItems.Update(item);
+        return Task.CompletedTask;
     }
 }
