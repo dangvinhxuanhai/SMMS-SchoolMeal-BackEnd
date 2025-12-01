@@ -21,9 +21,11 @@ public record ChangeParentStatusCommand(Guid UserId, bool IsActive)
     : IRequest<bool>;
 
 // 🔴 Xóa tài khoản phụ huynh + con + lớp
-public record DeleteParentCommand(Guid UserId)
+//public record DeleteParentCommand(Guid UserId)
+//    : IRequest<bool>;
+// Xóa quan hệ phụ huynh–học sinh trong 1 trường (không xóa account global)
+public record DeleteParentCommand(Guid UserId, Guid SchoolId)
     : IRequest<bool>;
-
 // 📥 Import từ Excel
 public record ImportParentsFromExcelCommand(Guid SchoolId, IFormFile File, string CreatedBy)
     : IRequest<List<AccountDto>>;

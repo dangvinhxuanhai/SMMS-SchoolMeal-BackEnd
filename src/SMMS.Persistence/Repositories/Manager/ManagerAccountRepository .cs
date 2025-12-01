@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Domain.Entities.auth;
@@ -21,6 +22,8 @@ public class ManagerAccountRepository : IManagerAccountRepository
 
     public IQueryable<User> Users => _context.Users.AsNoTracking();
     public IQueryable<Role> Roles => _context.Roles.AsNoTracking();
+    public IQueryable<Student> Students => _context.Students;
+
     public async Task<User?> GetByIdAsync(Guid userId)
     {
         return await _context.Users
@@ -41,39 +44,61 @@ public class ManagerAccountRepository : IManagerAccountRepository
 
     public async Task DeleteAsync(User user)
     {
-        // 1. Tìm teacher gắn với user này
+        var userId = user.UserId;
+        // 1. Xoá refresh tokens của user
+        var refreshTokens = await _context.RefreshTokens
+            .Where(rt => rt.UserId == user.UserId)
+            .ToListAsync();
+
+        if (refreshTokens.Count > 0)
+        {
+            _context.RefreshTokens.RemoveRange(refreshTokens);
+        }
+
+        // 2. Gỡ user khỏi Menus.ConfirmedBy
+        var menusConfirmedByUser = await _context.Menus
+            .Where(m => m.ConfirmedBy == userId)
+            .ToListAsync();
+
+        foreach (var menu in menusConfirmedByUser)
+        {
+            // chọn 1 trong 2:
+            menu.ConfirmedBy = null;       // nếu cho phép null
+                                           // hoặc menu.ConfirmedBy = someOtherUserId;  // nếu bạn muốn gán cho user khác
+        }
+        _context.Menus.UpdateRange(menusConfirmedByUser);
+
+        // 3. Gỡ CreatedBy ở ScheduleMeal
+        var schedulesCreatedByUser = await _context.ScheduleMeals
+            .Where(sm => sm.CreatedBy == userId)
+            .ToListAsync();
+
+        foreach (var sm in schedulesCreatedByUser)
+        {
+            sm.CreatedBy = null;              // hoặc gán user khác
+        }
+        _context.ScheduleMeals.UpdateRange(schedulesCreatedByUser);
+
+        // 2. Xoá teacher nếu có
         var teacher = await _context.Teachers
             .Include(t => t.TeacherNavigation)
             .FirstOrDefaultAsync(t => t.TeacherNavigation.UserId == user.UserId);
-        // 👆 chỗ này bạn sửa lại cho đúng:
-        //   t.TeacherNavigation.Id == user.Id
-        // hoặc t.TeacherNavigation.UserId == user.UserId
-        // tuỳ theo model của bạn
 
         if (teacher != null)
         {
-            // 2. Lấy tất cả Class đang dùng Teacher này
             var classesOfTeacher = await _context.Classes
                 .Where(c => c.TeacherId == teacher.TeacherId)
                 .ToListAsync();
 
-            // 3. Gỡ teacher khỏi các lớp (không xoá lớp)
             foreach (var cls in classesOfTeacher)
             {
-                cls.TeacherId = null;   // 👈 giữ lớp, chỉ bỏ giáo viên
+                cls.TeacherId = null;
             }
-
-            // 4. Cập nhật lại các Class
-            if (classesOfTeacher.Count > 0)
-            {
-                _context.Classes.UpdateRange(classesOfTeacher);
-            }
-
-            // 5. Xoá Teacher
+            _context.Classes.UpdateRange(classesOfTeacher);
             _context.Teachers.Remove(teacher);
         }
 
-        // 6. Cuối cùng xoá User
+        // 3. Xoá user cuối cùng
         _context.Users.Remove(user);
 
         await _context.SaveChangesAsync();
@@ -96,7 +121,66 @@ public class ManagerAccountRepository : IManagerAccountRepository
     }
     public async Task DeleteStudentAsync(Student student)
     {
+        var studentId = student.StudentId;
+        // 1. Xoá health records của student
+        var healthRecords = await _context.StudentHealthRecords
+            .Where(x => x.StudentId == student.StudentId)
+            .ToListAsync();
+
+        if (healthRecords.Count > 0)
+        {
+            _context.StudentHealthRecords.RemoveRange(healthRecords);
+        }
+
+        // 2. Xoá allergens của student
+        var allergenRecords = await _context.StudentAllergens
+            .Where(a => a.StudentId == student.StudentId)
+            .ToListAsync();
+
+        if (allergenRecords.Count > 0)
+        {
+            _context.StudentAllergens.RemoveRange(allergenRecords);
+        }
+        // 3. Xoá images
+        var imageRecords = await _context.StudentImages
+            .Where(i => i.StudentId == studentId)
+            .ToListAsync();
+
+        if (imageRecords.Count > 0)
+        {
+            _context.StudentImages.RemoveRange(imageRecords);
+        }
+        // 4. Xử lý billing
+        // 4.1. Lấy danh sách invoiceId của student này
+        var invoiceIds = await _context.Invoices
+            .Where(inv => inv.StudentId == studentId)
+            .Select(inv => inv.InvoiceId)   // đúng tên key của bạn
+            .ToListAsync();
+
+        if (invoiceIds.Any())
+        {
+            // 4.2. Xoá payments trước
+            var payments = await _context.Payments
+                .Where(p => invoiceIds.Contains(p.InvoiceId))
+                .ToListAsync();
+            _context.Payments.RemoveRange(payments);
+
+            // 4.3. Rồi xoá invoices
+            var invoices = await _context.Invoices
+                .Where(inv => invoiceIds.Contains(inv.InvoiceId))
+                .ToListAsync();
+            _context.Invoices.RemoveRange(invoices);
+        }
+        // 5. Xoá attendance
+        var attendances = await _context.Attendances   // hoặc Attendances, tuỳ DbSet
+            .Where(a => a.StudentId == studentId)
+            .ToListAsync();
+        _context.Attendances.RemoveRange(attendances);
+
+
+        // 3. Xoá student
         _context.Students.Remove(student);
+
         await _context.SaveChangesAsync();
     }
 

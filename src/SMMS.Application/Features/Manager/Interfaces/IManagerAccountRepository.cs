@@ -11,6 +11,8 @@ public interface IManagerAccountRepository
 {
     IQueryable<User> Users { get; }
     IQueryable<Role> Roles { get; }
+    IQueryable<Student> Students { get; }
+
     Task<User?> GetByIdAsync(Guid userId);
     Task AddAsync(User user);
     Task UpdateAsync(User user);
