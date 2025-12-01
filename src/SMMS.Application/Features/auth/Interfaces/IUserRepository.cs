@@ -10,4 +10,5 @@ namespace SMMS.Application.Features.auth.Interfaces;
 public interface IUserRepository : IRepository<User>
 {
     Task<List<Guid>> GetIdsByRoleAsync(string roleName);
+    Task<List<Guid>> GetAllActiveUserIdsAsync();
 }

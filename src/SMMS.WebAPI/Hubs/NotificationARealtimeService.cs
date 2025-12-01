@@ -17,17 +17,15 @@ public class NotificationARealtimeService : INotificationARealtimeService
 
     public async Task SendToUsersAsync(IEnumerable<Guid> userIds, AdminNotificationDto notification)
     {
+        if (userIds == null || !userIds.Any()) return;
         var userIdStrings = userIds.Select(u => u.ToString()).ToList();
         await _hub.Clients.Users(userIdStrings)
-            .SendAsync("ReceiveNotification", new
-            {
-                notification.NotificationId,
-                notification.Title,
-                notification.Content,
-                notification.AttachmentUrl,
-                notification.SenderId,
-                notification.CreatedAt
-            });
+            .SendAsync("ReceiveNotification", notification);
+    }
+
+    public async Task BroadcastToAllAsync(AdminNotificationDto notification)
+    {
+        await _hub.Clients.All.SendAsync("ReceiveNotification", notification);
     }
 
     public async Task BroadcastDeletedAsync(long notificationId)

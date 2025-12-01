@@ -7,5 +7,6 @@ namespace SMMS.Application.Features.billing.Interfaces
     {
         Task SendToUsersAsync(IEnumerable<Guid> userIds, AdminNotificationDto notification);
         Task BroadcastDeletedAsync(long notificationId);
+        Task BroadcastToAllAsync(AdminNotificationDto notification);
     }
 }

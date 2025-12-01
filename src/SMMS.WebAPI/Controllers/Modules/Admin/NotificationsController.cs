@@ -4,8 +4,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using Microsoft.EntityFrameworkCore;
+using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.billing.Commands;
 using SMMS.Application.Features.billing.DTOs;
+using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Application.Features.billing.Queries;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.billing;
@@ -19,10 +21,15 @@ namespace SMMS.WebAPI.Controllers.Modules.Admin
     public class NotificationsController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly IUserRepository _userRepository;
+        private readonly INotificationARealtimeService _realtimeService;
 
-        public NotificationsController(IMediator mediator)
+        public NotificationsController(IMediator mediator, IUserRepository userRepository,
+            INotificationARealtimeService realtimeService)
         {
             _mediator = mediator;
+            _userRepository = userRepository;
+            _realtimeService = realtimeService;
         }
 
         /// <summary>
@@ -38,7 +45,15 @@ namespace SMMS.WebAPI.Controllers.Modules.Admin
 
             // Gọi Mediator để tạo notification, handler sẽ gửi Realtime
             var result = await _mediator.Send(new CreateNotificationCommand(dto, adminId));
-
+            try
+            {
+                await _realtimeService.BroadcastToAllAsync(result);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi gửi Realtime Admin: {ex.Message}");
+                throw;
+            }
             // Trả về DTO để frontend hiển thị
             return Ok(result);
         }
@@ -66,6 +81,7 @@ namespace SMMS.WebAPI.Controllers.Modules.Admin
 
             return Ok(notification);
         }
+
         [HttpDelete("{id:long}")]
         public async Task<IActionResult> Delete(long id)
         {

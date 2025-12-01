@@ -26,4 +26,12 @@ public class UserRepository : Repository<User>, IUserRepository
 
         return await query.ToListAsync();
     }
+
+    public async Task<List<Guid>> GetAllActiveUserIdsAsync()
+    {
+        return await _dbContext.Users
+            .Where(u => u.IsActive) // Chỉ lấy user còn hoạt động
+            .Select(u => u.UserId)  // Chỉ SELECT cột UserId (nhẹ hơn nhiều)
+            .ToListAsync();
+    }
 }
