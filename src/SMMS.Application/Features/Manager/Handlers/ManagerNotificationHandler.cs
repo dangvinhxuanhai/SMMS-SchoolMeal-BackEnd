@@ -1,9 +1,10 @@
 using MediatR;
+using SMMS.Application.Features.billing.DTOs;
 using SMMS.Application.Features.Manager.Commands;
 using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.Manager.Queries;
-using SMMS.Domain.Entities.billing;     // Notification, NotificationRecipient
+using SMMS.Domain.Entities.billing; // Notification, NotificationRecipient
 
 namespace SMMS.Application.Features.Manager.Handlers;
 
@@ -12,7 +13,7 @@ public class ManagerNotificationHandler :
     IRequestHandler<UpdateManagerNotificationCommand, ManagerNotificationDto>,
     IRequestHandler<DeleteManagerNotificationCommand, bool>,
     IRequestHandler<GetManagerNotificationByIdQuery, ManagerNotificationDto?>,
-    IRequestHandler<GetManagerNotificationsBySenderQuery, List<ManagerNotificationDto>>
+    IRequestHandler<GetManagerNotificationsBySenderQuery, PagedResult<ManagerNotificationDto>>
 {
     private readonly IManagerNotificationRepository _repo;
     private readonly INotificationRealtimeService _realtime;
@@ -54,7 +55,7 @@ public class ManagerNotificationHandler :
             Content = req.Content,
             AttachmentUrl = req.AttachmentUrl,
             SenderId = command.SenderId,
-            SendType = req.SendType,      // "Immediate" | "Scheduled" | "Recurring"
+            SendType = req.SendType, // "Immediate" | "Scheduled" | "Recurring"
             ScheduleCron = req.ScheduleCron,
             CreatedAt = DateTime.UtcNow,
         };
@@ -65,9 +66,7 @@ public class ManagerNotificationHandler :
         // 4. Tạo NotificationRecipients
         var recEntities = userIds.Select(uid => new NotificationRecipient
         {
-            NotificationId = notif.NotificationId,
-            UserId = uid,
-            IsRead = false
+            NotificationId = notif.NotificationId, UserId = uid, IsRead = false
         }).ToList();
 
         await _repo.AddRecipientsAsync(recEntities);
@@ -190,36 +189,38 @@ public class ManagerNotificationHandler :
     }
 
     // 5️⃣ GET LIST BY SENDER
-    public async Task<List<ManagerNotificationDto>> Handle(
+    public async Task<PagedResult<ManagerNotificationDto>> Handle(
         GetManagerNotificationsBySenderQuery query,
         CancellationToken cancellationToken)
     {
+        var totalCount = await _repo.CountBySenderAsync(query.SenderId);
+
         var notifs = await _repo.GetBySenderAsync(
             query.SenderId, query.Page, query.PageSize);
 
-        if (!notifs.Any())
-            return new List<ManagerNotificationDto>();
+        var resultList = new List<ManagerNotificationDto>();
 
-        var result = new List<ManagerNotificationDto>();
-
-        foreach (var n in notifs)
+        if (notifs.Any())
         {
-            var totalRecipients = await _repo.CountRecipientsAsync(n.NotificationId);
-
-            result.Add(new ManagerNotificationDto
+            foreach (var n in notifs)
             {
-                NotificationId = n.NotificationId,
-                SenderId = n.SenderId,
-                Title = n.Title,
-                Content = n.Content,
-                AttachmentUrl = n.AttachmentUrl,
-                SendType = n.SendType,
-                ScheduleCron = n.ScheduleCron,
-                CreatedAt = n.CreatedAt,
-                TotalRecipients = totalRecipients,
-            });
+                var totalRecipients = await _repo.CountRecipientsAsync(n.NotificationId);
+
+                resultList.Add(new ManagerNotificationDto
+                {
+                    NotificationId = n.NotificationId,
+                    SenderId = n.SenderId,
+                    Title = n.Title,
+                    Content = n.Content,
+                    AttachmentUrl = n.AttachmentUrl,
+                    SendType = n.SendType,
+                    ScheduleCron = n.ScheduleCron,
+                    CreatedAt = n.CreatedAt,
+                    TotalRecipients = totalRecipients,
+                });
+            }
         }
 
-        return result;
+        return new PagedResult<ManagerNotificationDto>(resultList, totalCount);
     }
 }
