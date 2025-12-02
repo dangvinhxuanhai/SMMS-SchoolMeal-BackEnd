@@ -4,9 +4,9 @@ using System.Linq;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Application.Features.Menu.Command.MenuDayFoodItemz;
-using SMMS.Application.Features.Menu.DTOs.MenuDayFoodItemz;
-using SMMS.Application.Features.Menu.Queries.MenuDayFoodItemz;
+using SMMS.Application.Features.Menus.Command.MenuDayFoodItemz;
+using SMMS.Application.Features.Menus.DTOs.MenuDayFoodItemz;
+using SMMS.Application.Features.Menus.Queries.MenuDayFoodItemz;
 using SMMS.Domain.Entities.foodmenu;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff.v1.MenuDayFoodItemsManage;

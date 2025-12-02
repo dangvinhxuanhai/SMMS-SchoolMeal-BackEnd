@@ -1,9 +1,12 @@
 using System.Security.Claims;
+using Azure.Core;
+using DocumentFormat.OpenXml.Office2016.Excel;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.nutrition.Commands;
 using SMMS.Application.Features.nutrition.DTOs;
 using SMMS.Application.Features.nutrition.Queries;
+using SMMS.Persistence.Service;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
@@ -12,10 +15,12 @@ namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 public class FoodItemsController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly CloudinaryService _cloudinary;
 
-    public FoodItemsController(IMediator mediator)
+    public FoodItemsController(IMediator mediator, CloudinaryService cloudinary)
     {
         _mediator = mediator;
+        _cloudinary = cloudinary;
     }
 
     private Guid GetSchoolIdFromToken()
@@ -58,10 +63,36 @@ public class FoodItemsController : ControllerBase
 
     // POST api/nutrition/fooditems
     [HttpPost]
-    public async Task<ActionResult<FoodItemDto>> Create([FromBody] CreateFoodItemCommand command)
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<FoodItemDto>> Create([FromForm] CreateFoodItemRequest request)
     {
-        command.SchoolId = GetSchoolIdFromToken();
-        command.CreatedBy = GetCurrentUserId();
+        var schoolId = GetSchoolIdFromToken();
+        var userId = GetCurrentUserId();
+
+        string imageUrl="";       
+
+        if (request.ImageFile != null)
+        {
+            var uploadedUrl = await _cloudinary.UploadImageAsync(request.ImageFile);
+            if (!string.IsNullOrWhiteSpace(uploadedUrl))
+            {
+                imageUrl = uploadedUrl;
+            }
+        }
+
+        // 3. Tạo command gửi xuống Application
+        var command = new CreateFoodItemCommand
+        {
+            SchoolId = schoolId,
+            CreatedBy = userId,
+            FoodName = request.FoodName,
+            FoodType = request.FoodType,
+            FoodDesc = request.FoodDesc,
+            ImageUrl = imageUrl,
+            IsMainDish = request.IsMainDish,
+            Ingredients = request.Ingredients
+        };
+
         var created = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { id = created.FoodId }, created);
     }

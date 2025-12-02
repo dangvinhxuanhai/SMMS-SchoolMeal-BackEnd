@@ -1,8 +1,8 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using SMMS.Application.Features.Menu.Command.Menuing;
-using SMMS.Application.Features.Menu.DTOs.Menuing;
-using SMMS.Application.Features.Menu.Queries.Menuing;
+using SMMS.Application.Features.Menus.Command.Menuing;
+using SMMS.Application.Features.Menus.DTOs.Menuing;
+using SMMS.Application.Features.Menus.Queries.Menuing;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff.v1.MenuManage;
 
