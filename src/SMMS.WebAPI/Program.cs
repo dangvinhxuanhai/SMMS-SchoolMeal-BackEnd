@@ -69,6 +69,24 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 
+    // ĐẢM BẢO schemaId là duy nhất cho cả generic và non-generic
+    options.CustomSchemaIds(type =>
+    {
+        var ns = type.Namespace ?? "Global";
+        ns = ns.Replace(".", "_");
+
+        if (type.IsGenericType)
+        {
+            // Ví dụ: SMMS_Application_Features_foodmenu_DTOs_PagedResult_WeeklyScheduleDto
+            var genericTypeName = type.Name[..type.Name.IndexOf('`')]; // bỏ `1
+            var genericArgs = string.Join("_",
+                type.GetGenericArguments().Select(t => t.Name));
+            return $"{ns}_{genericTypeName}_{genericArgs}";
+        }
+
+        // Non-generic: SMMS_Application_Features_school_DTOs_CreateSchoolDto
+        return $"{ns}_{type.Name}";
+    });
     options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
         Title = "EduMeal API",

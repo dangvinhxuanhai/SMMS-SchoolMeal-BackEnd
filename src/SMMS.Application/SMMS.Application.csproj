@@ -40,8 +40,10 @@
     <Compile Include="Features\Meal\Interfaces\IMenuRepository.cs" />
     <Compile Include="Features\Meal\Queries\GetMenuDetailQuery.cs" />
     <Compile Include="Features\Meal\Queries\GetMenuListQuery.cs" />
+    <Compile Include="Features\Plan\Commands\ConfirmPurchaseOrderCommand.cs" />
     <Compile Include="Features\Plan\Commands\CreatePurchasePlanFromScheduleCommand.cs" />
     <Compile Include="Features\Plan\Commands\DeletePurchasePlanCommand.cs" />
+    <Compile Include="Features\Plan\Commands\RejectPurchaseOrderCommand.cs" />
     <Compile Include="Features\Plan\Commands\SoftDeletePurchasePlanCommand.cs" />
     <Compile Include="Features\Plan\Commands\UpdatePurchasePlanCommand.cs" />
     <Compile Include="Features\Plan\DTOs\CreatePurchaseOrderFromPlanDto.cs" />
