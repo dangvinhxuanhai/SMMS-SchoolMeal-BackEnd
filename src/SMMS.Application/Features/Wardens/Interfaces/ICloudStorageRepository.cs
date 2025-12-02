@@ -13,4 +13,5 @@ public interface ICloudStorageRepository
     IQueryable<Class> Classes { get; }
     IQueryable<AcademicYear> AcademicYears { get; }
     IQueryable<School> Schools { get; }
+    IQueryable<StudentImage> StudentImages { get; }
 }

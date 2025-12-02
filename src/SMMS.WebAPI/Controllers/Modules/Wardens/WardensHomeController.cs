@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.Manager.Commands;
 using SMMS.Application.Features.Wardens.DTOs;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Application.Features.Wardens.Queries;
@@ -30,7 +31,7 @@ public class WardensHomeController : ControllerBase
     }
     // 1️⃣ Lấy danh sách lớp mà giám thị phụ trách
     // GET: /api/WardensHome/classes/{wardenId}
-    [HttpGet("classes/{wardenId:guid}")]
+    [HttpGet("classes")]
     public async Task<IActionResult> GetClasses()
     {
         try
@@ -95,6 +96,40 @@ public class WardensHomeController : ControllerBase
                 new GetWardenNotificationsQuery(wardenId));
 
             return Ok(notifications);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPut("read-all")]
+    public async Task<IActionResult> MarkAllAsRead()
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            await _mediator.Send(new MarkAllNotificationsAsReadCommand(userId));
+
+            return Ok(new { message = "Đã đánh dấu tất cả là đã đọc." });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // 5️⃣ Lấy dữ liệu thống kê Dashboard (Tổng quan)
+    // GET: /api/WardensHome/dashboard
+    [HttpGet("dashboard")]
+    public async Task<IActionResult> GetDashboardStats()
+    {
+        try
+        {
+            var wardenId = GetCurrentUserId();
+            // Gọi Query đã được định nghĩa ở Region 7 trong Handler
+            var dashboardData = await _mediator.Send(new GetWardenDashboardQuery(wardenId));
+            return Ok(dashboardData);
         }
         catch (Exception ex)
         {

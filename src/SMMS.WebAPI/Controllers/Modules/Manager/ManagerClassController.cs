@@ -122,4 +122,79 @@ public class ManagerClassController : ControllerBase
             return StatusCode(500, new { message = $"Lỗi lấy danh sách niên khóa: {ex.Message}" });
         }
     }
+    // 📅 GET: /api/ManagerClass/academic-years/{yearId}
+    [HttpGet("academic-years/{yearId:int}")]
+    public async Task<IActionResult> GetAcademicYearById(int yearId)
+    {
+        var result = await _mediator.Send(new GetAcademicYearByIdQuery(yearId));
+        if (result == null)
+            return NotFound(new { message = "Không tìm thấy niên khóa." });
+
+        return Ok(result);
+    }
+
+    // 📅 POST: /api/ManagerClass/academic-years
+    [HttpPost("academic-years")]
+    public async Task<IActionResult> CreateAcademicYear([FromBody] CreateAcademicYearRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            request.SchoolId = GetSchoolIdFromToken();
+
+            var result = await _mediator.Send(new CreateAcademicYearCommand(request));
+            return Ok(new
+            {
+                message = "Tạo niên khóa thành công!",
+                data = result
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi hệ thống: {ex.Message}" });
+        }
+    }
+
+    // 📅 PUT: /api/ManagerClass/academic-years/{yearId}
+    [HttpPut("academic-years/{yearId:int}")]
+    public async Task<IActionResult> UpdateAcademicYear(int yearId, [FromBody] UpdateAcademicYearRequest request)
+    {
+        try
+        {
+            var result = await _mediator.Send(new UpdateAcademicYearCommand(yearId, request));
+            if (result == null)
+                return NotFound(new { message = "Không tìm thấy niên khóa cần cập nhật." });
+
+            return Ok(new
+            {
+                message = "Cập nhật niên khóa thành công!",
+                data = result
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Lỗi hệ thống: {ex.Message}" });
+        }
+    }
+
+    // 📅 DELETE: /api/ManagerClass/academic-years/{yearId}
+    [HttpDelete("academic-years/{yearId:int}")]
+    public async Task<IActionResult> DeleteAcademicYear(int yearId)
+    {
+        var success = await _mediator.Send(new DeleteAcademicYearCommand(yearId));
+        if (!success)
+            return NotFound(new { message = "Không tìm thấy niên khóa cần xóa." });
+
+        return Ok(new { message = "Xóa niên khóa thành công!" });
+    }
 }

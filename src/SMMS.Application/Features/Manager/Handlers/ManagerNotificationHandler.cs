@@ -56,7 +56,7 @@ public class ManagerNotificationHandler :
             SenderId = command.SenderId,
             SendType = req.SendType,      // "Immediate" | "Scheduled" | "Recurring"
             ScheduleCron = req.ScheduleCron,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
         };
 
         await _repo.AddNotificationAsync(notif);
@@ -84,7 +84,7 @@ public class ManagerNotificationHandler :
             SendType = notif.SendType,
             ScheduleCron = notif.ScheduleCron,
             CreatedAt = notif.CreatedAt,
-            TotalRecipients = userIds.Count
+            TotalRecipients = userIds.Count,
         };
 
         // 6. 🔔 realtime: gửi tới Parent / KitchenStaff / Teacher
@@ -127,7 +127,7 @@ public class ManagerNotificationHandler :
             SendType = notif.SendType,
             ScheduleCron = notif.ScheduleCron,
             CreatedAt = notif.CreatedAt,
-            TotalRecipients = totalRecipients
+            TotalRecipients = totalRecipients,
         };
     }
 
@@ -185,7 +185,7 @@ public class ManagerNotificationHandler :
             SendType = notif.SendType,
             ScheduleCron = notif.ScheduleCron,
             CreatedAt = notif.CreatedAt,
-            TotalRecipients = totalRecipients
+            TotalRecipients = totalRecipients,
         };
     }
 
@@ -216,7 +216,7 @@ public class ManagerNotificationHandler :
                 SendType = n.SendType,
                 ScheduleCron = n.ScheduleCron,
                 CreatedAt = n.CreatedAt,
-                TotalRecipients = totalRecipients
+                TotalRecipients = totalRecipients,
             });
         }
 

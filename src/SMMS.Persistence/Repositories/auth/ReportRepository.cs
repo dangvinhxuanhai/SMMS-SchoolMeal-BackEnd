@@ -74,6 +74,7 @@ namespace SMMS.Infrastructure.Repositories.Implementations
 
             return result;
         }
+
         public async Task<List<FinanceReportDto>> GetFinanceReportAsync(FinanceReportFilterDto filter)
         {
             var query = _context.SchoolRevenues

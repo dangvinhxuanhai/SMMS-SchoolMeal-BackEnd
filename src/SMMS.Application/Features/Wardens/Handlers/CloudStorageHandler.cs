@@ -14,6 +14,7 @@ using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Application.Features.Wardens.Queries;
 using Microsoft.EntityFrameworkCore;
 namespace SMMS.Application.Features.Wardens.Handlers;
+
 public class CloudStorageHandler :
     IRequestHandler<GetAllImagesQuery, List<CloudImageDto>>,
     IRequestHandler<GetImagesByClassQuery, List<CloudImageDto>>,
@@ -64,17 +65,35 @@ public class CloudStorageHandler :
             var folderPrefix = request.Folder.TrimEnd('/') + "/";
             resources = resources.Where(r => r.PublicId.StartsWith(folderPrefix));
         }
+        var urls = resources
+       .Select(r => r.SecureUrl?.ToString() ?? string.Empty)
+       .Where(u => !string.IsNullOrEmpty(u))
+       .ToList();
 
-        return resources
-            .Select(r => new CloudImageDto
+        var dbImages = await _repo.StudentImages
+            .Where(si => urls.Contains(si.ImageUrl))
+            .ToListAsync(cancellationToken);
+
+        var dbMap = dbImages.ToDictionary(x => x.ImageUrl, x => x.ImageId);
+
+        var resultDto = resources
+            .Select(r =>
             {
-                Url = r.SecureUrl?.ToString() ?? string.Empty,
-                PublicId = r.PublicId,
-                CreatedAt = DateTime.TryParse(r.CreatedAt, out var parsed)
-                    ? parsed
-                    : DateTime.MinValue
+                var url = r.SecureUrl?.ToString() ?? string.Empty;
+                dbMap.TryGetValue(url, out var dbImageId);
+
+                return new CloudImageDto
+                {
+                    Url = url,
+                    PublicId = r.PublicId,
+                    ImageId = dbImageId.ToString(), // 👈 ImageId từ DB
+                    CreatedAt = DateTime.TryParse(r.CreatedAt, out var parsed)
+                        ? parsed
+                        : DateTime.MinValue
+                };
             })
             .ToList();
+        return resultDto;
     }
 
     // 🟡 2. Lấy ảnh theo lớp

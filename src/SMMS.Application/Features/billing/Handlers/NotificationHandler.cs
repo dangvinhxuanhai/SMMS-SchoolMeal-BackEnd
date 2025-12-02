@@ -10,12 +10,14 @@ using SMMS.Application.Features.billing.Queries;
 using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Domain.Entities.billing;
 using Microsoft.EntityFrameworkCore;
+
 namespace SMMS.Application.Features.billing.Handlers
 {
     public class NotificationHandler :
-      IRequestHandler<CreateNotificationCommand, string>,
-      IRequestHandler<GetNotificationHistoryQuery, IEnumerable<NotificationDto>>,
-      IRequestHandler<GetNotificationByIdQuery, NotificationDetailDto?>
+        IRequestHandler<CreateNotificationCommand, AdminNotificationDto>,
+        IRequestHandler<GetNotificationHistoryQuery, IEnumerable<NotificationDto>>,
+        IRequestHandler<GetNotificationByIdQuery, NotificationDetailDto?>,
+        IRequestHandler<DeleteNotificationCommand, bool>
     {
         private readonly INotificationRepository _notificationRepo;
 
@@ -24,7 +26,8 @@ namespace SMMS.Application.Features.billing.Handlers
             _notificationRepo = notificationRepo;
         }
 
-        public async Task<string> Handle(CreateNotificationCommand request, CancellationToken cancellationToken)
+        public async Task<AdminNotificationDto> Handle(CreateNotificationCommand request,
+            CancellationToken cancellationToken)
         {
             var dto = request.Dto;
             var adminId = request.AdminId;
@@ -44,12 +47,23 @@ namespace SMMS.Application.Features.billing.Handlers
 
             await _notificationRepo.AddNotificationAsync(notification);
 
-            return $"Notification ({sendType}) created successfully.";
+            return new AdminNotificationDto
+            {
+                NotificationId = notification.NotificationId,
+                Title = notification.Title,
+                Content = notification.Content,
+                AttachmentUrl = notification.AttachmentUrl,
+                SenderId = notification.SenderId,
+                CreatedAt = notification.CreatedAt
+            };
         }
 
-        public async Task<IEnumerable<NotificationDto>> Handle(GetNotificationHistoryQuery request, CancellationToken cancellationToken)
+        public async Task<IEnumerable<NotificationDto>> Handle(GetNotificationHistoryQuery request,
+            CancellationToken cancellationToken)
         {
-            var data = _notificationRepo.GetAllNotifications();
+            var data = _notificationRepo.GetAllNotifications()
+                .Include(n => n.Sender)
+                .Where(n => n.SenderId == request.adminId); // chỉ lấy thông báo của Admin đang login
 
             return await data
                 .Select(n => new NotificationDto
@@ -61,13 +75,16 @@ namespace SMMS.Application.Features.billing.Handlers
                     SendType = n.SendType,
                     CreatedAt = n.CreatedAt,
                     TotalRecipients = n.NotificationRecipients.Count(),
-                    TotalRead = n.NotificationRecipients.Count(r => r.IsRead)
+                    TotalRead = n.NotificationRecipients.Count(r => r.IsRead),
+                    SenderName = n.Sender != null ? n.Sender.FullName : null
                 })
                 .OrderByDescending(n => n.CreatedAt)
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<NotificationDetailDto?> Handle(GetNotificationByIdQuery request, CancellationToken cancellationToken)
+
+        public async Task<NotificationDetailDto?> Handle(GetNotificationByIdQuery request,
+            CancellationToken cancellationToken)
         {
             var notification = await _notificationRepo.GetByIdAsync(request.Id);
             if (notification == null) return null;
@@ -81,12 +98,24 @@ namespace SMMS.Application.Features.billing.Handlers
                 CreatedAt = notification.CreatedAt,
                 Recipients = notification.NotificationRecipients.Select(r => new RecipientDto
                 {
-                    UserId = r.UserId,
-                    UserEmail = r.User.Email,
-                    IsRead = r.IsRead,
-                    ReadAt = r.ReadAt
+                    UserId = r.UserId, UserEmail = r.User.Email, IsRead = r.IsRead, ReadAt = r.ReadAt
                 }).ToList()
             };
+        }
+
+        public async Task<bool> Handle(DeleteNotificationCommand request, CancellationToken cancellationToken)
+        {
+            var notification = await _notificationRepo.GetByIdAsync(request.NotificationId);
+
+            if (notification == null)
+                return false;
+
+            // CHỈ admin tạo ra thông báo mới được xóa
+            if (notification.SenderId != request.AdminId)
+                throw new UnauthorizedAccessException("Bạn không có quyền xóa thông báo này.");
+
+            await _notificationRepo.DeleteNotificationAsync(notification);
+            return true;
         }
     }
 }

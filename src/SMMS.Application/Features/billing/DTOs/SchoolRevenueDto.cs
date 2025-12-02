@@ -16,7 +16,6 @@ namespace SMMS.Application.Features.billing.DTOs
         public string? ContractNote { get; set; }
 
         public IFormFile? ContractFile { get; set; }  // upload file
-        public Guid? CreatedBy { get; set; }
     }
     public class UpdateSchoolRevenueDto
     {
@@ -26,6 +25,5 @@ namespace SMMS.Application.Features.billing.DTOs
         public string? ContractNote { get; set; }
 
         public IFormFile? ContractFile { get; set; }  // upload file mới
-        public Guid? UpdatedBy { get; set; }
     }
 }
