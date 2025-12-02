@@ -102,8 +102,7 @@ namespace SMMS.Infrastructure.Service
                     rt.RevokedAt == null);
 
             if (storedRefreshToken == null)
-                throw new Exception("Refresh token không hợp lệ.");
-
+                throw new Exception("Refresh token không hợp lệ hoặc đã hết hạn."); // vẫn throw, nhưng chỉ khi CÓ cookie mà sai
             var newToken = _jwtService.GenerateToken(storedRefreshToken.User, storedRefreshToken.User.Role.RoleName);
             var newRefreshTokenString = _jwtService.GenerateRefreshToken();
 

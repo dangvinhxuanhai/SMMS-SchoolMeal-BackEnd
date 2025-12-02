@@ -33,6 +33,13 @@ public class ManagerNotificationRepository : IManagerNotificationRepository
             .ToListAsync();
     }
 
+    public async Task<long> CountBySenderAsync(Guid senderId)
+    {
+        return await _context.Notifications
+            .Where(n => n.SenderId == senderId)
+            .CountAsync();
+    }
+
     public async Task<int> CountRecipientsAsync(long notificationId)
     {
         return await _context.NotificationRecipients
