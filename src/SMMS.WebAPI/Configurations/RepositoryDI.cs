@@ -65,7 +65,7 @@ public static class RepositoryDI
         services.AddScoped<IKitchenDashboardRepository, KitchenDashboardRepository>();
         services.AddScoped<IPurchasePlanRepository, PurchasePlanRepository>();
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
-
+        services.AddScoped<IManagerAcademicYearRepository, ManagerAcademicYearRepository>();
         return services;
     }
 }
