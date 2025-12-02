@@ -56,6 +56,7 @@ public static class SerivceDI
             cfg.RegisterServicesFromAssemblyContaining<ManagerPaymentSettingHandler>();
             cfg.RegisterServicesFromAssemblyContaining<ManagerNotificationHandler>();
             cfg.RegisterServicesFromAssemblyContaining<WardensHealthHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<ManagerAcademicYearHandler>();
         });
 
         services.AddMediatR(cfg =>
