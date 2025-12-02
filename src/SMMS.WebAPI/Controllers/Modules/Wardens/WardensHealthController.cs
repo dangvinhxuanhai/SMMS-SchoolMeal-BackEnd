@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.Wardens.Commands;
 using SMMS.Application.Features.Wardens.DTOs;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Application.Features.Wardens.Queries;
@@ -26,7 +27,7 @@ public class WardensHealthController : ControllerBase
     {
         try
         {
-            var healthData = await _mediator.Send(new GetHealthRecordsQuery(classId));
+            var healthData = await _mediator.Send(new GetStudentsHealthQuery(classId));
             return Ok(healthData);
         }
         catch (Exception ex)
@@ -66,6 +67,89 @@ public class WardensHealthController : ControllerBase
         {
             var healthData = await _mediator.Send(new GetStudentsHealthQuery(classId));
             return Ok(healthData);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+    // 🧾 1) Lịch sử BMI của 1 học sinh
+    // GET: /api/WardensHealth/student/{studentId}/bmi-history
+    [HttpGet("student/{studentId:guid}/bmi-history")]
+    public async Task<IActionResult> GetStudentBmiHistory(Guid studentId)
+    {
+        try
+        {
+            var result = await _mediator.Send(new GetStudentBmiHistoryQuery(studentId));
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // ➕ 2) Tạo record BMI mới cho học sinh
+    // POST: /api/WardensHealth/student/{studentId}/bmi
+    [HttpPost("student/{studentId:guid}/bmi")]
+    public async Task<IActionResult> CreateStudentBmi(Guid studentId, [FromBody] CreateBmiRequest request)
+    {
+        try
+        {
+            var cmd = new CreateStudentBmiCommand(
+                studentId,
+                request.HeightCm,
+                request.WeightKg,
+                request.RecordDate
+            );
+
+            var result = await _mediator.Send(cmd);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // ♻️ 3) Cập nhật 1 record BMI theo RecordId
+    // PUT: /api/WardensHealth/bmi/{recordId}
+    [HttpPut("bmi/{recordId:guid}")]
+    public async Task<IActionResult> UpdateStudentBmi(Guid recordId, [FromBody] UpdateBmiRequest request)
+    {
+        try
+        {
+            var cmd = new UpdateStudentBmiCommand(
+                recordId,
+                request.HeightCm,
+                request.WeightKg,
+                request.RecordDate
+            );
+
+            var result = await _mediator.Send(cmd);
+            if (result == null)
+                return NotFound(new { message = "Health record not found" });
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    // ❌ 4) Xoá 1 record BMI
+    // DELETE: /api/WardensHealth/bmi/{recordId}
+    [HttpDelete("bmi/{recordId:guid}")]
+    public async Task<IActionResult> DeleteStudentBmi(Guid recordId)
+    {
+        try
+        {
+            var ok = await _mediator.Send(new DeleteStudentBmiCommand(recordId));
+            if (!ok)
+                return NotFound(new { message = "Health record not found" });
+
+            return NoContent();
         }
         catch (Exception ex)
         {

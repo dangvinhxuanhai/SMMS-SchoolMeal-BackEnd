@@ -22,4 +22,5 @@ public class CloudStorageRepository : ICloudStorageRepository
     public IQueryable<Class> Classes => _context.Classes;
     public IQueryable<AcademicYear> AcademicYears => _context.AcademicYears;
     public IQueryable<School> Schools => _context.Schools;
+    public IQueryable<StudentImage> StudentImages => _context.StudentImages;
 }

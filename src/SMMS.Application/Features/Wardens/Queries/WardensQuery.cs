@@ -26,7 +26,8 @@ public record GetStudentsInClassQuery(Guid ClassId)
 // 5️⃣ Tổng hợp sức khỏe tất cả học sinh thuộc các lớp của giám thị
 public record GetHealthSummaryQuery(Guid WardenId)
     : IRequest<HealthSummaryDto>;
-
+public record GetStudentBmiHistoryQuery(Guid StudentId)
+    : IRequest<IEnumerable<StudentHealthDto>>;
 // 6️⃣ Sức khỏe học sinh trong 1 lớp
 public record GetStudentsHealthQuery(Guid ClassId)
     : IRequest<IEnumerable<StudentHealthDto>>;

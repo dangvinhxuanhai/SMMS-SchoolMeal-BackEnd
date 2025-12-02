@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Manager.Commands;
 using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Manager.Interfaces;
@@ -14,10 +15,12 @@ namespace SMMS.WebAPI.Controllers.Modules.Manager;
 public class ManagerParentController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly IManagerAccountRepository _accountRepo;   // 👈 thêm
 
-    public ManagerParentController(IMediator mediator)
+    public ManagerParentController(IMediator mediator, IManagerAccountRepository accountRepo)
     {
         _mediator = mediator;
+        _accountRepo = accountRepo;
     }
     private Guid GetSchoolIdFromToken()
     {
@@ -50,14 +53,47 @@ public class ManagerParentController : ControllerBase
 
     // 🟡 Tạo tài khoản phụ huynh + con + gán lớp
     [HttpPost]
+    [Route("create-parent")]
     public async Task<IActionResult> Create([FromBody] CreateParentRequest request)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var result = await _mediator.Send(new CreateParentCommand(request));
-        return Ok(new { message = "Tạo tài khoản phụ huynh thành công!", data = result });
+        try
+        {
+            request.SchoolId = GetSchoolIdFromToken();
+
+            // 👉 Check trước xem có phụ huynh nào trùng email/phone trong hệ thống không
+            var normalizedEmail = string.IsNullOrWhiteSpace(request.Email)
+                ? null
+                : request.Email.Trim().ToLower();
+
+            var existingParent = await _accountRepo.Users
+                .FirstOrDefaultAsync(u =>
+                        ((normalizedEmail != null && u.Email == normalizedEmail) ||
+                         u.Phone == request.Phone));
+
+            bool isExistingParent = existingParent != null;
+
+            // Gọi handler như cũ
+            var result = await _mediator.Send(new CreateParentCommand(request));
+
+            var message = isExistingParent
+                ? "Phụ huynh đã tồn tại trong hệ thống. Hệ thống sử dụng lại thông tin phụ huynh và chỉ thêm con tại trường này."
+                : "Tạo tài khoản phụ huynh thành công!";
+
+            return Ok(new { message, data = result });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Lỗi hệ thống: " + ex.Message });
+        }
     }
+
 
     // 🟠 Cập nhật phụ huynh + con
     [HttpPut("{userId:guid}")]
@@ -65,7 +101,7 @@ public class ManagerParentController : ControllerBase
     {
         var result = await _mediator.Send(new UpdateParentCommand(userId, request));
         if (result == null)
-            return NotFound(new { message = "Không tìm thấy phụ huynh cần cập nhật." });
+            return NotFound(new { message = "Mật khẩu đã được thay đổi không thể cập nhật thông tin phụ huynh." });
 
         return Ok(new { message = "Cập nhật thành công!", data = result });
     }
@@ -82,14 +118,20 @@ public class ManagerParentController : ControllerBase
     }
 
     // 🔴 Xóa tài khoản phụ huynh + con + lớp
+    // 🔴 Xóa phụ huynh KHỎI TRƯỜNG HIỆN TẠI (chỉ xóa con + lớp của trường này)
     [HttpDelete("{userId:guid}")]
     public async Task<IActionResult> Delete(Guid userId)
     {
-        var success = await _mediator.Send(new DeleteParentCommand(userId));
-        if (!success)
-            return NotFound(new { message = "Không tìm thấy tài khoản." });
+        // Lấy SchoolId từ token (manager đang thuộc trường nào)
+        var schoolId = GetSchoolIdFromToken();
 
-        return Ok(new { message = "Xóa tài khoản thành công!" });
+        // Command mới: DeleteParentCommand(Guid userId, Guid schoolId)
+        var success = await _mediator.Send(new DeleteParentCommand(userId, schoolId));
+
+        if (!success)
+            return NotFound(new { message = "Không tìm thấy tài khoản hoặc không có học sinh thuộc trường này." });
+
+        return Ok(new { message = "Xóa phụ huynh khỏi trường hiện tại thành công!" });
     }
 
     // 📥 Import phụ huynh từ Excel

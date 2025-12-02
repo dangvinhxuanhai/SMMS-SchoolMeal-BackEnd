@@ -1,24 +1,27 @@
+using SMMS.Application.Abstractions;
 using SMMS.Application.Features.auth.Interfaces;
 using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.notification.Interfaces;
+using SMMS.Application.Features.nutrition.Interfaces;
+using SMMS.Application.Features.Plan.Interfaces;
 using SMMS.Application.Features.school.Interfaces;
-using SMMS.Infrastructure.Repositories.Implementations;
+using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Infrastructure.Repositories;
+using SMMS.Infrastructure.Repositories.Implementations;
 using SMMS.Infrastructure.Service;
+using SMMS.Persistence;
 using SMMS.Persistence.Repositories.auth;
 using SMMS.Persistence.Repositories.billing;
 using SMMS.Persistence.Repositories.foodmenu;
 using SMMS.Persistence.Repositories.Manager;
+using SMMS.Persistence.Repositories.nutrition;
+using SMMS.Persistence.Repositories.purchasing;
 using SMMS.Persistence.Repositories.schools;
 using SMMS.Persistence.Repositories.Schools;
-using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence.Repositories.Wardens;
-using SMMS.Application.Abstractions;
-using SMMS.Application.Features.nutrition.Interfaces;
-using SMMS.Persistence.Repositories.nutrition;
-using SMMS.Persistence;
+using SMMS.WebAPI.Hubs;
 
 namespace SMMS.WebAPI.Configurations;
 
@@ -36,10 +39,13 @@ public static class RepositoryDI
         services.AddScoped<ISchoolRepository, SchoolRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddScoped<IWardensHealthRepository, WardensHealthRepository>();
         services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
         services.AddScoped<IManagerPaymentSettingRepository, ManagerPaymentSettingRepository>();
         services.AddScoped<ISchoolRevenueRepository, SchoolRevenueRepository>();
         services.AddScoped<IFeedbackRepository, FeedbackRepository>();
+        services.AddScoped<INotificationARealtimeService,  NotificationARealtimeService>();
+        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IWardensRepository, WardensRepository>();
         services.AddScoped<IManagerRepository, ManagerRepository>();
         services.AddScoped<IManagerAccountRepository, ManagerAccountRepository>();
@@ -57,6 +63,8 @@ public static class RepositoryDI
         services.AddScoped<IFoodItemIngredientRepository, FoodItemIngredientRepository>();
         services.AddScoped<IFeedbackRepository, FeedbackRepository>();
         services.AddScoped<IKitchenDashboardRepository, KitchenDashboardRepository>();
+        services.AddScoped<IPurchasePlanRepository, PurchasePlanRepository>();
+        services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
 
         return services;
     }

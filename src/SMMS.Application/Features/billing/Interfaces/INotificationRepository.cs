@@ -7,5 +7,6 @@ namespace SMMS.Application.Features.notification.Interfaces
         IQueryable<Notification> GetAllNotifications();
         Task AddNotificationAsync(Notification notification);
         Task<Notification?> GetByIdAsync(long id);
+        Task DeleteNotificationAsync(Notification notification);
     }
 }

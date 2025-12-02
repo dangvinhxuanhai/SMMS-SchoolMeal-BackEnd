@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -113,6 +114,21 @@ builder.Services.AddAuthentication(options =>
         RoleClaimType = ClaimTypes.Role
     };
 
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/hubs")))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
+
     // Đó test lại r em mở comment cái dòng dưới hình như cần để phía be allow nhận token từ cookie
     /*options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
     {
@@ -122,7 +138,11 @@ builder.Services.AddAuthentication(options =>
             return Task.CompletedTask;
         }
     };*/
-});
+    });
+
+builder.Services.AddControllers().AddJsonOptions(x =>
+    x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+
 
 builder.Services.AddAuthorization();
 builder.Services.Configure<CloudinarySettings>(
@@ -154,7 +174,17 @@ if (app.Environment.IsDevelopment())
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.UseHttpsRedirection();
 
-app.UseAuthentication();
+// var hasher = new PasswordHasher();
+// var password = "@1";
+// var hashed = hasher.HashPassword(password);
+//
+// Console.ForegroundColor = ConsoleColor.Green;
+// Console.WriteLine("=====================================");
+// Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
+// Console.WriteLine(hashed);
+// Console.WriteLine("=====================================");
+// Console.ResetColor();
+
 app.UseCors("AllowFrontend");
 
 app.UseStaticFiles(new StaticFileOptions

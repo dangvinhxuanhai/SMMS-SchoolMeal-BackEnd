@@ -12,7 +12,9 @@ using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.school;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+
 namespace SMMS.Application.Features.Manager.Handlers;
+
 public class ManagerAccountHandler :
     // Queries
     IRequestHandler<SearchAccountsQuery, List<AccountDto>>,

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Domain.Entities.auth;
 using SMMS.Domain.Entities.foodmenu;
@@ -31,7 +32,17 @@ public class WardensFeedbackRepository : IWardensFeedbackRepository
         _context.Feedbacks.Add(feedback);
         await Task.CompletedTask;
     }
+    // 🆕 Lấy 1 feedback theo Id
+    public Task<Feedback?> GetFeedbackByIdAsync(int feedbackId)
+        => _context.Feedbacks
+            .FirstOrDefaultAsync(f => f.FeedbackId == feedbackId);
 
+    // 🆕 Xoá feedback
+    public Task DeleteFeedbackAsync(Feedback feedback)
+    {
+        _context.Feedbacks.Remove(feedback);
+        return Task.CompletedTask;
+    }
     public Task<int> SaveChangesAsync()
         => _context.SaveChangesAsync();
 }

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.foodmenu.Queries;
@@ -16,6 +17,26 @@ public class FeedbacksController : ControllerBase
         _mediator = mediator;
     }
 
+    private Guid GetSchoolIdFromToken()
+    {
+        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        if (string.IsNullOrEmpty(schoolIdClaim))
+            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
+
+        return Guid.Parse(schoolIdClaim);
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdString = User.FindFirst("UserId")?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst("sub")?.Value
+                           ?? User.FindFirst("id")?.Value
+                           ?? throw new Exception("Token does not contain UserId.");
+
+        return Guid.Parse(userIdString);
+    }
+
     /// <summary>
     /// Search / filter / sort feedbacks
     /// </summary>
@@ -27,6 +48,8 @@ public class FeedbacksController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<FeedbackDto>>> Search(
         [FromQuery] SearchFeedbacksQuery query)
     {
+        query.SchoolId = GetSchoolIdFromToken();
+        // query.SenderId = GetCurrentUserId();
         var result = await _mediator.Send(query);
         return Ok(result);
     }

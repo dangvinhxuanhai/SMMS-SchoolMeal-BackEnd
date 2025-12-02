@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.foodmenu.Commands;
@@ -17,6 +18,26 @@ public class AiMenuController : ControllerBase
         _mediator = mediator;
     }
 
+    private Guid GetSchoolIdFromToken()
+    {
+        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        if (string.IsNullOrEmpty(schoolIdClaim))
+            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
+
+        return Guid.Parse(schoolIdClaim);
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdString = User.FindFirst("UserId")?.Value
+                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? User.FindFirst("sub")?.Value
+                           ?? User.FindFirst("id")?.Value
+                           ?? throw new Exception("Token does not contain UserId.");
+
+        return Guid.Parse(userIdString);
+    }
+
     /// <summary>
     /// Nhờ AI đề xuất danh sách món ăn (món chính + món phụ).
     /// </summary>
@@ -26,8 +47,8 @@ public class AiMenuController : ControllerBase
         CancellationToken ct)
     {
         var command = new SuggestMenuCommand(
-            request.UserId,
-            request.SchoolId,
+            GetSchoolIdFromToken(),
+            GetCurrentUserId(),
             request.MainIngredientIds ?? new(),
             request.SideIngredientIds ?? new(),
             request.AvoidAllergenIds ?? new(),
@@ -50,7 +71,7 @@ public class AiMenuController : ControllerBase
         CancellationToken ct)
     {
         var command = new LogAiSelectionCommand(
-            request.UserId,
+            GetCurrentUserId(),
             request.SessionId,
             request.SelectedItems
         );

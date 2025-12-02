@@ -65,4 +65,21 @@ public class ManagerPaymentSettingRepository : IManagerPaymentSettingRepository
         _context.SchoolPaymentSettings.Remove(entity);
         await _context.SaveChangesAsync(cancellationToken);
     }
+    public async Task<bool> HasOverlappedRangeAsync(
+        Guid schoolId,
+        byte fromMonth,
+        byte toMonth,
+        int? excludeSettingId = null,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.SchoolPaymentSettings
+            .AnyAsync(x =>
+                x.SchoolId == schoolId
+                && x.IsActive
+                && (excludeSettingId == null || x.SettingId != excludeSettingId.Value)
+                // 2 khoảng [fromMonth, toMonth] và [x.FromMonth, x.ToMonth] giao nhau
+                && fromMonth <= x.ToMonth
+                && toMonth >= x.FromMonth,
+                cancellationToken);
+    }
 }
