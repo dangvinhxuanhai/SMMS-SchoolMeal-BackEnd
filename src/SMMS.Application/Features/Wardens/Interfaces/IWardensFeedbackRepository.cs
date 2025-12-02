@@ -18,5 +18,7 @@ public interface IWardensFeedbackRepository
     IQueryable<Feedback> Feedbacks { get; }
 
     Task AddFeedbackAsync(Feedback feedback);
+    Task<Feedback?> GetFeedbackByIdAsync(int feedbackId);   // 🆕
+    Task DeleteFeedbackAsync(Feedback feedback);
     Task<int> SaveChangesAsync();
 }

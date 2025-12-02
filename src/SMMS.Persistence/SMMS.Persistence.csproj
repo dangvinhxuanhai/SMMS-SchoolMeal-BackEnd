@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -34,11 +34,13 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" /> 
+    <Folder Include="Data\" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\SMMS.Application\SMMS.Application.csproj" />
     <ProjectReference Include="..\SMMS.Domain\SMMS.Domain.csproj" />
+    <ProjectReference Include="..\SMMS.Infrastructure\SMMS.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

@@ -20,10 +20,15 @@ public class KitchenController : ControllerBase
     private Guid GetSchoolIdFromToken()
     {
         var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        Console.WriteLine($"👉 [API DEBUG] Token Raw Claim 'SchoolId': {schoolIdClaim}");
         if (string.IsNullOrEmpty(schoolIdClaim))
             throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
 
-        return Guid.Parse(schoolIdClaim);
+        var guid = Guid.Parse(schoolIdClaim);
+
+        Console.WriteLine($"👉 [API DEBUG] Parsed SchoolId GUID: {guid}");
+
+        return guid;
     }
 
     [HttpGet("dashboard")]

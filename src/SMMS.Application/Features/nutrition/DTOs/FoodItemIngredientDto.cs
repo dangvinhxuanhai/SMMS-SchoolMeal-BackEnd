@@ -16,5 +16,7 @@ public class FoodItemIngredientRequestDto
 public class FoodItemIngredientDto
 {
     public int IngredientId { get; set; }
+    public string IngredientName { get; set; } = string.Empty; // Thêm
     public decimal QuantityGram { get; set; }
+    public string Unit { get; set; } = string.Empty; // Thêm
 }

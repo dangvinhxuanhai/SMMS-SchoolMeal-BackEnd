@@ -27,4 +27,12 @@ public interface IManagerPaymentSettingRepository
     Task DeleteAsync(
         SchoolPaymentSetting entity,
         CancellationToken cancellationToken = default);
+
+    // ✅ Thêm hàm này để check trùng khoảng tháng
+    Task<bool> HasOverlappedRangeAsync(
+           Guid schoolId,
+           byte fromMonth,
+           byte toMonth,
+           int? excludeSettingId = null,
+           CancellationToken cancellationToken = default);
 }

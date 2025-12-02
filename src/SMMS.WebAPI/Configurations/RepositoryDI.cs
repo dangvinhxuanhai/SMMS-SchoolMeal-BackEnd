@@ -25,6 +25,7 @@ using SMMS.Persistence.Repositories.purchasing;
 using SMMS.Persistence.Repositories.schools;
 using SMMS.Persistence.Repositories.Schools;
 using SMMS.Persistence.Repositories.Wardens;
+using SMMS.WebAPI.Hubs;
 
 namespace SMMS.WebAPI.Configurations;
 
@@ -42,10 +43,13 @@ public static class RepositoryDI
         services.AddScoped<ISchoolRepository, SchoolRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddScoped<IWardensHealthRepository, WardensHealthRepository>();
         services.AddScoped<IMenuRecommendResultRepository, MenuRecommendResultRepository>();
         services.AddScoped<IManagerPaymentSettingRepository, ManagerPaymentSettingRepository>();
         services.AddScoped<ISchoolRevenueRepository, SchoolRevenueRepository>();
         services.AddScoped<IFeedbackRepository, FeedbackRepository>();
+        services.AddScoped<INotificationARealtimeService,  NotificationARealtimeService>();
+        services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IWardensRepository, WardensRepository>();
         services.AddScoped<IManagerRepository, ManagerRepository>();
         services.AddScoped<IManagerAccountRepository, ManagerAccountRepository>();
@@ -68,7 +72,7 @@ public static class RepositoryDI
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IMenuRepository, MenuRepository>();
-        
+                services.AddScoped<IManagerAcademicYearRepository, ManagerAcademicYearRepository>();
         return services;
     }
 }

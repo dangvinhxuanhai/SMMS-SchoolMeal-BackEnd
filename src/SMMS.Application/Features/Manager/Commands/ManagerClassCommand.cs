@@ -17,3 +17,11 @@ public record UpdateClassCommand(Guid ClassId, UpdateClassRequest Request)
 // 🔴 Xóa lớp
 public record DeleteClassCommand(Guid ClassId)
     : IRequest<bool>;
+public record CreateAcademicYearCommand(CreateAcademicYearRequest Request)
+        : IRequest<AcademicYearDto>;
+
+public record UpdateAcademicYearCommand(int YearId, UpdateAcademicYearRequest Request)
+    : IRequest<AcademicYearDto?>;
+
+public record DeleteAcademicYearCommand(int YearId)
+    : IRequest<bool>;

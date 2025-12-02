@@ -73,6 +73,7 @@ public class StudentHealthDto
     public double? BMI { get; set; }
     public string? BMICategory { get; set; }
     public DateTime RecordDate { get; set; }
+    public Guid? RecordId { get; set; }
 }
 
 public class DashboardDto
@@ -100,4 +101,17 @@ public class NotificationDto
     public DateTime CreatedAt { get; set; }
     public bool IsRead { get; set; }
     public string SendType { get; set; } = string.Empty;
+}
+public class CreateBmiRequest
+{
+    public double HeightCm { get; set; }
+    public double WeightKg { get; set; }
+    public DateTime RecordDate { get; set; }
+}
+
+public class UpdateBmiRequest
+{
+    public double HeightCm { get; set; }
+    public double WeightKg { get; set; }
+    public DateTime RecordDate { get; set; }
 }

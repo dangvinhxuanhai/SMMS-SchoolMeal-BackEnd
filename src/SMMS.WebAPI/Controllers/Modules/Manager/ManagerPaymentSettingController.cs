@@ -68,16 +68,37 @@ public class ManagerPaymentSettingController : ControllerBase
     public async Task<IActionResult> Create(
         [FromBody] CreateSchoolPaymentSettingRequest request)
     {
-        var created = await _mediator.Send(new CreateSchoolPaymentSettingCommand(request));
+        try
+        {
+            var created = await _mediator.Send(new CreateSchoolPaymentSettingCommand(request));
 
-        return CreatedAtAction(nameof(GetById),
-            new { settingId = created.SettingId },
-            new
+            return CreatedAtAction(nameof(GetById),
+                new { settingId = created.SettingId },
+                new
+                {
+                    success = true,
+                    message = "Tạo cấu hình mới thành công.",
+                    data = created
+                });
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Lỗi trùng khoảng tháng
+            return BadRequest(new
             {
-                success = true,
-                message = "Tạo cấu hình mới thành công.",
-                data = created
+                success = false,
+                message = ex.Message
             });
+        }
+        catch (ArgumentException ex)
+        {
+            // Lỗi validate input
+            return BadRequest(new
+            {
+                success = false,
+                message = ex.Message
+            });
+        }
     }
 
     // PUT: api/ManagerPaymentSetting/{settingId}
@@ -86,24 +107,45 @@ public class ManagerPaymentSettingController : ControllerBase
         int settingId,
         [FromBody] UpdateSchoolPaymentSettingRequest request)
     {
-        var updated = await _mediator.Send(
-            new UpdateSchoolPaymentSettingCommand(settingId, request));
-
-        if (updated == null)
+        try
         {
-            return NotFound(new
+            var updated = await _mediator.Send(
+                new UpdateSchoolPaymentSettingCommand(settingId, request));
+
+            if (updated == null)
             {
-                success = false,
-                message = "Không tìm thấy cấu hình để cập nhật."
+                return NotFound(new
+                {
+                    success = false,
+                    message = "Không tìm thấy cấu hình để cập nhật."
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Cập nhật cấu hình thành công.",
+                data = updated
             });
         }
-
-        return Ok(new
+        catch (InvalidOperationException ex)
         {
-            success = true,
-            message = "Cập nhật cấu hình thành công.",
-            data = updated
-        });
+            // Lỗi trùng khoảng tháng
+            return BadRequest(new
+            {
+                success = false,
+                message = ex.Message
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            // Lỗi validate input
+            return BadRequest(new
+            {
+                success = false,
+                message = ex.Message
+            });
+        }
     }
 
     // DELETE: api/ManagerPaymentSetting/{settingId}

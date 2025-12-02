@@ -16,14 +16,14 @@ public class WardensHandler :
     IRequestHandler<GetClassAttendanceQuery, ClassAttendanceDto>,
     IRequestHandler<ExportAttendanceReportQuery, byte[]>,
     IRequestHandler<GetStudentsInClassQuery, IEnumerable<StudentDto>>,
-    IRequestHandler<GetHealthSummaryQuery, HealthSummaryDto>,
-    IRequestHandler<GetStudentsHealthQuery, IEnumerable<StudentHealthDto>>,
+
     IRequestHandler<GetWardenDashboardQuery, DashboardDto>,
     IRequestHandler<GetWardenNotificationsQuery, IEnumerable<NotificationDto>>,
     IRequestHandler<ExportClassStudentsQuery, byte[]>,
     IRequestHandler<ExportClassHealthQuery, byte[]>,
     IRequestHandler<GetHealthRecordsQuery, object>,
     IRequestHandler<SearchStudentsInClassQuery, object>
+
 {
     private readonly IWardensRepository _repo;
 
@@ -316,6 +316,7 @@ public class WardensHandler :
             where sc.ClassId == request.ClassId
             select new StudentHealthDto
             {
+                RecordId = health != null ? (Guid?)health.RecordId : null,
                 StudentId = s.StudentId,
                 StudentName = s.FullName,
                 HeightCm = health != null ? (double?)health.HeightCm : null,
@@ -689,16 +690,18 @@ public class WardensHandler :
             return new { Students = new List<object>() };
 
         var keyword = request.Keyword.Trim().ToLower();
+        var words = keyword.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
         var students = await (
             from sc in _repo.StudentClasses
             join s in _repo.Students on sc.StudentId equals s.StudentId
             join p in _repo.Users on s.ParentId equals p.UserId into parentJoin
             from parent in parentJoin.DefaultIfEmpty()
-            where sc.ClassId == request.ClassId &&
-                  (
-                      s.FullName.ToLower().Contains(keyword) ||
-                      (parent.FullName != null && parent.FullName.ToLower().Contains(keyword))
+            where sc.ClassId == request.ClassId
+                  &&
+                  words.All(w =>
+                      s.FullName.ToLower().Contains(w)
+                      || (parent.FullName != null && parent.FullName.ToLower().Contains(w))
                   )
             select new
             {

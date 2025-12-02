@@ -1,6 +1,7 @@
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.OData;
+using Microsoft.AspNetCore.SignalR;
 using SMMS.Application.Common.Interfaces;
 using SMMS.Application.Common.Validators;
 using SMMS.Application.Features.auth.Handlers;
@@ -53,6 +54,9 @@ public static class SerivceDI
             cfg.RegisterServicesFromAssemblyContaining<WardensHandler>();
             cfg.RegisterServicesFromAssemblyContaining<CloudStorageHandler>();
             cfg.RegisterServicesFromAssemblyContaining<ManagerPaymentSettingHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<ManagerNotificationHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<WardensHealthHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<ManagerAcademicYearHandler>();
         });
 
         services.AddMediatR(cfg =>
