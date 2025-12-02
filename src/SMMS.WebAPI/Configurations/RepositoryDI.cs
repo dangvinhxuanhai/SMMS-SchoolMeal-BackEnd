@@ -73,6 +73,7 @@ public static class RepositoryDI
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IMenuRepository, MenuRepository>();
                 services.AddScoped<IManagerAcademicYearRepository, ManagerAcademicYearRepository>();
+        services.AddScoped<IStudentImageRepository, StudentImageRepository>();
         return services;
     }
 }
