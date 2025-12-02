@@ -2,34 +2,35 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using SMMS.Application.Features.foodmenu.Interfaces;
-using SMMS.WebAPI.Configurations;
-using Microsoft.Extensions.FileProviders;
-using SMMS.Application.Features.nutrition.Interfaces;
+using Microsoft.OpenApi.Models;
 using SMMS.Application.Abstractions;
+using SMMS.Application.Features.foodmenu.Interfaces;
+using SMMS.Application.Features.nutrition.Interfaces;
+using SMMS.Application.Features.school.Interfaces;
 using SMMS.Application.Features.Wardens.Interfaces;
-using SMMS.Persistence;
-using SMMS.Persistence.Data;
 using SMMS.Infrastructure.ExternalService.AiMenu;
 using SMMS.Infrastructure.Repositories;
 using SMMS.Infrastructure.Repositories.Implementations;
 using SMMS.Infrastructure.Security;
 using SMMS.Infrastructure.Service;
 using SMMS.Infrastructure.Services;
+using SMMS.Persistence;
+using SMMS.Persistence;
+using SMMS.Persistence.Data;
 using SMMS.Persistence.Data;
 using SMMS.Persistence.Repositories.auth;
 using SMMS.Persistence.Repositories.foodmenu;
 using SMMS.Persistence.Repositories.Manager;
+using SMMS.Persistence.Repositories.nutrition;
 using SMMS.Persistence.Repositories.schools;
 using SMMS.Persistence.Repositories.Schools;
 using SMMS.Persistence.Repositories.Wardens;
-using SMMS.Persistence;
-using SMMS.Persistence.Repositories.nutrition;
+using SMMS.WebAPI.Configurations;
 using SMMS.WebAPI.Configurations;
 using SMMS.WebAPI.Hubs;
-using SMMS.Application.Features.school.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -84,6 +85,31 @@ builder.Services.AddSwaggerGen(options =>
             },
             new string[] { }
         }
+    });
+
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "SMMS.WebAPI",
+        Version = "v1"
+    });
+
+    // ĐẢM BẢO schemaId là duy nhất cho cả generic và non-generic
+    options.CustomSchemaIds(type =>
+    {
+        var ns = type.Namespace ?? "Global";
+        ns = ns.Replace(".", "_");
+
+        if (type.IsGenericType)
+        {
+            // Ví dụ: SMMS_Application_Features_foodmenu_DTOs_PagedResult_WeeklyScheduleDto
+            var genericTypeName = type.Name[..type.Name.IndexOf('`')]; // bỏ `1
+            var genericArgs = string.Join("_",
+                type.GetGenericArguments().Select(t => t.Name));
+            return $"{ns}_{genericTypeName}_{genericArgs}";
+        }
+
+        // Non-generic: SMMS_Application_Features_school_DTOs_CreateSchoolDto
+        return $"{ns}_{type.Name}";
     });
 });
 

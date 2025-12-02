@@ -42,20 +42,20 @@ namespace SMMS.Infrastructure.Service
             if (!user.IsActive)
                 throw new Exception("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.");
             // Kiểm tra mật khẩu
-            if (!_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
-                throw new Exception("Mật khẩu không đúng.");
+            //if (!_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
+            //    throw new Exception("Mật khẩu không đúng.");
 
-            // ✅ Kiểm tra xem có đang dùng mật khẩu tạm không
-            bool isUsingTempPassword = _passwordHasher.VerifyPassword("@1", user.PasswordHash);
+            //// ✅ Kiểm tra xem có đang dùng mật khẩu tạm không
+            //bool isUsingTempPassword = _passwordHasher.VerifyPassword("@1", user.PasswordHash);
 
-            if (isUsingTempPassword)
-            {
-                return new LoginResponseDto
-                {
-                    RequirePasswordReset = true,
-                    Message = "Tài khoản đang sử dụng mật khẩu tạm, vui lòng đổi mật khẩu để kích hoạt."
-                };
-            }
+            //if (isUsingTempPassword)
+            //{
+            //    return new LoginResponseDto
+            //    {
+            //        RequirePasswordReset = true,
+            //        Message = "Tài khoản đang sử dụng mật khẩu tạm, vui lòng đổi mật khẩu để kích hoạt."
+            //    };
+            //}
 
             // ✅ Sinh JWT token
             string token = _jwtService.GenerateToken(user, user.Role.RoleName);

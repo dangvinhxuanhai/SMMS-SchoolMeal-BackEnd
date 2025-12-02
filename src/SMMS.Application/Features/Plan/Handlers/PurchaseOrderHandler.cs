@@ -21,7 +21,9 @@ public class PurchaseOrderHandler :
         IRequestHandler<GetPurchaseOrderByIdQuery, KsPurchaseOrderDetailDto?>,
         IRequestHandler<GetPurchaseOrdersBySchoolQuery, List<PurchaseOrderSummaryDto>>,
         IRequestHandler<UpdatePurchaseOrderLinesCommand, List<KsPurchaseOrderLineDto>>,
-        IRequestHandler<DeletePurchaseOrderLineCommand, Unit>
+        IRequestHandler<DeletePurchaseOrderLineCommand, Unit>,
+        IRequestHandler<ConfirmPurchaseOrderCommand, KsPurchaseOrderDetailDto>,
+        IRequestHandler<RejectPurchaseOrderCommand, KsPurchaseOrderDetailDto>
 {
     private readonly IPurchaseOrderRepository _repository;
     private readonly IPurchasePlanRepository _planRepository;
@@ -111,30 +113,6 @@ public class PurchaseOrderHandler :
 
         // 6) Lưu
         await _repository.AddAsync(order, cancellationToken);
-
-        // ====== Cập nhật Inventory từ các purchase lines ======
-        var reference = $"PO-FromPlan:{plan.PlanId}";
-
-        foreach (var line in order.PurchaseOrderLines)
-        {
-            // 1) Tạo hoặc cộng dồn quantity cho InventoryItem
-            var item = await _inventoryRepository.AddOrIncreaseAsync(
-                schoolId,
-                line.IngredientId,
-                line.QuantityGram,
-                line.ExpiryDate,
-                line.BatchNo,
-                line.Origin,
-                request.StaffUserId,          // CreatedBy
-                cancellationToken);
-
-            // 2) Ghi transaction IN
-            await _inventoryRepository.AddInboundTransactionAsync(
-                item,
-                line.QuantityGram,
-                reference,
-                cancellationToken);
-        }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -245,6 +223,105 @@ public class PurchaseOrderHandler :
             cancellationToken);
 
         return Unit.Value;
+    }
+
+    public async Task<KsPurchaseOrderDetailDto> Handle(
+    ConfirmPurchaseOrderCommand request,
+    CancellationToken cancellationToken)
+    {
+        // 1) Load order (kèm lines)
+        var order = await _repository.GetByIdAsync(
+            request.OrderId,
+            request.SchoolId,
+            cancellationToken)
+            ?? throw new KeyNotFoundException("Purchase order not found.");
+
+        if (!string.Equals(order.PurchaseOrderStatus, "Draft", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Only Draft purchase orders can be confirmed.");
+        }
+
+        if (order.PlanId == null)
+            throw new InvalidOperationException("Purchase order is not linked to a purchase plan.");
+
+        // 2) Load plan + schedule meal
+        var plan = await _planRepository.GetByIdAsync(order.PlanId.Value, cancellationToken)
+                  ?? throw new KeyNotFoundException($"Purchase plan {order.PlanId} not found.");
+
+        // Giả sử GetByIdAsync include luôn ScheduleMeal navigation.
+        plan.PlanStatus = "Confirmed";
+        plan.ConfirmedBy = request.ManagerUserId;
+        plan.ConfirmedAt = DateTime.UtcNow;
+
+        if (plan.ScheduleMeal != null)
+        {
+            plan.ScheduleMeal.Status = "Confirmed";
+        }
+
+        // 3) Đổi status order
+        order.PurchaseOrderStatus = "Confirmed";
+
+        // 4) Cập nhật Inventory từ các purchase order lines
+        var reference = $"PO-FromPlan:{plan.PlanId}";
+
+        foreach (var line in order.PurchaseOrderLines)
+        {
+            var item = await _inventoryRepository.AddOrIncreaseAsync(
+                order.SchoolId,
+                line.IngredientId,
+                line.QuantityGram,
+                line.ExpiryDate,
+                line.BatchNo,
+                line.Origin,
+                request.ManagerUserId,    // CreatedBy = manager duyệt
+                cancellationToken);
+
+            await _inventoryRepository.AddInboundTransactionAsync(
+                item,
+                line.QuantityGram,
+                reference,
+                cancellationToken);
+        }
+
+        // 5) Lưu tất cả trong 1 transaction
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return MapToDetail(order);
+    }
+
+    public async Task<KsPurchaseOrderDetailDto> Handle(
+    RejectPurchaseOrderCommand request,
+    CancellationToken cancellationToken)
+    {
+        var order = await _repository.GetByIdAsync(
+            request.OrderId,
+            request.SchoolId,
+            cancellationToken)
+            ?? throw new KeyNotFoundException("Purchase order not found.");
+
+        if (!string.Equals(order.PurchaseOrderStatus, "Draft", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Only Draft purchase orders can be exported.");
+        }
+
+        if (order.PlanId == null)
+            throw new InvalidOperationException("Purchase order is not linked to a purchase plan.");
+
+        var plan = await _planRepository.GetByIdAsync(order.PlanId.Value, cancellationToken)
+                  ?? throw new KeyNotFoundException($"Purchase plan {order.PlanId} not found.");
+
+        // Đổi status sang Exported, không nhập kho
+        order.PurchaseOrderStatus = "Rejected";
+        plan.PlanStatus = "Rejected";
+
+        if (plan.ScheduleMeal != null)
+        {
+            plan.ScheduleMeal.Status = "Rejected";
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return MapToDetail(order);
     }
 
     #region Mapping helpers
