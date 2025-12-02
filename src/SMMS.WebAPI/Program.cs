@@ -118,12 +118,9 @@ builder.Services.AddAuthentication(options =>
     {
         OnMessageReceived = context =>
         {
-            var accessToken = context.Request.Query["access_token"];
-            var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) &&
-                (path.StartsWithSegments("/hubs")))
+            if (context.Request.Cookies.ContainsKey("accessToken"))
             {
-                context.Token = accessToken;
+                context.Token = context.Request.Cookies["accessToken"];
             }
             return Task.CompletedTask;
         }

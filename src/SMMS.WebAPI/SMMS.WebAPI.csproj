@@ -58,4 +58,16 @@
     <ProjectReference Include="..\SMMS.Persistence\SMMS.Persistence.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="wwwroot\uploads\edu-meal\student-avatars\student_397f430f-f418-4158-9061-189af862d40f_20251118114955" />
+    <_ContentIncludedByDefault Remove="wwwroot\uploads\edu-meal\student-avatars\student_d0d7cc51-a12b-47f4-99dc-225c0f44f794_20251120033750.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\uploads\edu-meal\user-avatars\user_65edee23-adbe-4218-8a7a-580ebe8a72f6_20251120024855" />
+    <_ContentIncludedByDefault Remove="wwwroot\uploads\edu-meal\user-avatars\user_65edee23-adbe-4218-8a7a-580ebe8a72f6_20251120030549.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\uploads\edu-meal\user-avatars\user_65edee23-adbe-4218-8a7a-580ebe8a72f6_20251120031310.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\uploads\edu-meal\user-avatars\user_65edee23-adbe-4218-8a7a-580ebe8a72f6_20251120032018.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\uploads\edu-meal\user-avatars\user_65edee23-adbe-4218-8a7a-580ebe8a72f6_20251120032050.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\uploads\edu-meal\user-avatars\user_65edee23-adbe-4218-8a7a-580ebe8a72f6_20251120032718.png" />
+    <_ContentIncludedByDefault Remove="wwwroot\uploads\edu-meal\user-avatars\user_65edee23-adbe-4218-8a7a-580ebe8a72f6_20251120033738.png" />
+  </ItemGroup>
+
 </Project>

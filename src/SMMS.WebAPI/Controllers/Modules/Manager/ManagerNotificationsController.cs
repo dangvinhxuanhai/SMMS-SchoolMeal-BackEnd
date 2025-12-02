@@ -164,10 +164,15 @@ public class ManagerNotificationsController : ControllerBase
 
         var senderId = GetCurrentUserId();
 
-        var list = await _mediator.Send(
+        var result = await _mediator.Send(
             new GetManagerNotificationsBySenderQuery(senderId, page, pageSize));
 
-        return Ok(new { page, pageSize, count = list.Count, data = list });
+        return Ok(new {
+            page,
+            pageSize,
+            count = result.TotalCount,
+            data = result.Items
+        });
     }
 
     [HttpGet("notifications")]
