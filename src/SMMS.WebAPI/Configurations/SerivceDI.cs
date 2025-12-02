@@ -56,6 +56,7 @@ public static class SerivceDI
             cfg.RegisterServicesFromAssemblyContaining<ManagerPaymentSettingHandler>();
             cfg.RegisterServicesFromAssemblyContaining<ManagerNotificationHandler>();
             cfg.RegisterServicesFromAssemblyContaining<WardensHealthHandler>();
+            cfg.RegisterServicesFromAssemblyContaining<ManagerAcademicYearHandler>();
         });
 
         services.AddMediatR(cfg =>
@@ -65,7 +66,7 @@ public static class SerivceDI
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
         //  cloud
-        services.AddScoped<CloudinaryService>();
+        services.AddScoped<CloudinaryService>(); 
         services.AddScoped<INotificationRealtimeService, NotificationRealtimeService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
 

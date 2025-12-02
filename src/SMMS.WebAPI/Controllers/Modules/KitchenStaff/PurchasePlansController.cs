@@ -112,10 +112,9 @@ public class PurchasePlansController : ControllerBase
     // GET api/purchase-plans?schoolId=...&includeDeleted=false
     [HttpGet]
     public async Task<ActionResult<List<PurchasePlanListItemDto>>> GetAll(
-        [FromQuery] Guid schoolId,
         [FromQuery] bool includeDeleted = false)
     {
-        var query = new GetPurchasePlansQuery(schoolId, includeDeleted);
+        var query = new GetPurchasePlansQuery(GetSchoolIdFromToken(), includeDeleted);
         var result = await _mediator.Send(query);
         return Ok(result);
     }
@@ -124,13 +123,12 @@ public class PurchasePlansController : ControllerBase
     // GET api/purchase-plans/by-date?schoolId=...&date=2025-11-28
     [HttpGet("by-date")]
     public async Task<ActionResult<PurchasePlanDto>> GetByDate(
-        [FromQuery] Guid schoolId,
         [FromQuery] DateOnly? date)
     {
         var day = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
 
         var result = await _mediator.Send(
-            new GetPurchasePlanByDateQuery(schoolId, day));
+            new GetPurchasePlanByDateQuery(GetSchoolIdFromToken(), day));
 
         if (result == null)
             return NotFound();

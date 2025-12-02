@@ -28,10 +28,23 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Features\Meal\Command\CreateScheduleMealCommand.cs" />
+    <Compile Include="Features\Meal\DTOs\DailyMealRequestDto.cs" />
+    <Compile Include="Features\Meal\DTOs\KsMenuDetailDto.cs" />
+    <Compile Include="Features\Meal\DTOs\KsMenuListItemDto.cs" />
+    <Compile Include="Features\Meal\DTOs\MenuDayFoodItemDto.cs" />
+    <Compile Include="Features\Meal\DTOs\MenuDetailDto.cs" />
+    <Compile Include="Features\Meal\Handlers\CreateScheduleMealCommandHandler.cs" />
+    <Compile Include="Features\Meal\Handlers\GetMenuDetailQueryHandler.cs" />
+    <Compile Include="Features\Meal\Handlers\GetMenuListQueryHandler.cs" />
+    <Compile Include="Features\Meal\Interfaces\IMenuRepository.cs" />
+    <Compile Include="Features\Meal\Queries\GetMenuDetailQuery.cs" />
+    <Compile Include="Features\Meal\Queries\GetMenuListQuery.cs" />
     <Compile Include="Features\Plan\Commands\CreatePurchasePlanFromScheduleCommand.cs" />
     <Compile Include="Features\Plan\Commands\DeletePurchasePlanCommand.cs" />
     <Compile Include="Features\Plan\Commands\SoftDeletePurchasePlanCommand.cs" />
     <Compile Include="Features\Plan\Commands\UpdatePurchasePlanCommand.cs" />
+    <Compile Include="Features\Plan\DTOs\CreatePurchaseOrderFromPlanDto.cs" />
     <Compile Include="Features\Plan\DTOs\CreatePurchaseOrderLineFromPlanDto.cs" />
     <Compile Include="Features\Plan\DTOs\KsPurchaseOrderDto.cs" />
     <Compile Include="Features\Plan\DTOs\PurchasePlanDto.cs" />
@@ -62,6 +75,11 @@
     <Folder Include="Common\Validators\" />
     <Folder Include="Features\Menu\Interfaces\" />
     <Folder Include="Features\Menu\Search\" />
+    <Folder Include="Features\Inventory\Service\" />
+    <Folder Include="Features\Inventory\Validators\" />
+    <Folder Include="Features\Menus\Interfaces\" />
+    <Folder Include="Features\Menus\Search\" />
+    <Folder Include="Features\Notifications\" />
     <Folder Include="Features\nutrition\Validators\" />
     <Folder Include="Features\Menu\Interfaces\" />
     <Folder Include="Features\Menu\Search\" />

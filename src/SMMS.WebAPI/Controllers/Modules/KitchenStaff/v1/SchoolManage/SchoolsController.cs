@@ -1,8 +1,8 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using SMMS.Application.Features.Menu.Command.Schooling;
-using SMMS.Application.Features.Menu.DTOs.Schooling;
-using SMMS.Application.Features.Menu.Queries.Schooling;
+using SMMS.Application.Features.Menus.Command.Schooling;
+using SMMS.Application.Features.Menus.DTOs.Schooling;
+using SMMS.Application.Features.Menus.Queries.Schooling;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff.v1.SchoolManage;
 

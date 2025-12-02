@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MediatR;
 using SMMS.Application.Abstractions;
+using SMMS.Application.Features.Inventory.Interfaces;
 using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Plan.Commands;
 using SMMS.Application.Features.Plan.DTOs;
@@ -24,12 +25,14 @@ public class PurchaseOrderHandler :
 {
     private readonly IPurchaseOrderRepository _repository;
     private readonly IPurchasePlanRepository _planRepository;
+    private readonly IInventoryRepository _inventoryRepository;
     private readonly IUnitOfWork _unitOfWork;
-    public PurchaseOrderHandler(IPurchaseOrderRepository repository, IUnitOfWork unitOfWork, IPurchasePlanRepository planRepository)
+    public PurchaseOrderHandler(IPurchaseOrderRepository repository, IUnitOfWork unitOfWork, IPurchasePlanRepository planRepository, IInventoryRepository inventoryRepository)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
         _planRepository = planRepository;
+        _inventoryRepository = inventoryRepository;
     }
 
     public async Task<KsPurchaseOrderDto> Handle(
@@ -47,10 +50,10 @@ public class PurchaseOrderHandler :
                    ?? throw new KeyNotFoundException($"PurchasePlan {request.PlanId} not found");
 
         // Optional: chỉ cho phép tạo order từ plan đã Confirmed
-        if (!string.Equals(plan.PlanStatus, "Confirmed", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("Purchase plan must be Confirmed before creating purchase order.");
-        }
+        //if (!string.Equals(plan.PlanStatus, "Confirmed", StringComparison.OrdinalIgnoreCase))
+        //{
+        //    throw new InvalidOperationException("Purchase plan must be Confirmed before creating purchase order.");
+        //}
 
         // 2) Không cho tạo trùng đơn cho cùng 1 Plan
         if (await _repository.ExistsForPlanAsync(plan.PlanId, cancellationToken))
@@ -108,6 +111,31 @@ public class PurchaseOrderHandler :
 
         // 6) Lưu
         await _repository.AddAsync(order, cancellationToken);
+
+        // ====== Cập nhật Inventory từ các purchase lines ======
+        var reference = $"PO-FromPlan:{plan.PlanId}";
+
+        foreach (var line in order.PurchaseOrderLines)
+        {
+            // 1) Tạo hoặc cộng dồn quantity cho InventoryItem
+            var item = await _inventoryRepository.AddOrIncreaseAsync(
+                schoolId,
+                line.IngredientId,
+                line.QuantityGram,
+                line.ExpiryDate,
+                line.BatchNo,
+                line.Origin,
+                request.StaffUserId,          // CreatedBy
+                cancellationToken);
+
+            // 2) Ghi transaction IN
+            await _inventoryRepository.AddInboundTransactionAsync(
+                item,
+                line.QuantityGram,
+                reference,
+                cancellationToken);
+        }
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         // 7) Map sang DTO trả về

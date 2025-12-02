@@ -8,33 +8,15 @@ using Microsoft.IdentityModel.Tokens;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.WebAPI.Configurations;
 using Microsoft.Extensions.FileProviders;
-using SMMS.Application.Features.nutrition.Interfaces;
-using SMMS.Application.Abstractions;
 using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Persistence;
 using SMMS.Persistence.Data;
 using SMMS.Infrastructure.ExternalService.AiMenu;
-using SMMS.Infrastructure.Repositories;
-using SMMS.Infrastructure.Repositories.Implementations;
-using SMMS.Infrastructure.Security;
-using SMMS.Infrastructure.Service;
-using SMMS.Infrastructure.Services;
-using SMMS.Persistence.Data;
-using SMMS.Persistence.Repositories.auth;
-using SMMS.Persistence.Repositories.foodmenu;
-using SMMS.Persistence.Repositories.Manager;
-using SMMS.Persistence.Repositories.schools;
-using SMMS.Persistence.Repositories.Schools;
-using SMMS.Persistence.Repositories.Wardens;
-using SMMS.Persistence;
-using SMMS.Persistence.Repositories.nutrition;
-using SMMS.WebAPI.Configurations;
 using SMMS.WebAPI.Hubs;
-using SMMS.Application.Features.school.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+//builder.Services.AddControllers();
 builder.Services.AddDbContext<EduMealContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("SqlConnection")));
 
@@ -86,6 +68,13 @@ builder.Services.AddSwaggerGen(options =>
             new string[] { }
         }
     });
+
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "EduMeal API",
+        Version = "v1"
+    });
+
 });
 
 // JWT Authentication

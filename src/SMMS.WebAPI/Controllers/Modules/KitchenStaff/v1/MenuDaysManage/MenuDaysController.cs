@@ -1,9 +1,9 @@
 using System;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using SMMS.Application.Features.Menu.Command.MenuDaying;
-using SMMS.Application.Features.Menu.DTOs.MenuDaying;
-using SMMS.Application.Features.Menu.Queries.MenuDaying;
+using SMMS.Application.Features.Menus.Command.MenuDaying;
+using SMMS.Application.Features.Menus.DTOs.MenuDaying;
+using SMMS.Application.Features.Menus.Queries.MenuDaying;
 using SMMS.Domain.Entities.foodmenu;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff.v1.MenuDaysManage;

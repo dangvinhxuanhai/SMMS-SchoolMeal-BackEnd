@@ -44,9 +44,6 @@ public partial class Menu
     [InverseProperty("Menu")]
     public virtual ICollection<MenuDay> MenuDays { get; set; } = new List<MenuDay>();
 
-    [InverseProperty("Menu")]
-    public virtual ICollection<ScheduleMeal> ScheduleMeals { get; set; } = new List<ScheduleMeal>();
-
     [ForeignKey("SchoolId")]
     [InverseProperty("Menus")]
     public virtual School School { get; set; } = null!;
@@ -55,3 +52,4 @@ public partial class Menu
     [InverseProperty("Menus")]
     public virtual AcademicYear? Year { get; set; }
 }
+

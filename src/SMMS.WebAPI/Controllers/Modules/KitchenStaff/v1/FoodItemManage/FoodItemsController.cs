@@ -6,9 +6,9 @@ using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SMMS.Application.Features.Menu.Command;
-using SMMS.Application.Features.Menu.DTOs;
-using SMMS.Application.Features.Menu.Queries;
+using SMMS.Application.Features.Menus.Command;
+using SMMS.Application.Features.Menus.DTOs;
+using SMMS.Application.Features.Menus.Queries;
 using SMMS.Domain.Entities.nutrition;
 using SMMS.Persistence.Data;
 
