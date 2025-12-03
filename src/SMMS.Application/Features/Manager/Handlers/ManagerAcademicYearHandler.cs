@@ -116,11 +116,8 @@ public class ManagerAcademicYearHandler :
             entity.YearName = req.YearName.Trim();
         }
 
-        if (req.BoardingStartDate.HasValue)
-            entity.BoardingStartDate = req.BoardingStartDate.Value;
-
-        if (req.BoardingEndDate.HasValue)
-            entity.BoardingEndDate = req.BoardingEndDate.Value;
+        entity.BoardingStartDate = req.BoardingStartDate;
+        entity.BoardingEndDate = req.BoardingEndDate;
 
         if (entity.BoardingStartDate.HasValue && entity.BoardingEndDate.HasValue &&
             entity.BoardingStartDate > entity.BoardingEndDate)
