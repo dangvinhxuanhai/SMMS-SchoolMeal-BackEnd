@@ -30,7 +30,7 @@ public class WardensFeedbackController : ControllerBase
     }
     // 🟢 Lấy danh sách feedback của giám thị
     // GET: /api/WardensFeedback/{wardenId}/list
-    [HttpGet("{wardenId:guid}/list")]
+    [HttpGet("list")]
     public async Task<IActionResult> GetFeedbacks()
     {
         try
@@ -107,11 +107,11 @@ public class WardensFeedbackController : ControllerBase
 
     [HttpDelete("{feedbackId:int}")]
     public async Task<IActionResult> DeleteFeedback(
-           int feedbackId,
-           [FromQuery] Guid wardenId)
+           int feedbackId)
     {
         try
         {
+            var wardenId = GetCurrentUserId();
             var ok = await _mediator.Send(
                 new DeleteWardenFeedbackCommand(feedbackId, wardenId));
 
