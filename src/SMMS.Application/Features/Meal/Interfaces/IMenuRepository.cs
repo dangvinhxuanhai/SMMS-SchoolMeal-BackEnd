@@ -27,4 +27,10 @@ public interface IMenuRepository
         int menuId,
         Guid schoolId,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Xóa cứng 1 menu và toàn bộ dữ liệu liên quan.
+    /// </summary>
+    /// <returns>true nếu xóa được, false nếu không tìm thấy</returns>
+    Task<bool> HardDeleteAsync(int menuId, CancellationToken cancellationToken = default);
 }

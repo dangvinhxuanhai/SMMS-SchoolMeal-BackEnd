@@ -2,6 +2,7 @@ using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.Meal.Command;
 using SMMS.Application.Features.Meal.DTOs;
 using SMMS.Application.Features.Meal.Queries;
 
@@ -54,6 +55,14 @@ public class MenusController : ControllerBase
 
         var result = await _mediator.Send(query, ct);
         return Ok(result);
+    }
+
+    // DELETE api/menus/{id}/hard
+    [HttpDelete("{id:int}/hard")]
+    public async Task<IActionResult> HardDelete(int id)
+    {
+        await _mediator.Send(new DeleteMenuHardCommand(id));
+        return NoContent();
     }
 
     // ================= helper lấy claim =================
