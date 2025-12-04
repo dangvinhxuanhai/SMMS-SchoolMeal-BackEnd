@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using DocumentFormat.OpenXml.Drawing.Charts;
 using DocumentFormat.OpenXml.ExtendedProperties;
+using DocumentFormat.OpenXml.Office2010.Excel;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -29,17 +30,24 @@ public class MenusController : ControllerBase
         [FromQuery] short? weekNo,
         CancellationToken ct)
     {
-        var schoolId = GetSchoolIdFromToken();
-
-        var query = new GetMenuListQuery
+        try
         {
-            SchoolId = schoolId,
-            YearId = yearId,
-            WeekNo = weekNo
-        };
+            var schoolId = GetSchoolIdFromToken();
 
-        var result = await _mediator.Send(query, ct);
-        return Ok(result);
+            var query = new GetMenuListQuery
+            {
+                SchoolId = schoolId,
+                YearId = yearId,
+                WeekNo = weekNo
+            };
+
+            var result = await _mediator.Send(query, ct);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // GET api/menus/{id}
@@ -48,16 +56,23 @@ public class MenusController : ControllerBase
         int id,
         CancellationToken ct)
     {
-        var schoolId = GetSchoolIdFromToken();
-
-        var query = new GetMenuDetailQuery
+        try
         {
-            MenuId = id,
-            SchoolId = schoolId
-        };
+            var schoolId = GetSchoolIdFromToken();
 
-        var result = await _mediator.Send(query, ct);
-        return Ok(result);
+            var query = new GetMenuDetailQuery
+            {
+                MenuId = id,
+                SchoolId = schoolId
+            };
+
+            var result = await _mediator.Send(query, ct);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // DELETE api/menus/{id}/hard

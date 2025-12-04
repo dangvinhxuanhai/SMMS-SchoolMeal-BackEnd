@@ -46,20 +46,20 @@ public class AiMenuController : ControllerBase
         [FromBody] SuggestMenuRequest request,
         CancellationToken ct)
     {
-        var command = new SuggestMenuCommand(
-            GetSchoolIdFromToken(),
-            GetCurrentUserId(),
-            request.MainIngredientIds ?? new(),
-            request.SideIngredientIds ?? new(),
-            request.AvoidAllergenIds ?? new(),
-            request.MaxMainKcal,
-            request.MaxSideKcal,
-            request.TopKMain ?? 5,
-            request.TopKSide ?? 5
-        );
 
         try
         {
+            var command = new SuggestMenuCommand(
+                GetSchoolIdFromToken(),
+                GetCurrentUserId(),
+                request.MainIngredientIds ?? new(),
+                request.SideIngredientIds ?? new(),
+                request.AvoidAllergenIds ?? new(),
+                request.MaxMainKcal,
+                request.MaxSideKcal,
+                request.TopKMain ?? 5,
+                request.TopKSide ?? 5
+            );
             var result = await _mediator.Send(command, ct);
             return Ok(result); // chứa session_id + danh sách món
         }
@@ -77,14 +77,13 @@ public class AiMenuController : ControllerBase
         [FromBody] LogAiSelectionRequest request,
         CancellationToken ct)
     {
-        var command = new LogAiSelectionCommand(
-            GetCurrentUserId(),
-            request.SessionId,
-            request.SelectedItems
-        );
-
         try
         {
+            var command = new LogAiSelectionCommand(
+                GetCurrentUserId(),
+                request.SessionId,
+                request.SelectedItems
+            );
             await _mediator.Send(command, ct);
             return NoContent();
         }

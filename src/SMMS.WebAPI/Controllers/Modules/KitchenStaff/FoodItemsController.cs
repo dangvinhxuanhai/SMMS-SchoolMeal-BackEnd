@@ -48,8 +48,15 @@ public class FoodItemsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<FoodItemDto>>> GetList(
         [FromQuery] string? keyword)
     {
-        var result = await _mediator.Send(new GetFoodItemsQuery(GetSchoolIdFromToken(), keyword));
-        return Ok(result);
+        try
+        {
+            var result = await _mediator.Send(new GetFoodItemsQuery(GetSchoolIdFromToken(), keyword));
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // GET api/nutrition/fooditems/5
@@ -66,35 +73,34 @@ public class FoodItemsController : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<FoodItemDto>> Create([FromForm] CreateFoodItemRequest request)
     {
-        var schoolId = GetSchoolIdFromToken();
-        var userId = GetCurrentUserId();
-
-        string imageUrl="";       
-
-        if (request.ImageFile != null)
-        {
-            var uploadedUrl = await _cloudinary.UploadImageAsync(request.ImageFile);
-            if (!string.IsNullOrWhiteSpace(uploadedUrl))
-            {
-                imageUrl = uploadedUrl;
-            }
-        }
-
-        // 3. Tạo command gửi xuống Application
-        var command = new CreateFoodItemCommand
-        {
-            SchoolId = schoolId,
-            CreatedBy = userId,
-            FoodName = request.FoodName,
-            FoodType = request.FoodType,
-            FoodDesc = request.FoodDesc,
-            ImageUrl = imageUrl,
-            IsMainDish = request.IsMainDish,
-            Ingredients = request.Ingredients
-        };
-
         try
         {
+            var schoolId = GetSchoolIdFromToken();
+            var userId = GetCurrentUserId();
+
+            string imageUrl = "";
+
+            if (request.ImageFile != null)
+            {
+                var uploadedUrl = await _cloudinary.UploadImageAsync(request.ImageFile);
+                if (!string.IsNullOrWhiteSpace(uploadedUrl))
+                {
+                    imageUrl = uploadedUrl;
+                }
+            }
+
+            // 3. Tạo command gửi xuống Application
+            var command = new CreateFoodItemCommand
+            {
+                SchoolId = schoolId,
+                CreatedBy = userId,
+                FoodName = request.FoodName,
+                FoodType = request.FoodType,
+                FoodDesc = request.FoodDesc,
+                ImageUrl = imageUrl,
+                IsMainDish = request.IsMainDish,
+                Ingredients = request.Ingredients
+            };
             var created = await _mediator.Send(command);
             return CreatedAtAction(nameof(GetById), new { id = created.FoodId }, created);
         }

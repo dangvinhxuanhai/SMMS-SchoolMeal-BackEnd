@@ -45,10 +45,17 @@ public class IngredientsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<IngredientDto>>> GetActive(
         [FromQuery] string? keyword)
     {
-        var result = await _mediator.Send(
-            new GetIngredientsQuery(GetSchoolIdFromToken(), keyword, IncludeInactive: false));
+        try
+        {
+            var result = await _mediator.Send(
+                new GetIngredientsQuery(GetSchoolIdFromToken(), keyword, IncludeInactive: false));
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>
@@ -59,10 +66,17 @@ public class IngredientsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<IngredientDto>>> GetAll(
         [FromQuery] string? keyword)
     {
-        var result = await _mediator.Send(
+        try
+        {
+            var result = await _mediator.Send(
             new GetIngredientsQuery(GetSchoolIdFromToken(), keyword, IncludeInactive: true));
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpGet("{id:int}")]
@@ -76,10 +90,10 @@ public class IngredientsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<IngredientDto>> Create([FromBody] CreateIngredientCommand command)
     {
-        command.SchoolId = GetSchoolIdFromToken();
-        command.CreatedBy = GetCurrentUserId();
         try
         {
+            command.SchoolId = GetSchoolIdFromToken();
+            command.CreatedBy = GetCurrentUserId();
             var created = await _mediator.Send(command);
             return CreatedAtAction(nameof(GetById), new { id = created.IngredientId }, created);
         }

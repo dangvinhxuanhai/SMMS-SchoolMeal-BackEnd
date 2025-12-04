@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -131,9 +132,16 @@ public class PurchasePlansController : ControllerBase
     public async Task<ActionResult<List<PurchasePlanListItemDto>>> GetAll(
         [FromQuery] bool includeDeleted = false)
     {
-        var query = new GetPurchasePlansQuery(GetSchoolIdFromToken(), includeDeleted);
-        var result = await _mediator.Send(query);
-        return Ok(result);
+        try
+        {
+            var query = new GetPurchasePlansQuery(GetSchoolIdFromToken(), includeDeleted);
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // ====== NEW: GET BY DATE (tìm plan của tuần chứa ngày đó) ======
@@ -142,6 +150,7 @@ public class PurchasePlansController : ControllerBase
     public async Task<ActionResult<PurchasePlanDto>> GetByDate(
         [FromQuery] DateOnly? date)
     {
+        try {
         var day = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
 
         var result = await _mediator.Send(
@@ -151,5 +160,10 @@ public class PurchasePlansController : ControllerBase
             return NotFound();
 
         return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message});
+        }
     }
 }

@@ -50,7 +50,9 @@ public class PurchaseOrdersController : ControllerBase
     public async Task<ActionResult<KsPurchaseOrderDto>> CreateFromPlan(
         [FromBody] CreatePurchaseOrderFromPlanDto request)
     {
-        var command = new CreatePurchaseOrderFromPlanCommand
+        try
+        {
+            var command = new CreatePurchaseOrderFromPlanCommand
         {
             PlanId = request.PlanId,
             SupplierName = request.SupplierName,
@@ -58,7 +60,6 @@ public class PurchaseOrdersController : ControllerBase
             StaffUserId = GetCurrentUserId(),
             Lines = request.Lines
         };
-        try {
         var result = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { orderId = result.OrderId }, result);
         }
