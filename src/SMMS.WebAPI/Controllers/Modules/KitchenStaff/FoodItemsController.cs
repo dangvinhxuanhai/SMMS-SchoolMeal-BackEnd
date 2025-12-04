@@ -69,7 +69,7 @@ public class FoodItemsController : ControllerBase
         var schoolId = GetSchoolIdFromToken();
         var userId = GetCurrentUserId();
 
-        string imageUrl="";       
+        string imageUrl="";
 
         if (request.ImageFile != null)
         {
@@ -103,6 +103,7 @@ public class FoodItemsController : ControllerBase
         int id,
         [FromBody] UpdateFoodItemCommand command)
     {
+        command.FoodId = id;
         var updated = await _mediator.Send(command);
         return Ok(updated);
     }

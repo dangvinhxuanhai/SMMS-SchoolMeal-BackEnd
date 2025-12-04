@@ -25,6 +25,7 @@ public class AiMenuController : ControllerBase
             throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
 
         return Guid.Parse(schoolIdClaim);
+        // return Guid.Parse("477B88C0-2E3E-48A8-AF4F-BD00C5DE9AA0");
     }
 
     private Guid GetCurrentUserId()
@@ -46,22 +47,27 @@ public class AiMenuController : ControllerBase
         [FromBody] SuggestMenuRequest request,
         CancellationToken ct)
     {
+        var realSchoolId = GetSchoolIdFromToken();
+        var realUserId = GetCurrentUserId();
+
+        Console.WriteLine($">>> SchoolID: {realSchoolId} | UserID: {realUserId}");
+
         var command = new SuggestMenuCommand(
-            GetSchoolIdFromToken(),
-            GetCurrentUserId(),
-            request.MainIngredientIds ?? new(),
-            request.SideIngredientIds ?? new(),
-            request.AvoidAllergenIds ?? new(),
-            request.MaxMainKcal,
-            request.MaxSideKcal,
-            request.TopKMain ?? 5,
-            request.TopKSide ?? 5
+            SchoolId: realSchoolId,
+            UserId: realUserId,
+
+            MainIngredientIds: request.MainIngredientIds ?? new(),
+            SideIngredientIds: request.SideIngredientIds ?? new(),
+            AvoidAllergenIds: request.AvoidAllergenIds ?? new(),
+            MaxMainKcal: request.MaxMainKcal,
+            MaxSideKcal: request.MaxSideKcal,
+            TopKMain: request.TopKMain ?? 5,
+            TopKSide: request.TopKSide ?? 5
         );
 
         var result = await _mediator.Send(command, ct);
-        return Ok(result); // chứa session_id + danh sách món
+        return Ok(result);
     }
-
     /// <summary>
     /// Ghi log user đã chọn món nào trong list recommend (phục vụ Machine Learning).
     /// </summary>
