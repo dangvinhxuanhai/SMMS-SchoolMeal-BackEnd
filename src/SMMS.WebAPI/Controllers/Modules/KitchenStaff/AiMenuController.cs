@@ -58,8 +58,15 @@ public class AiMenuController : ControllerBase
             request.TopKSide ?? 5
         );
 
-        var result = await _mediator.Send(command, ct);
-        return Ok(result); // chứa session_id + danh sách món
+        try
+        {
+            var result = await _mediator.Send(command, ct);
+            return Ok(result); // chứa session_id + danh sách món
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>
@@ -76,7 +83,14 @@ public class AiMenuController : ControllerBase
             request.SelectedItems
         );
 
-        await _mediator.Send(command, ct);
-        return NoContent();
+        try
+        {
+            await _mediator.Send(command, ct);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }

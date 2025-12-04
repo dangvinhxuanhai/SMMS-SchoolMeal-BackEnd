@@ -81,23 +81,34 @@ public class PurchasePlansController : ControllerBase
         {
             confirmedBy = GetCurrentUserId();
         }
+        try {
+            var result = await _mediator.Send(
+                new UpdatePurchasePlanCommand(
+                    request.PlanId,
+                    request.PlanStatus,
+                    confirmedBy,
+                    request.Lines));
+            return Ok(result);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is KeyNotFoundException)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
 
-        var result = await _mediator.Send(
-            new UpdatePurchasePlanCommand(
-                request.PlanId,
-                request.PlanStatus,
-                confirmedBy,
-                request.Lines));
-
-        return Ok(result);
     }
 
     // DELETE api/purchase-plans/{planId}
     [HttpDelete("{planId:int}")]
     public async Task<IActionResult> Delete(int planId)
     {
+        try {
         await _mediator.Send(new SoftDeletePurchasePlanCommand(planId));
         return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message});
+        }
     }
 
     // CHỈ DÙNG CHO ADMIN: hard delete thật sự
@@ -105,8 +116,14 @@ public class PurchasePlansController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> HardDelete(int planId)
     {
-        await _mediator.Send(new DeletePurchasePlanCommand(planId));
-        return NoContent();
+        try {
+            await _mediator.Send(new DeletePurchasePlanCommand(planId));
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message});
+        }
     }
 
     // GET api/purchase-plans?schoolId=...&includeDeleted=false

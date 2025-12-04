@@ -38,6 +38,8 @@ public class ScheduleMealsController : ControllerBase
         );
 
         var result = await _mediator.Send(query, ct);
+        if (result == null)
+            return NotFound();
         return Ok(result);
     }
 
@@ -84,8 +86,15 @@ public class ScheduleMealsController : ControllerBase
         command.SchoolId = GetSchoolIdFromToken();
         command.CreatedByUserId = GetCurrentUserId();
 
-        var id = await _mediator.Send(command, ct);
-        return Ok(new { scheduleMealId = id });
+        try
+        {
+            var id = await _mediator.Send(command, ct);
+            return Ok(new { scheduleMealId = id });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     private Guid GetCurrentUserId()

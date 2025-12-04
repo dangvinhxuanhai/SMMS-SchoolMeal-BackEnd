@@ -5,6 +5,8 @@ using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.Inventory.Commands;
 using SMMS.Application.Features.Inventory.DTOs;
 using SMMS.Application.Features.Inventory.Queries;
+using SMMS.Application.Features.Meal.Command;
+using SMMS.WebAPI.DTOs;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 [ApiController]
@@ -53,13 +55,6 @@ public class InventoryItemsController : ControllerBase
         return Ok(dto);
     }
 
-    public class UpdateInventoryItemRequest
-    {
-        public decimal? QuantityGram { get; set; }
-        public DateOnly? ExpirationDate { get; set; }
-        public string? BatchNo { get; set; }
-        public string? Origin { get; set; }
-    }
 
     // PUT: api/inventory/InventoryItems/5
     [HttpPut("{id:int}")]
@@ -80,8 +75,15 @@ public class InventoryItemsController : ControllerBase
             Origin = request.Origin
         };
 
-        await _mediator.Send(command, ct);
-        return NoContent();
+        try
+        {
+            await _mediator.Send(command, ct);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // ============ helpers lấy claim ============

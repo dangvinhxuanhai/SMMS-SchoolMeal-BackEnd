@@ -31,12 +31,20 @@ public class CreateScheduleMealCommandHandler
 
     public async Task<long> Handle(CreateScheduleMealCommand request, CancellationToken cancellationToken)
     {
-        // 1. Chống trùng tuần
-        var existed = await _scheduleMealRepository
-            .FindBySchoolAndWeekAsync(request.SchoolId, request.WeekStart.Date, cancellationToken);
+        // 1. Chống trùng / overlap tuần
+        var conflict = await _scheduleMealRepository.GetForDateAsync(
+            request.SchoolId,
+            request.WeekStart.Date,
+            cancellationToken);
 
-        if (existed != null)
-            throw new InvalidOperationException("Schedule meal for this week already exists.");
+        if (conflict != null)
+        {
+            // Tuỳ bạn thông điệp, có thể trả chi tiết tuần đang bị đụng
+            throw new InvalidOperationException(
+                $"School already has a schedule from {conflict.WeekStart:yyyy-MM-dd} " +
+                $"to {conflict.WeekEnd:yyyy-MM-dd}. " +
+                "WeekStart must not be inside that 7-day range.");
+        }
 
         // 2. Chuẩn bị menu template
         Menu menu;
