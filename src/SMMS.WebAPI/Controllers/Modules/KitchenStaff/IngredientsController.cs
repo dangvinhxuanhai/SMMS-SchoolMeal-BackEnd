@@ -78,8 +78,15 @@ public class IngredientsController : ControllerBase
     {
         command.SchoolId = GetSchoolIdFromToken();
         command.CreatedBy = GetCurrentUserId();
-        var created = await _mediator.Send(command);
-        return CreatedAtAction(nameof(GetById), new { id = created.IngredientId }, created);
+        try
+        {
+            var created = await _mediator.Send(command);
+            return CreatedAtAction(nameof(GetById), new { id = created.IngredientId }, created);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     [HttpPut("{id:int}")]
@@ -87,8 +94,15 @@ public class IngredientsController : ControllerBase
         int id,
         [FromBody] UpdateIngredientCommand command)
     {
-        var updated = await _mediator.Send(command);
-        return Ok(updated);
+        try
+        {
+            var updated = await _mediator.Send(command);
+            return Ok(updated);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>
@@ -101,12 +115,19 @@ public class IngredientsController : ControllerBase
         int id,
         [FromQuery] bool hardDelete = false)
     {
-        await _mediator.Send(new DeleteIngredientCommand
+        try
         {
-            IngredientId = id,
-            HardDelete = hardDelete
-        });
+            await _mediator.Send(new DeleteIngredientCommand
+            {
+                IngredientId = id,
+                HardDelete = hardDelete
+            });
 
-        return NoContent();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }

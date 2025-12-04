@@ -93,8 +93,15 @@ public class FoodItemsController : ControllerBase
             Ingredients = request.Ingredients
         };
 
-        var created = await _mediator.Send(command);
-        return CreatedAtAction(nameof(GetById), new { id = created.FoodId }, created);
+        try
+        {
+            var created = await _mediator.Send(command);
+            return CreatedAtAction(nameof(GetById), new { id = created.FoodId }, created);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // PUT api/nutrition/fooditems/5
@@ -103,8 +110,15 @@ public class FoodItemsController : ControllerBase
         int id,
         [FromBody] UpdateFoodItemCommand command)
     {
-        var updated = await _mediator.Send(command);
-        return Ok(updated);
+        try
+        {
+            var updated = await _mediator.Send(command);
+            return Ok(updated);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // DELETE api/nutrition/fooditems/5
@@ -113,11 +127,18 @@ public class FoodItemsController : ControllerBase
         int id,
         [FromQuery] bool hardDeleteIfNoRelation = false)
     {
-        await _mediator.Send(new DeleteFoodItemCommand
+        try
         {
-            FoodId = id,
-            HardDeleteIfNoRelation = hardDeleteIfNoRelation
-        });
-        return NoContent();
+            await _mediator.Send(new DeleteFoodItemCommand
+            {
+                FoodId = id,
+                HardDeleteIfNoRelation = hardDeleteIfNoRelation
+            });
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }

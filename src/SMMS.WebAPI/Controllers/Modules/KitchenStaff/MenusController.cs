@@ -1,10 +1,13 @@
 using System.Security.Claims;
+using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.ExtendedProperties;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.Meal.Command;
 using SMMS.Application.Features.Meal.DTOs;
 using SMMS.Application.Features.Meal.Queries;
+using SMMS.Application.Features.Plan.Commands;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 [ApiController]
@@ -61,8 +64,15 @@ public class MenusController : ControllerBase
     [HttpDelete("{id:int}/hard")]
     public async Task<IActionResult> HardDelete(int id)
     {
-        await _mediator.Send(new DeleteMenuHardCommand(id));
-        return NoContent();
+        try
+        {
+            await _mediator.Send(new DeleteMenuHardCommand(id));
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // ================= helper lấy claim =================
