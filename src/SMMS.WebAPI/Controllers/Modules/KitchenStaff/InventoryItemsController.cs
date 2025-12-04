@@ -1,10 +1,14 @@
 using System.Security.Claims;
+using Azure.Core;
+using DocumentFormat.OpenXml.Office2010.Excel;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.Inventory.Commands;
 using SMMS.Application.Features.Inventory.DTOs;
 using SMMS.Application.Features.Inventory.Queries;
+using SMMS.Application.Features.Meal.Command;
+using SMMS.WebAPI.DTOs;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 [ApiController]
@@ -25,15 +29,22 @@ public class InventoryItemsController : ControllerBase
         [FromQuery] int pageSize = 10,
         CancellationToken ct = default)
     {
-        var schoolId = GetSchoolIdFromToken();
+        try
+        {
+            var schoolId = GetSchoolIdFromToken();
 
-        var query = new GetInventoryItemsQuery(
-            SchoolId: schoolId,
-            PageIndex: pageIndex,
-            PageSize: pageSize);
+            var query = new GetInventoryItemsQuery(
+                SchoolId: schoolId,
+                PageIndex: pageIndex,
+                PageSize: pageSize);
 
-        var result = await _mediator.Send(query, ct);
-        return Ok(result);
+            var result = await _mediator.Send(query, ct);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // GET: api/inventory/InventoryItems/5
@@ -42,24 +53,24 @@ public class InventoryItemsController : ControllerBase
         int id,
         CancellationToken ct)
     {
-        var schoolId = GetSchoolIdFromToken();
+        try
+        {
+            var schoolId = GetSchoolIdFromToken();
 
-        var dto = await _mediator.Send(
-            new GetInventoryItemByIdQuery(schoolId, id),
-            ct);
+            var dto = await _mediator.Send(
+                new GetInventoryItemByIdQuery(schoolId, id),
+                ct);
 
-        if (dto == null) return NotFound();
+            if (dto == null) return NotFound();
 
-        return Ok(dto);
+            return Ok(dto);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
-    public class UpdateInventoryItemRequest
-    {
-        public decimal? QuantityGram { get; set; }
-        public DateOnly? ExpirationDate { get; set; }
-        public string? BatchNo { get; set; }
-        public string? Origin { get; set; }
-    }
 
     // PUT: api/inventory/InventoryItems/5
     [HttpPut("{id:int}")]
@@ -68,20 +79,26 @@ public class InventoryItemsController : ControllerBase
         [FromBody] UpdateInventoryItemRequest request,
         CancellationToken ct)
     {
-        var schoolId = GetSchoolIdFromToken();
-
-        var command = new UpdateInventoryItemCommand
+        try
         {
-            SchoolId = schoolId,
-            ItemId = id,
-            QuantityGram = request.QuantityGram,
-            ExpirationDate = request.ExpirationDate,
-            BatchNo = request.BatchNo,
-            Origin = request.Origin
-        };
+            var schoolId = GetSchoolIdFromToken();
 
-        await _mediator.Send(command, ct);
-        return NoContent();
+            var command = new UpdateInventoryItemCommand
+            {
+                SchoolId = schoolId,
+                ItemId = id,
+                QuantityGram = request.QuantityGram,
+                ExpirationDate = request.ExpirationDate,
+                BatchNo = request.BatchNo,
+                Origin = request.Origin
+            };
+            await _mediator.Send(command, ct);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // ============ helpers lấy claim ============

@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -81,23 +82,34 @@ public class PurchasePlansController : ControllerBase
         {
             confirmedBy = GetCurrentUserId();
         }
+        try {
+            var result = await _mediator.Send(
+                new UpdatePurchasePlanCommand(
+                    request.PlanId,
+                    request.PlanStatus,
+                    confirmedBy,
+                    request.Lines));
+            return Ok(result);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is KeyNotFoundException)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
 
-        var result = await _mediator.Send(
-            new UpdatePurchasePlanCommand(
-                request.PlanId,
-                request.PlanStatus,
-                confirmedBy,
-                request.Lines));
-
-        return Ok(result);
     }
 
     // DELETE api/purchase-plans/{planId}
     [HttpDelete("{planId:int}")]
     public async Task<IActionResult> Delete(int planId)
     {
+        try {
         await _mediator.Send(new SoftDeletePurchasePlanCommand(planId));
         return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message});
+        }
     }
 
     // CHỈ DÙNG CHO ADMIN: hard delete thật sự
@@ -105,8 +117,14 @@ public class PurchasePlansController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> HardDelete(int planId)
     {
-        await _mediator.Send(new DeletePurchasePlanCommand(planId));
-        return NoContent();
+        try {
+            await _mediator.Send(new DeletePurchasePlanCommand(planId));
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message});
+        }
     }
 
     // GET api/purchase-plans?schoolId=...&includeDeleted=false
@@ -114,9 +132,16 @@ public class PurchasePlansController : ControllerBase
     public async Task<ActionResult<List<PurchasePlanListItemDto>>> GetAll(
         [FromQuery] bool includeDeleted = false)
     {
-        var query = new GetPurchasePlansQuery(GetSchoolIdFromToken(), includeDeleted);
-        var result = await _mediator.Send(query);
-        return Ok(result);
+        try
+        {
+            var query = new GetPurchasePlansQuery(GetSchoolIdFromToken(), includeDeleted);
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // ====== NEW: GET BY DATE (tìm plan của tuần chứa ngày đó) ======
@@ -125,6 +150,7 @@ public class PurchasePlansController : ControllerBase
     public async Task<ActionResult<PurchasePlanDto>> GetByDate(
         [FromQuery] DateOnly? date)
     {
+        try {
         var day = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
 
         var result = await _mediator.Send(
@@ -134,5 +160,10 @@ public class PurchasePlansController : ControllerBase
             return NotFound();
 
         return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message});
+        }
     }
 }

@@ -38,6 +38,8 @@ public class ScheduleMealsController : ControllerBase
         );
 
         var result = await _mediator.Send(query, ct);
+        if (result == null)
+            return NotFound();
         return Ok(result);
     }
 
@@ -80,24 +82,19 @@ public class ScheduleMealsController : ControllerBase
         [FromBody] CreateScheduleMealCommand command,
         CancellationToken ct)
     {
+
         try
         {
+            // Lấy SchoolId & UserId từ token, không tin từ client
             command.SchoolId = GetSchoolIdFromToken();
             command.CreatedByUserId = GetCurrentUserId();
-
             var id = await _mediator.Send(command, ct);
             return Ok(new { scheduleMealId = id });
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(new { error = ex.Message });
         }
-
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "Lỗi hệ thống: " + ex.Message });
-        }
-
     }
 
     private Guid GetCurrentUserId()

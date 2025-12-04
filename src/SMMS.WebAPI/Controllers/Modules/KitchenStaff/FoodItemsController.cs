@@ -48,8 +48,15 @@ public class FoodItemsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<FoodItemDto>>> GetList(
         [FromQuery] string? keyword)
     {
-        var result = await _mediator.Send(new GetFoodItemsQuery(GetSchoolIdFromToken(), keyword));
-        return Ok(result);
+        try
+        {
+            var result = await _mediator.Send(new GetFoodItemsQuery(GetSchoolIdFromToken(), keyword));
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // GET api/nutrition/fooditems/5
@@ -66,35 +73,41 @@ public class FoodItemsController : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<FoodItemDto>> Create([FromForm] CreateFoodItemRequest request)
     {
-        var schoolId = GetSchoolIdFromToken();
-        var userId = GetCurrentUserId();
-
-        string imageUrl="";
-
-        if (request.ImageFile != null)
+        try
         {
-            var uploadedUrl = await _cloudinary.UploadImageAsync(request.ImageFile);
-            if (!string.IsNullOrWhiteSpace(uploadedUrl))
+            var schoolId = GetSchoolIdFromToken();
+            var userId = GetCurrentUserId();
+
+            string imageUrl = "";
+
+            if (request.ImageFile != null)
             {
-                imageUrl = uploadedUrl;
+                var uploadedUrl = await _cloudinary.UploadImageAsync(request.ImageFile);
+                if (!string.IsNullOrWhiteSpace(uploadedUrl))
+                {
+                    imageUrl = uploadedUrl;
+                }
             }
+
+            // 3. Tạo command gửi xuống Application
+            var command = new CreateFoodItemCommand
+            {
+                SchoolId = schoolId,
+                CreatedBy = userId,
+                FoodName = request.FoodName,
+                FoodType = request.FoodType,
+                FoodDesc = request.FoodDesc,
+                ImageUrl = imageUrl,
+                IsMainDish = request.IsMainDish,
+                Ingredients = request.Ingredients
+            };
+            var created = await _mediator.Send(command);
+            return CreatedAtAction(nameof(GetById), new { id = created.FoodId }, created);
         }
-
-        // 3. Tạo command gửi xuống Application
-        var command = new CreateFoodItemCommand
+        catch (Exception ex)
         {
-            SchoolId = schoolId,
-            CreatedBy = userId,
-            FoodName = request.FoodName,
-            FoodType = request.FoodType,
-            FoodDesc = request.FoodDesc,
-            ImageUrl = imageUrl,
-            IsMainDish = request.IsMainDish,
-            Ingredients = request.Ingredients
-        };
-
-        var created = await _mediator.Send(command);
-        return CreatedAtAction(nameof(GetById), new { id = created.FoodId }, created);
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // PUT api/nutrition/fooditems/5
@@ -103,9 +116,15 @@ public class FoodItemsController : ControllerBase
         int id,
         [FromBody] UpdateFoodItemCommand command)
     {
-        command.FoodId = id;
-        var updated = await _mediator.Send(command);
-        return Ok(updated);
+        try
+        {
+            var updated = await _mediator.Send(command);
+            return Ok(updated);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // DELETE api/nutrition/fooditems/5
@@ -114,11 +133,18 @@ public class FoodItemsController : ControllerBase
         int id,
         [FromQuery] bool hardDeleteIfNoRelation = false)
     {
-        await _mediator.Send(new DeleteFoodItemCommand
+        try
         {
-            FoodId = id,
-            HardDeleteIfNoRelation = hardDeleteIfNoRelation
-        });
-        return NoContent();
+            await _mediator.Send(new DeleteFoodItemCommand
+            {
+                FoodId = id,
+                HardDeleteIfNoRelation = hardDeleteIfNoRelation
+            });
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }

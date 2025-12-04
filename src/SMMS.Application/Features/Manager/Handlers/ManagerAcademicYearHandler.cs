@@ -51,18 +51,33 @@ public class ManagerAcademicYearHandler :
     {
         var req = command.Request;
 
+        if (req.SchoolId == Guid.Empty)
+            throw new InvalidOperationException("Trường học không hợp lệ.");
+
         if (string.IsNullOrWhiteSpace(req.YearName))
             throw new InvalidOperationException("Tên niên khóa không được để trống.");
 
-        var normalizedName = req.YearName.Trim().ToLower();
+        // chuẩn hóa tên
+        req.YearName = req.YearName.Trim();
+        if (req.YearName.Length > 100)
+            throw new InvalidOperationException("Tên niên khóa không được vượt quá 100 ký tự.");
 
+        var normalizedName = req.YearName.ToLower();
+
+        // ❌ Không cho trùng tên trong cùng 1 trường
         var isDuplicate = await _repo.AcademicYears.AnyAsync(
             y => y.SchoolId == req.SchoolId &&
                  y.YearName.ToLower() == normalizedName,
             cancellationToken);
 
         if (isDuplicate)
-            throw new InvalidOperationException($"Niên khóa '{req.YearName}' đã tồn tại trong trường này.");
+            throw new InvalidOperationException(
+                $"Niên khóa '{req.YearName}' đã tồn tại trong trường này."
+            );
+
+        // validate ngày
+        if (req.BoardingStartDate.HasValue ^ req.BoardingEndDate.HasValue)
+            throw new InvalidOperationException("Vui lòng nhập đầy đủ cả ngày bắt đầu và ngày kết thúc nội trú.");
 
         if (req.BoardingStartDate.HasValue && req.BoardingEndDate.HasValue &&
             req.BoardingStartDate > req.BoardingEndDate)
@@ -72,18 +87,17 @@ public class ManagerAcademicYearHandler :
 
         var entity = new AcademicYear
         {
-            // ❌ KHÔNG YearId = Guid.NewGuid();
-            YearName = req.YearName.Trim(),
+            YearName = req.YearName,
             BoardingStartDate = req.BoardingStartDate,
             BoardingEndDate = req.BoardingEndDate,
             SchoolId = req.SchoolId
         };
 
-        await _repo.AddAsync(entity); // Sau SaveChanges, entity.YearId (int) sẽ được DB set
+        await _repo.AddAsync(entity);
 
         return new AcademicYearDto
         {
-            YearId = entity.YearId,   // int
+            YearId = entity.YearId,
             YearName = entity.YearName,
             BoardingStartDate = entity.BoardingStartDate,
             BoardingEndDate = entity.BoardingEndDate,
@@ -91,39 +105,64 @@ public class ManagerAcademicYearHandler :
         };
     }
 
+
     // 🟠 Cập nhật niên khóa
     public async Task<AcademicYearDto?> Handle(
         UpdateAcademicYearCommand command,
         CancellationToken cancellationToken)
     {
         var req = command.Request;
-        var entity = await _repo.GetByIdAsync(command.YearId); // command.YearId: int
+        var entity = await _repo.GetByIdAsync(command.YearId);
         if (entity == null) return null;
 
+        // ----- xử lý & validate YearName -----
         if (!string.IsNullOrWhiteSpace(req.YearName))
         {
-            var normalizedName = req.YearName.Trim().ToLower();
+            req.YearName = req.YearName.Trim();
 
+            if (req.YearName.Length > 100)
+                throw new InvalidOperationException("Tên niên khóa không được vượt quá 100 ký tự.");
+
+            var normalizedName = req.YearName.ToLower();
+
+            // ❌ Check trùng tên trong cùng trường, khác chính nó
             var isDuplicate = await _repo.AcademicYears.AnyAsync(
                 y => y.SchoolId == entity.SchoolId &&
-                     y.YearId != entity.YearId &&                 // int
+                     y.YearId != entity.YearId &&
                      y.YearName.ToLower() == normalizedName,
                 cancellationToken);
 
             if (isDuplicate)
-                throw new InvalidOperationException($"Niên khóa '{req.YearName}' đã tồn tại trong trường này.");
+                throw new InvalidOperationException(
+                    $"Niên khóa '{req.YearName}' đã tồn tại trong trường này."
+                );
 
-            entity.YearName = req.YearName.Trim();
+            entity.YearName = req.YearName;
         }
 
-        entity.BoardingStartDate = req.BoardingStartDate;
-        entity.BoardingEndDate = req.BoardingEndDate;
+        // ----- xử lý ngày (giữ giá trị cũ nếu không truyền) -----
+        var newStart = req.BoardingStartDate.HasValue
+            ? req.BoardingStartDate
+            : entity.BoardingStartDate;
 
-        if (entity.BoardingStartDate.HasValue && entity.BoardingEndDate.HasValue &&
-            entity.BoardingStartDate > entity.BoardingEndDate)
+        var newEnd = req.BoardingEndDate.HasValue
+            ? req.BoardingEndDate
+            : entity.BoardingEndDate;
+
+        if ((req.BoardingStartDate.HasValue || req.BoardingEndDate.HasValue) &&
+            (newStart.HasValue ^ newEnd.HasValue))
         {
-            throw new InvalidOperationException("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
+            throw new InvalidOperationException("Vui lòng nhập đầy đủ cả ngày bắt đầu và ngày kết thúc nội trú.");
         }
+
+        if (newStart.HasValue && newEnd.HasValue && newStart > newEnd)
+            throw new InvalidOperationException("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
+
+        if (req.BoardingStartDate.HasValue)
+            entity.BoardingStartDate = req.BoardingStartDate;
+
+        if (req.BoardingEndDate.HasValue)
+            entity.BoardingEndDate = req.BoardingEndDate;
 
         await _repo.UpdateAsync(entity);
 
@@ -136,6 +175,7 @@ public class ManagerAcademicYearHandler :
             SchoolId = entity.SchoolId
         };
     }
+
 
 
     // 🔴 Xoá niên khóa

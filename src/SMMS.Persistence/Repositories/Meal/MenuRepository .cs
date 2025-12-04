@@ -64,4 +64,54 @@ public class MenuRepository : IMenuRepository
                     .ThenInclude(f => f.Food) // navigation tới FoodItem
             .FirstOrDefaultAsync(ct);
     }
+
+    public async Task<bool> HardDeleteAsync(int menuId, CancellationToken cancellationToken = default)
+    {
+        var menu = await _context.Menus
+            .FirstOrDefaultAsync(m => m.MenuId == menuId, cancellationToken);
+
+        if (menu == null)
+            return false;
+
+        using var tx = await _context.Database.BeginTransactionAsync(cancellationToken);
+
+        // 1. Xóa FoodInFridge (IngredientInFridge sẽ cascade)
+        var foodInFridges = await _context.FoodInFridges
+            .Where(f => f.MenuId == menuId)
+            .ToListAsync(cancellationToken);
+
+        if (foodInFridges.Count > 0)
+        {
+            _context.FoodInFridges.RemoveRange(foodInFridges);
+        }
+
+        // 2. Xóa MenuDayFoodItems & MenuDays
+        var menuDays = await _context.MenuDays
+            .Where(md => md.MenuId == menuId)
+            .ToListAsync(cancellationToken);
+
+        if (menuDays.Count > 0)
+        {
+            var menuDayIds = menuDays.Select(md => md.MenuDayId).ToList();
+
+            var menuDayFoodItems = await _context.MenuDayFoodItems
+                .Where(mdf => menuDayIds.Contains(mdf.MenuDayId))
+                .ToListAsync(cancellationToken);
+
+            if (menuDayFoodItems.Count > 0)
+            {
+                _context.MenuDayFoodItems.RemoveRange(menuDayFoodItems);
+            }
+
+            _context.MenuDays.RemoveRange(menuDays);
+        }
+
+        // 3. Xóa Menu
+        _context.Menus.Remove(menu);
+
+        await _context.SaveChangesAsync(cancellationToken);
+        await tx.CommitAsync(cancellationToken);
+
+        return true;
+    }
 }
