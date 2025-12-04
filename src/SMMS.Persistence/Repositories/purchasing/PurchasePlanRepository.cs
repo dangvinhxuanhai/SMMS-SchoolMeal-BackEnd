@@ -289,18 +289,21 @@ public class PurchasePlanRepository : IPurchasePlanRepository
 
     // ------------------- NEW: GetPlanByDateAsync -------------------
     public async Task<PurchasePlanDto?> GetPlanByDateAsync(
-        Guid schoolId,
-        DateOnly date,
-        CancellationToken cancellationToken)
+    Guid schoolId,
+    DateOnly date,
+    CancellationToken cancellationToken)
     {
-        // Tìm PlanId của tuần chứa "date"
+        // Lấy ngày bất kỳ của "tuần tới" so với date
+        var nextWeekDate = date.AddDays(7);
+
+        // Tìm PlanId của tuần chứa "nextWeekDate"
         var planId = await (
             from p in _context.PurchasePlans
             join sm in _context.ScheduleMeals
                 on p.ScheduleMealId equals sm.ScheduleMealId
             where sm.SchoolId == schoolId
-                  && sm.WeekStart <= date
-                  && sm.WeekEnd >= date
+                  && sm.WeekStart <= nextWeekDate
+                  && sm.WeekEnd >= nextWeekDate
                   && !p.AskToDelete
             orderby sm.YearNo descending,
                     sm.WeekNo descending,
