@@ -1,8 +1,10 @@
 using System.Security.Claims;
+using DocumentFormat.OpenXml.Bibliography;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.foodmenu.Queries;
+using SMMS.Application.Features.Meal.Queries;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
@@ -35,11 +37,18 @@ public class KitchenController : ControllerBase
     public async Task<ActionResult<KitchenDashboardDto>> GetDashboard(
         [FromQuery] DateOnly? date)
     {
-        var today = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
+        try
+        {
+            var today = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
 
-        var query = new GetKitchenDashboardQuery(GetSchoolIdFromToken(), today);
-        var result = await _mediator.Send(query);
+            var query = new GetKitchenDashboardQuery(GetSchoolIdFromToken(), today);
+            var result = await _mediator.Send(query);
 
-        return Ok(result);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }

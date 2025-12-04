@@ -82,12 +82,12 @@ public class ScheduleMealsController : ControllerBase
         [FromBody] CreateScheduleMealCommand command,
         CancellationToken ct)
     {
-        // Lấy SchoolId & UserId từ token, không tin từ client
-        command.SchoolId = GetSchoolIdFromToken();
-        command.CreatedByUserId = GetCurrentUserId();
 
         try
         {
+            // Lấy SchoolId & UserId từ token, không tin từ client
+            command.SchoolId = GetSchoolIdFromToken();
+            command.CreatedByUserId = GetCurrentUserId();
             var id = await _mediator.Send(command, ct);
             return Ok(new { scheduleMealId = id });
         }
