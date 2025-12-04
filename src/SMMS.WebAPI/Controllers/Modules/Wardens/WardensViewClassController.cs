@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -10,7 +11,7 @@ namespace SMMS.WebAPI.Controllers.Modules.Wardens;
 
 [Route("api/[controller]")]
 [ApiController]
-    [Authorize(Roles = "Teacher")]
+[Authorize(Roles = "Teacher")]
 public class WardensViewClassController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -18,6 +19,16 @@ public class WardensViewClassController : ControllerBase
     public WardensViewClassController(IMediator mediator)
     {
         _mediator = mediator;
+    }
+
+    private Guid GetCurrentWardenId()
+    {
+        var idClaim = User.FindFirst("UserId")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("sub")?.Value;
+        if (string.IsNullOrEmpty(idClaim))
+            throw new UnauthorizedAccessException("Không tìm thấy Warden ID trong token.");
+
+        return Guid.Parse(idClaim);
     }
 
     // 🔍 Tìm kiếm học sinh/phụ huynh trong lớp

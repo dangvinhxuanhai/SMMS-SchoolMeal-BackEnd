@@ -44,6 +44,19 @@ builder.Services.AddHttpClient<IAiMenuAdminClient, AiMenuAdminClient>((sp, http)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    options.CustomSchemaIds(type =>
+    {
+        if (type.IsGenericType)
+        {
+            var genericTypeName = type.GetGenericTypeDefinition().Name;
+            genericTypeName = genericTypeName.Substring(0, genericTypeName.IndexOf('`'));
+            var genericArgs = string.Join("_", type.GetGenericArguments().Select(t => t.Name));
+            return $"{genericTypeName}_{genericArgs}";
+        }
+
+        // 🔥 FIX TRÙNG SCHEMA: dùng FullName thay vì Name
+        return type.FullName!.Replace(".", "_").Replace("+", "_");
+    });
     // ✅ Thêm cấu hình để Swagger nhập JWT token
     options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
@@ -125,12 +138,9 @@ builder.Services.AddAuthentication(options =>
     {
         OnMessageReceived = context =>
         {
-            var accessToken = context.Request.Query["access_token"];
-            var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) &&
-                (path.StartsWithSegments("/hubs")))
+            if (context.Request.Cookies.ContainsKey("accessToken"))
             {
-                context.Token = accessToken;
+                context.Token = context.Request.Cookies["accessToken"];
             }
             return Task.CompletedTask;
         }

@@ -56,5 +56,15 @@ namespace SMMS.Application.Features.billing.DTOs
         public string SendType { get; set; } = "Immediate";
         public DateTime CreatedAt { get; set; }
     }
+    public class PagedResult<T>
+    {
+        public List<T> Items { get; set; }
+        public long TotalCount { get; set; }
 
+        public PagedResult(List<T> items, long totalCount)
+        {
+            Items = items;
+            TotalCount = totalCount;
+        }
+    }
 }

@@ -18,27 +18,42 @@ public class ManagerPaymentSettingController : ControllerBase
     {
         _mediator = mediator;
     }
+
     private Guid GetSchoolIdFromToken()
     {
-        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        // Kiểm tra cả 2 trường hợp viết hoa/thường của Claim Key
+        var schoolIdClaim = User.FindFirst("SchoolId")?.Value
+                         ?? User.FindFirst("schoolId")?.Value;
+
         if (string.IsNullOrEmpty(schoolIdClaim))
             throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
 
-        return Guid.Parse(schoolIdClaim);
-    }
-    // GET: api/ManagerPaymentSetting/school/{schoolId}
-    [HttpGet("school/{schoolId:guid}")]
-    public async Task<IActionResult> GetBySchool()
-    {
-        var schoolId = GetSchoolIdFromToken();
-        var result = await _mediator.Send(new GetSchoolPaymentSettingsQuery(schoolId));
+        if (!Guid.TryParse(schoolIdClaim, out var schoolId))
+            throw new UnauthorizedAccessException("SchoolId trong token không hợp lệ.");
 
-        return Ok(new
+        return schoolId;
+    }
+
+    [HttpGet("school/current")]
+    public async Task<IActionResult> GetByCurrentSchool()
+    {
+        try
         {
-            success = true,
-            message = "Lấy danh sách cấu hình của trường thành công.",
-            data = result
-        });
+            // Backend tự lấy ID từ Token
+            var schoolId = GetSchoolIdFromToken();
+            var result = await _mediator.Send(new GetSchoolPaymentSettingsQuery(schoolId));
+
+            return Ok(new
+            {
+                success = true,
+                message = "Lấy danh sách cấu hình của trường thành công.",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { success = false, message = ex.Message });
+        }
     }
 
     // GET: api/ManagerPaymentSetting/{settingId}
@@ -70,6 +85,9 @@ public class ManagerPaymentSettingController : ControllerBase
     {
         try
         {
+            var schoolId = GetSchoolIdFromToken();
+            request.SchoolId = schoolId;
+
             var created = await _mediator.Send(new CreateSchoolPaymentSettingCommand(request));
 
             return CreatedAtAction(nameof(GetById),
@@ -81,23 +99,17 @@ public class ManagerPaymentSettingController : ControllerBase
                     data = created
                 });
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { success = false, message = ex.Message });
+        }
         catch (InvalidOperationException ex)
         {
-            // Lỗi trùng khoảng tháng
-            return BadRequest(new
-            {
-                success = false,
-                message = ex.Message
-            });
+            return BadRequest(new { success = false, message = ex.Message });
         }
         catch (ArgumentException ex)
         {
-            // Lỗi validate input
-            return BadRequest(new
-            {
-                success = false,
-                message = ex.Message
-            });
+            return BadRequest(new { success = false, message = ex.Message });
         }
     }
 
@@ -109,6 +121,7 @@ public class ManagerPaymentSettingController : ControllerBase
     {
         try
         {
+
             var updated = await _mediator.Send(
                 new UpdateSchoolPaymentSettingCommand(settingId, request));
 
@@ -130,21 +143,11 @@ public class ManagerPaymentSettingController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
-            // Lỗi trùng khoảng tháng
-            return BadRequest(new
-            {
-                success = false,
-                message = ex.Message
-            });
+            return BadRequest(new { success = false, message = ex.Message });
         }
         catch (ArgumentException ex)
         {
-            // Lỗi validate input
-            return BadRequest(new
-            {
-                success = false,
-                message = ex.Message
-            });
+            return BadRequest(new { success = false, message = ex.Message });
         }
     }
 
@@ -162,7 +165,6 @@ public class ManagerPaymentSettingController : ControllerBase
             });
         }
 
-        // Có message nên trả 200 thay vì 204
         return Ok(new
         {
             success = true,

@@ -77,7 +77,13 @@ public class ManagerClassHandler :
         return await _repo.AcademicYears
             .Where(y => y.SchoolId == request.SchoolId)
             .OrderByDescending(y => y.YearName) // Sắp xếp năm mới nhất lên đầu
-            .Select(y => new AcademicYearDto { YearId = y.YearId, YearName = y.YearName })
+            .Select(y => new AcademicYearDto
+            {
+                YearId = y.YearId,
+                YearName = y.YearName,
+                BoardingStartDate = y.BoardingStartDate,
+                BoardingEndDate = y.BoardingEndDate
+            })
             .ToListAsync(cancellationToken);
     }
 
