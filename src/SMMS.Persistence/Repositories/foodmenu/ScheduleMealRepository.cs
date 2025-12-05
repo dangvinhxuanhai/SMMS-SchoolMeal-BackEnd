@@ -26,6 +26,15 @@ public class ScheduleMealRepository : IScheduleMealRepository
             .Where(x => x.SchoolId == schoolId)
             .CountAsync(ct);
     }
+    public async Task<IReadOnlyList<ScheduleMeal>> GetAllBySchoolAsync(
+        Guid schoolId,
+        CancellationToken ct = default)
+    {
+        return await _context.ScheduleMeals
+            .Where(x => x.SchoolId == schoolId)
+            .OrderByDescending(x => x.WeekStart)
+            .ToListAsync(ct);
+    }
 
     public async Task<IReadOnlyList<ScheduleMeal>> GetPagedBySchoolAsync(
         Guid schoolId,

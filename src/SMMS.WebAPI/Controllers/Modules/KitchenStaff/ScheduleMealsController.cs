@@ -27,6 +27,7 @@ public class ScheduleMealsController : ControllerBase
     public async Task<ActionResult<PagedResult<WeeklyScheduleDto>>> GetPaged(
         [FromQuery] int pageIndex = 1,
         [FromQuery] int pageSize = 4,
+        [FromQuery] bool GetAll = false,
         CancellationToken ct = default)
     {
         var schoolId = GetSchoolIdFromToken();
@@ -34,7 +35,8 @@ public class ScheduleMealsController : ControllerBase
         var query = new GetWeeklySchedulesPagedQuery(
             SchoolId: schoolId,
             PageIndex: pageIndex,
-            PageSize: pageSize
+            PageSize: pageSize,
+            GetAll: GetAll
         );
 
         var result = await _mediator.Send(query, ct);

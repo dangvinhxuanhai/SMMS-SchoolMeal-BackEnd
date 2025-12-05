@@ -10,5 +10,6 @@ namespace SMMS.Application.Features.foodmenu.Queries;
 public sealed record GetWeeklySchedulesPagedQuery(
     Guid SchoolId,
     int PageIndex = 1,
-    int PageSize = 10
+    int PageSize = 10,
+    bool GetAll = false
 ) : IRequest<PagedResult<WeeklyScheduleDto>>;

@@ -13,6 +13,7 @@ using SMMS.Persistence;
 using SMMS.Persistence.Data;
 using SMMS.Infrastructure.ExternalService.AiMenu;
 using SMMS.WebAPI.Hubs;
+using SMMS.Application.Common.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -39,7 +40,8 @@ builder.Services.AddHttpClient<IAiMenuAdminClient, AiMenuAdminClient>((sp, http)
     var opts = sp.GetRequiredService<IOptions<AiMenuOptions>>().Value;
     http.BaseAddress = new Uri(opts.BaseUrl);
 });
-
+builder.Services.Configure<PayOsOptions>(
+    builder.Configuration.GetSection(PayOsOptions.SectionName));
 //  swagger
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>

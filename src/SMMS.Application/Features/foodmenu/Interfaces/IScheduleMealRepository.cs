@@ -17,7 +17,9 @@ public interface IScheduleMealRepository
         int pageIndex,
         int pageSize,
         CancellationToken ct = default);
-
+    Task<IReadOnlyList<ScheduleMeal>> GetAllBySchoolAsync(
+        Guid schoolId,
+        CancellationToken ct = default);
     Task<ScheduleMeal?> GetForDateAsync(
         Guid schoolId,
         DateTime date,
