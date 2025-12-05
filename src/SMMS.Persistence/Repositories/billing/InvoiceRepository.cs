@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.billing.DTOs;
 using SMMS.Application.Features.billing.Interfaces;
+using SMMS.Domain.Entities.billing;
 using SMMS.Persistence.Data;
 
 namespace SMMS.Infrastructure.Repositories
@@ -56,6 +57,12 @@ namespace SMMS.Infrastructure.Repositories
                 }).FirstOrDefaultAsync();
 
             return result;
+        }
+
+        public Task<Invoice?> GetByIdAsync(long invoiceId, CancellationToken ct)
+        {
+            return _context.Invoices
+                .FirstOrDefaultAsync(i => i.InvoiceId == invoiceId, ct);
         }
     }
 }

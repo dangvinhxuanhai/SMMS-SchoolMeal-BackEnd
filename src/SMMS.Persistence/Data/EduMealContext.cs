@@ -6,11 +6,11 @@ using SMMS.Domain.Entities.billing;
 using SMMS.Domain.Entities.foodmenu;
 using SMMS.Domain.Entities.fridge;
 using SMMS.Domain.Entities.inventory;
+using SMMS.Domain.Entities.Logs;
 using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.purchasing;
 using SMMS.Domain.Entities.rag;
 using SMMS.Domain.Entities.school;
-using SMMS.Domain.Entities.Logs;
 
 namespace SMMS.Persistence.Data;
 
@@ -94,6 +94,8 @@ public partial class EduMealContext : DbContext
     public virtual DbSet<ScheduleMeal> ScheduleMeals { get; set; }
 
     public virtual DbSet<School> Schools { get; set; }
+
+    public virtual DbSet<SchoolPaymentGateway> SchoolPaymentGateways { get; set; }
 
     public virtual DbSet<SchoolPaymentSetting> SchoolPaymentSettings { get; set; }
 
@@ -577,6 +579,22 @@ public partial class EduMealContext : DbContext
             entity.Property(e => e.IsActive).HasDefaultValue(true);
         });
 
+        modelBuilder.Entity<SchoolPaymentGateway>(entity =>
+        {
+            entity.HasKey(e => e.GatewayId).HasName("PK__SchoolPa__66BCD8A094CD1017");
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.SchoolPaymentGatewayCreatedByNavigations).HasConstraintName("FK_SPG_CreatedBy");
+
+            entity.HasOne(d => d.School).WithMany(p => p.SchoolPaymentGateways)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_SPG_School");
+
+            entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.SchoolPaymentGatewayUpdatedByNavigations).HasConstraintName("FK_SPG_UpdatedBy");
+        });
+
         modelBuilder.Entity<SchoolPaymentSetting>(entity =>
         {
             entity.HasKey(e => e.SettingId).HasName("PK__SchoolPa__54372B1D80E71C57");
@@ -754,6 +772,7 @@ public partial class EduMealContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__UserExter__UserI__59FA5E80");
         });
+
         OnModelCreatingPartial(modelBuilder);
     }
 

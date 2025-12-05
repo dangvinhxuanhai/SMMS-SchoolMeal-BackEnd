@@ -14,6 +14,7 @@ using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.school.Handlers;
 using SMMS.Application.Features.Wardens.Handlers;
 using SMMS.Infrastructure.Security;
+using SMMS.Infrastructure.Service;
 using SMMS.Infrastructure.Services;
 using SMMS.Persistence.Service;
 using SMMS.WebAPI.Hubs;
@@ -33,6 +34,7 @@ public static class SerivceDI
         // continute DI
         services.AddScoped<IJwtService, JwtTokenService>();
         services.AddScoped<IFileStorageService, FileStorageService>();
+        services.AddHttpClient<IPayOsIntegrationService, PayOsIntegrationService>();
         services.AddMediatR(cfg =>
             cfg.RegisterServicesFromAssembly(typeof(AttendanceCommandHandler).Assembly));
         services.AddMediatR(cfg =>

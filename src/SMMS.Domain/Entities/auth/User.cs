@@ -138,6 +138,12 @@ public partial class User
     public virtual School? School { get; set; }
 
     [InverseProperty("CreatedByNavigation")]
+    public virtual ICollection<SchoolPaymentGateway> SchoolPaymentGatewayCreatedByNavigations { get; set; } = new List<SchoolPaymentGateway>();
+
+    [InverseProperty("UpdatedByNavigation")]
+    public virtual ICollection<SchoolPaymentGateway> SchoolPaymentGatewayUpdatedByNavigations { get; set; } = new List<SchoolPaymentGateway>();
+
+    [InverseProperty("CreatedByNavigation")]
     public virtual ICollection<SchoolRevenue> SchoolRevenueCreatedByNavigations { get; set; } = new List<SchoolRevenue>();
 
     [InverseProperty("UpdatedByNavigation")]
