@@ -15,17 +15,35 @@ namespace SMMS.Infrastructure.Repositories
             _context = context;
         }
 
-        // ✅ Danh sách hóa đơn của các con thuộc phụ huynh
-        public async Task<IEnumerable<InvoiceDto>> GetInvoicesByParentAsync(Guid parentId)
+        //Lấy hóa đơn của con chưa thanh toán
+        public async Task<IEnumerable<InvoiceDto>> GetUnpaidInvoicesAsync(Guid studentId)
         {
             var query = from inv in _context.Invoices
                         join stu in _context.Students on inv.StudentId equals stu.StudentId
-                        where stu.ParentId == parentId
+                        where stu.StudentId == studentId && inv.Status == "Unpaid"
                         orderby inv.DateFrom descending
                         select new InvoiceDto
                         {
                             InvoiceId = inv.InvoiceId,
-                            StudentId = stu.StudentId,
+                            StudentName = stu.FullName,
+                            MonthNo = inv.MonthNo,
+                            DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
+                            DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
+                            AbsentDay = inv.AbsentDay,
+                            Status = inv.Status
+                        };
+            return await query.ToListAsync();
+        }
+        // ✅ Danh sách hóa đơn của các con thuộc phụ huynh
+        public async Task<IEnumerable<InvoiceDto>> GetInvoicesByParentAsync(Guid studentId)
+        {
+            var query = from inv in _context.Invoices
+                        join stu in _context.Students on inv.StudentId equals stu.StudentId
+                        where stu.StudentId == studentId
+                        orderby inv.DateFrom descending
+                        select new InvoiceDto
+                        {
+                            InvoiceId = inv.InvoiceId,
                             StudentName = stu.FullName,
                             MonthNo = inv.MonthNo,
                             DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
@@ -38,25 +56,23 @@ namespace SMMS.Infrastructure.Repositories
         }
 
         // ✅ Chi tiết hóa đơn
-        public async Task<InvoiceDto?> GetInvoiceDetailAsync(long invoiceId, Guid parentId)
+        public async Task<InvoiceDto?> GetInvoiceDetailAsync(long invoiceId, Guid studentId)
         {
-            var result = await (
-                from inv in _context.Invoices
-                join stu in _context.Students on inv.StudentId equals stu.StudentId
-                where inv.InvoiceId == invoiceId && stu.ParentId == parentId
-                select new InvoiceDto
-                {
-                    InvoiceId = inv.InvoiceId,
-                    StudentId = stu.StudentId,
-                    StudentName = stu.FullName,
-                    MonthNo = inv.MonthNo,
-                    DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
-                    DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
-                    AbsentDay = inv.AbsentDay,
-                    Status = inv.Status
-                }).FirstOrDefaultAsync();
-
-            return result;
+            return await (
+        from inv in _context.Invoices
+        join stu in _context.Students on inv.StudentId equals stu.StudentId
+        where inv.InvoiceId == invoiceId && stu.StudentId == studentId
+        select new InvoiceDto
+        {
+            InvoiceId = inv.InvoiceId,
+            StudentName = stu.FullName,
+            MonthNo = inv.MonthNo,
+            DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
+            DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
+            AbsentDay = inv.AbsentDay,
+            Status = inv.Status
+        }
+    ).FirstOrDefaultAsync();
         }
 
         public Task<Invoice?> GetByIdAsync(long invoiceId, CancellationToken ct)
