@@ -290,11 +290,11 @@ public class PurchasePlanRepository : IPurchasePlanRepository
     // ------------------- NEW: GetPlanByDateAsync -------------------
     public async Task<PurchasePlanDto?> GetPlanByDateAsync(
     Guid schoolId,
-    DateOnly date,
+    DateOnly nextWeekDate,
     CancellationToken cancellationToken)
     {
         // Lấy ngày bất kỳ của "tuần tới" so với date
-        var nextWeekDate = date.AddDays(7);
+        //var nextWeekDate = date.AddDays(7);
 
         // Tìm PlanId của tuần chứa "nextWeekDate"
         var planId = await (
