@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.nutrition.Commands;
 using SMMS.Application.Features.nutrition.DTOs;
 using SMMS.Application.Features.nutrition.Queries;
-using SMMS.Persistence.Service;
+using SMMS.Persistence;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
@@ -82,7 +82,7 @@ public class FoodItemsController : ControllerBase
 
             if (request.ImageFile != null)
             {
-                var uploadedUrl = await _cloudinary.UploadImageAsync(request.ImageFile);
+                var uploadedUrl = await _cloudinary.UploadImageAsync(request.ImageFile, "edu-meal/food-items");
                 if (!string.IsNullOrWhiteSpace(uploadedUrl))
                 {
                     imageUrl = uploadedUrl;

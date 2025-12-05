@@ -15,7 +15,7 @@ using SMMS.Application.Features.school.Handlers;
 using SMMS.Application.Features.Wardens.Handlers;
 using SMMS.Infrastructure.Security;
 using SMMS.Infrastructure.Services;
-using SMMS.Persistence.Service;
+using SMMS.Persistence;
 using SMMS.WebAPI.Hubs;
 
 namespace SMMS.WebAPI.Configurations;
@@ -66,7 +66,7 @@ public static class SerivceDI
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 
         //  cloud
-        services.AddScoped<CloudinaryService>(); 
+        services.AddScoped<CloudinaryService>();
         services.AddScoped<INotificationRealtimeService, NotificationRealtimeService>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
 
