@@ -80,6 +80,9 @@ public partial class School
     public virtual ICollection<ScheduleMeal> ScheduleMeals { get; set; } = new List<ScheduleMeal>();
 
     [InverseProperty("School")]
+    public virtual ICollection<SchoolPaymentGateway> SchoolPaymentGateways { get; set; } = new List<SchoolPaymentGateway>();
+
+    [InverseProperty("School")]
     public virtual ICollection<SchoolPaymentSetting> SchoolPaymentSettings { get; set; } = new List<SchoolPaymentSetting>();
 
     [InverseProperty("School")]
