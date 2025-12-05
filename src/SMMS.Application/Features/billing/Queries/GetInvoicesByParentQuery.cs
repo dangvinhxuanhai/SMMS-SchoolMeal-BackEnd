@@ -13,5 +13,5 @@ namespace SMMS.Application.Features.billing.Queries
     // ✅ Query: Lấy chi tiết hóa đơn cụ thể
     public record GetInvoiceDetailQuery(long InvoiceId, Guid StudenId) : IRequest<InvoiceDto?>;
     // Lấy hóa đơn chưa thanh toán 
-    public record GetUnpaidInvoicesAsync(Guid StudentId) : IRequest<IEnumerable<InvoiceDto>>;
+    public record GetUnpaidInvoicesQuery(Guid StudentId) : IRequest<IEnumerable<InvoiceDto>>;
 }
