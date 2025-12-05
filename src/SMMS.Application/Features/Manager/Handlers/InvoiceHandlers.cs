@@ -108,10 +108,28 @@ public class GenerateSchoolInvoicesHandler :
         var dtFrom = request.Request.DateFrom.Date;
         var dtTo = request.Request.DateTo.Date;
 
+        // 0. Validate cơ bản
         if (dtFrom > dtTo)
-            throw new InvalidOperationException("DateFrom must <= DateTo.");
+            throw new ArgumentException("DateFrom must be <= DateTo.");
 
-        short monthNo = (short)dtFrom.Month;
+        // giống SchoolPaymentSetting: validate theo tháng
+        short fromMonth = (short)dtFrom.Month;
+        short toMonth = (short)dtTo.Month;
+
+        if (fromMonth < 1 || fromMonth > 12 ||
+            toMonth < 1 || toMonth > 12)
+        {
+            throw new ArgumentException("Tháng phải nằm trong khoảng từ 1 đến 12.");
+        }
+
+        // không cho khác năm (nếu muốn nhiều năm thì sửa thêm sau)
+        if (dtFrom.Year != dtTo.Year)
+        {
+            throw new ArgumentException("Không được tạo invoice cho nhiều năm khác nhau.");
+        }
+
+        // MonthNo của invoice: lấy theo DateFrom
+        short monthNo = fromMonth;
 
         var fromD = DateOnly.FromDateTime(dtFrom);
         var toD = DateOnly.FromDateTime(dtTo);
@@ -122,7 +140,10 @@ public class GenerateSchoolInvoicesHandler :
             .Select(s => s.StudentId)
             .ToListAsync(ct);
 
-        // 2️⃣ Tính absent
+        if (!students.Any())
+            return Array.Empty<InvoiceDto1>();
+
+        // 2️⃣ Tính absent trong khoảng ngày
         var absentMap = await _repo.Attendance
             .Where(a => a.AbsentDate >= fromD && a.AbsentDate <= toD)
             .Join(_repo.Students,
@@ -136,15 +157,18 @@ public class GenerateSchoolInvoicesHandler :
                 g => g.Select(x => x.AbsentDate).Distinct().Count(),
                 ct);
 
-        // 3️⃣ Invoice đã tồn tại
-        var existed = (await _repo.Invoices
-      .Where(i =>
-          students.Contains(i.StudentId) &&
-          i.DateFrom == fromD &&
-          i.DateTo == toD)
-      .Select(i => i.StudentId)
-      .ToListAsync(ct))
-      .ToHashSet();
+        // 3️⃣ Invoice đã tồn tại (check chồng lấn khoảng ngày – giống HasOverlappedRangeAsync)
+        var existedStudentIds = await _repo.Invoices
+            .Where(i =>
+                students.Contains(i.StudentId) &&
+                // khoảng [i.DateFrom, i.DateTo] OVERLAP với [fromD, toD]
+                i.DateFrom <= toD &&
+                i.DateTo >= fromD)
+            .Select(i => i.StudentId)
+            .Distinct()
+            .ToListAsync(ct);
+
+        var existed = existedStudentIds.ToHashSet();
 
         // 4️⃣ Tạo invoice mới
         var newInvoices = new List<Invoice>();
@@ -154,12 +178,12 @@ public class GenerateSchoolInvoicesHandler :
             if (request.Request.SkipExisting && existed.Contains(sid))
                 continue;
 
-            var absent = absentMap.ContainsKey(sid) ? absentMap[sid] : 0;
+            var absent = absentMap.TryGetValue(sid, out var c) ? c : 0;
 
             newInvoices.Add(new Invoice
             {
                 StudentId = sid,
-                MonthNo = monthNo,
+                MonthNo = monthNo,   // lấy theo DateFrom
                 DateFrom = fromD,
                 DateTo = toD,
                 AbsentDay = absent,
@@ -186,6 +210,7 @@ public class GenerateSchoolInvoicesHandler :
             .ToList();
     }
 }
+
 public class UpdateInvoiceHandler :
     IRequestHandler<UpdateInvoiceCommand, InvoiceDto1?>
 {
@@ -211,9 +236,49 @@ public class UpdateInvoiceHandler :
         if (invoice == null)
             return null;
 
-        invoice.MonthNo = request.Request.MonthNo;
-        invoice.DateFrom = DateOnly.FromDateTime(request.Request.DateFrom);
-        invoice.DateTo = DateOnly.FromDateTime(request.Request.DateTo);
+        var dtFrom = request.Request.DateFrom.Date;
+        var dtTo = request.Request.DateTo.Date;
+
+        // 1️⃣ Validate cơ bản
+        if (dtFrom > dtTo)
+            throw new ArgumentException("DateFrom must be <= DateTo.");
+
+        short fromMonth = (short)dtFrom.Month;
+        short toMonth = (short)dtTo.Month;
+
+        if (fromMonth < 1 || fromMonth > 12 ||
+            toMonth < 1 || toMonth > 12)
+        {
+            throw new ArgumentException("Tháng phải nằm trong khoảng từ 1 đến 12.");
+        }
+
+        if (dtFrom.Year != dtTo.Year)
+        {
+            throw new ArgumentException("Không được cập nhật invoice sang khoảng khác năm.");
+        }
+
+        var fromD = DateOnly.FromDateTime(dtFrom);
+        var toD = DateOnly.FromDateTime(dtTo);
+
+        // 2️⃣ Check chồng lấn với invoice khác của cùng học sinh
+        bool overlapped = await _repo.Invoices
+            .AnyAsync(i =>
+                i.StudentId == invoice.StudentId &&
+                i.InvoiceId != invoice.InvoiceId &&   // bỏ qua chính nó
+                i.DateFrom <= toD &&
+                i.DateTo >= fromD,
+                ct);
+
+        if (overlapped)
+        {
+            throw new InvalidOperationException(
+                "Khoảng ngày này trùng với một invoice khác của học sinh.");
+        }
+
+        // 3️⃣ Map lại dữ liệu: MonthNo lấy theo DateFrom
+        invoice.MonthNo = (short)dtFrom.Month;
+        invoice.DateFrom = fromD;
+        invoice.DateTo = toD;
         invoice.AbsentDay = request.Request.AbsentDay;
         invoice.Status = request.Request.Status;
 
@@ -231,6 +296,7 @@ public class UpdateInvoiceHandler :
         };
     }
 }
+
 public class DeleteInvoiceHandler :
     IRequestHandler<DeleteInvoiceCommand, bool>
 {

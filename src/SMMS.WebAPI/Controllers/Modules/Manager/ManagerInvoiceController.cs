@@ -85,19 +85,28 @@ public class ManagerInvoiceController : ControllerBase
                 ct);
 
             if (invoices.Count == 0)
+            {
                 return Ok(new
                 {
-                    message = "Không có hóa đơn nào được tạo (có thể tất cả đã tồn tại hoặc không có học sinh active).",
+                    message = "Không có hóa đơn nào được tạo (có thể tất cả đã tồn tại hoặc không có học sinh active trong khoảng ngày này).",
                     data = invoices
                 });
+            }
+
+            // MonthNo đang được handler set theo tháng của DateFrom
+            var monthNo = request.DateFrom.Month;
 
             return Ok(new
             {
-                message = $"Đã tạo {invoices.Count} hóa đơn cho toàn trường trong khoảng {request.DateFrom:yyyy-MM-dd} - {request.DateTo:yyyy-MM-dd}.",
+                message = $"Đã tạo {invoices.Count} hóa đơn cho toàn trường trong khoảng ngày {request.DateFrom:yyyy-MM-dd} - {request.DateTo:yyyy-MM-dd} (tháng {monthNo}).",
                 data = invoices
             });
         }
-        catch (InvalidOperationException ex)
+        catch (ArgumentException ex)          // validate lỗi (ngày, tháng, năm…)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)   // lỗi nghiệp vụ (trùng khoảng…)
         {
             return BadRequest(new { message = ex.Message });
         }
@@ -107,8 +116,9 @@ public class ManagerInvoiceController : ControllerBase
         }
     }
 
+
     // 🟠 Cập nhật 1 invoice
-    // PUT api/ManagerInvoice/123
+    // PUT api/ManagerInvoice/{invoiceId}
     [HttpPut("{invoiceId:long}")]
     public async Task<IActionResult> Update(
         long invoiceId,
@@ -127,15 +137,24 @@ public class ManagerInvoiceController : ControllerBase
                 ct);
 
             if (updated == null)
-                return NotFound(new { message = "Không tìm thấy hóa đơn hoặc không thuộc trường này." });
+            {
+                return NotFound(new
+                {
+                    message = "Không tìm thấy hóa đơn hoặc hóa đơn không thuộc trường này."
+                });
+            }
 
             return Ok(new
             {
-                message = "Cập nhật hóa đơn thành công!",
+                message = $"Cập nhật hóa đơn thành công! (khoảng {updated.DateFrom:yyyy-MM-dd} - {updated.DateTo:yyyy-MM-dd}, tháng {updated.MonthNo}).",
                 data = updated
             });
         }
-        catch (InvalidOperationException ex)
+        catch (ArgumentException ex)          // lỗi validate ngày / tháng
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)  // lỗi overlap, nghiệp vụ
         {
             return BadRequest(new { message = ex.Message });
         }
@@ -144,6 +163,7 @@ public class ManagerInvoiceController : ControllerBase
             return StatusCode(500, new { message = "Lỗi hệ thống: " + ex.Message });
         }
     }
+
 
     // 🔴 Xóa 1 invoice (scope theo trường)
     // DELETE api/ManagerInvoice/123

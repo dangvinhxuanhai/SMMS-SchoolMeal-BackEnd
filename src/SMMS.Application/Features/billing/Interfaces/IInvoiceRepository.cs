@@ -8,8 +8,9 @@ namespace SMMS.Application.Features.billing.Interfaces
 {
     public interface IInvoiceRepository
     {
-        Task<IEnumerable<InvoiceDto>> GetInvoicesByParentAsync(Guid parentId);
-        Task<InvoiceDto?> GetInvoiceDetailAsync(long invoiceId, Guid parentId);
         Task<Invoice?> GetByIdAsync(long invoiceId, CancellationToken ct);
+        Task<IEnumerable<InvoiceDto>> GetInvoicesByParentAsync(Guid studentId);
+        Task<InvoiceDto?> GetInvoiceDetailAsync(long invoiceId, Guid studentId);
+        Task<IEnumerable<InvoiceDto>> GetUnpaidInvoicesAsync(Guid studentId);
     }
 }

@@ -12,7 +12,8 @@ namespace SMMS.Application.Features.billing.Handlers
 {
     public class InvoiceQueryHandler :
         IRequestHandler<GetInvoicesByParentQuery, IEnumerable<InvoiceDto>>,
-        IRequestHandler<GetInvoiceDetailQuery, InvoiceDto?>
+        IRequestHandler<GetInvoiceDetailQuery, InvoiceDto?>,
+        IRequestHandler<GetUnpaidInvoicesAsync, IEnumerable<InvoiceDto>>
     {
         private readonly IInvoiceRepository _invoiceRepository;
 
@@ -23,12 +24,16 @@ namespace SMMS.Application.Features.billing.Handlers
 
         public async Task<IEnumerable<InvoiceDto>> Handle(GetInvoicesByParentQuery request, CancellationToken cancellationToken)
         {
-            return await _invoiceRepository.GetInvoicesByParentAsync(request.ParentId);
+            return await _invoiceRepository.GetInvoicesByParentAsync(request.StudenId);
         }
 
         public async Task<InvoiceDto?> Handle(GetInvoiceDetailQuery request, CancellationToken cancellationToken)
         {
-            return await _invoiceRepository.GetInvoiceDetailAsync(request.InvoiceId, request.ParentId);
+            return await _invoiceRepository.GetInvoiceDetailAsync(request.InvoiceId, request.StudenId);
+        }
+        public async Task<IEnumerable<InvoiceDto>> Handle(GetUnpaidInvoicesAsync request, CancellationToken cancellationToken)
+        {
+            return await _invoiceRepository.GetUnpaidInvoicesAsync(request.StudentId);
         }
     }
 }

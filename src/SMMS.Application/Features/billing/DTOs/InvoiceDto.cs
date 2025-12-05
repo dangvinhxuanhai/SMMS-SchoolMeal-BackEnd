@@ -9,7 +9,6 @@ namespace SMMS.Application.Features.billing.DTOs
     public class InvoiceDto
     {
         public long InvoiceId { get; set; }
-        public Guid StudentId { get; set; }
         public string StudentName { get; set; } = string.Empty;
         public short MonthNo { get; set; }
         public DateTime DateFrom { get; set; }

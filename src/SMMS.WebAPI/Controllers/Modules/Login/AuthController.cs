@@ -19,7 +19,7 @@ public class AuthController : ControllerBase
     {
         var cookieOptions = new CookieOptions
         {
-            HttpOnly = true, Secure = true, SameSite = SameSiteMode.None, Expires = DateTime.UtcNow.AddDays(7)
+            HttpOnly = true, Secure = true, SameSite = SameSiteMode.Lax, Expires = DateTime.UtcNow.AddDays(7)
         };
         Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
     }
@@ -33,7 +33,7 @@ public class AuthController : ControllerBase
 
             Response.Cookies.Append("accessToken", result.Token, new CookieOptions
             {
-                HttpOnly = true, Secure = true, SameSite = SameSiteMode.None, Expires = DateTime.UtcNow.AddMinutes(30),
+                HttpOnly = true, Secure = true, SameSite = SameSiteMode.Lax, Expires = DateTime.UtcNow.AddMinutes(30),
             });
 
             SetRefreshTokenCookie(result.RefreshToken);
@@ -99,7 +99,7 @@ public class AuthController : ControllerBase
                 {
                     HttpOnly = true,
                     Secure = true,
-                    SameSite = SameSiteMode.None,
+                    SameSite = SameSiteMode.Lax,
                     Expires = DateTime.UtcNow.AddDays(-1)
                 };
                 Response.Cookies.Delete("accessToken", cookieOptions);
@@ -119,7 +119,7 @@ public class AuthController : ControllerBase
             {
                 HttpOnly = true,
                 Secure = true,
-                SameSite = SameSiteMode.None,
+                SameSite = SameSiteMode.Lax,
                 Expires = DateTime.UtcNow.AddMinutes(30),
             });
 
@@ -134,7 +134,7 @@ public class AuthController : ControllerBase
         {
             var cookieOptions = new CookieOptions
             {
-                HttpOnly = true, Secure = true, SameSite = SameSiteMode.None, Expires = DateTime.UtcNow.AddDays(-1)
+                HttpOnly = true, Secure = true, SameSite = SameSiteMode.Lax, Expires = DateTime.UtcNow.AddDays(-1)
             };
             Response.Cookies.Delete("refreshToken", cookieOptions);
             Response.Cookies.Delete("accessToken", cookieOptions);
@@ -172,7 +172,7 @@ public class AuthController : ControllerBase
 
             var cookieOptions = new CookieOptions
             {
-                HttpOnly = true, Secure = true, SameSite = SameSiteMode.None, Expires = DateTime.UtcNow.AddDays(-1)
+                HttpOnly = true, Secure = true, SameSite = SameSiteMode.Lax, Expires = DateTime.UtcNow.AddDays(-1)
             };
 
             Response.Cookies.Delete("refreshToken", cookieOptions);
