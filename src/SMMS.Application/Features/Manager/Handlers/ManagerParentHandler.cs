@@ -128,9 +128,9 @@ public class ManagerParentHandler :
             .ThenInclude(s => s.StudentClasses)
             .ThenInclude(sc => sc.Class)
             .Where(u =>
-                u.Role.RoleName.ToLower() == "parent" &&
-                u.SchoolId == schoolId &&
-                u.IsActive
+                    u.Role.RoleName.ToLower() == "parent" &&
+                    u.SchoolId == schoolId &&
+                    u.IsActive
                 // u.Students.Any(s => s.SchoolId == schoolId && s.IsActive)
             );
 
@@ -560,14 +560,29 @@ public class ManagerParentHandler :
                 await _repo.DeleteStudentClassAsync(sc);
             }
 
-            // xoá hẳn học sinh ở TRƯỜNG NÀY
             await _repo.DeleteStudentAsync(student);
         }
 
         await _repo.DeleteNotificationRecipientsByUserIdAsync(user.UserId);
 
-        user.UpdatedAt = DateTime.UtcNow;
-        await _repo.UpdateAsync(user);
+        var hasAnyStudentOtherSchool = await _repo.Students
+            .AnyAsync(s => s.ParentId == user.UserId, cancellationToken);
+
+
+        if (!hasAnyStudentOtherSchool)
+
+        {
+
+            await _repo.DeleteAsync(user);
+        }
+
+        else
+
+        {
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _repo.UpdateAsync(user);
+        }
 
         return true;
     }
