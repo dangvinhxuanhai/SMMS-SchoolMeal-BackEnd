@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.nutrition.Commands;
 using SMMS.Application.Features.nutrition.DTOs;
 using SMMS.Application.Features.nutrition.Queries;
+using SMMS.Persistence;
 using SMMS.Persistence.Service;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;

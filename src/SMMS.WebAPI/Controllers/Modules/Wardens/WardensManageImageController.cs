@@ -39,12 +39,15 @@ public class WardensManageImageController : ControllerBase
 
         try
         {
-            // 🔹 Kiểm tra người upload có tồn tại không
-            var uploaderExists = await _context.Users
-                .AnyAsync(u => u.UserId == request.UploaderId);
+            var userIdString = User.FindFirst("UserId")?.Value
+                               ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-            if (!uploaderExists)
-                return BadRequest(new { message = "Người tải lên không tồn tại trong hệ thống." });
+            if (string.IsNullOrEmpty(userIdString) || !Guid.TryParse(userIdString, out var currentUserId))
+            {
+                return Unauthorized(new { message = "Không xác định được người dùng." });
+            }
+
+            request.UploaderId = currentUserId;
 
             // 🔹 Kiểm tra định dạng file (OPTIONAL, trùng với handler nhưng giúp báo lỗi sớm)
             var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };

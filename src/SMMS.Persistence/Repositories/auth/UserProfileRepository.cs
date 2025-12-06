@@ -10,6 +10,7 @@ using SMMS.Domain.Entities.school;
 using SMMS.Persistence.Data;
 using  SMMS.Persistence.Repositories.Skeleton;
 using SMMS.Persistence.Service;
+
 namespace SMMS.Persistence.Repositories.auth
 {
     public class UserProfileRepository : Repository<User>, IUserProfileRepository

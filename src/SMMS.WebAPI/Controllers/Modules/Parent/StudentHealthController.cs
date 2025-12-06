@@ -6,7 +6,7 @@ using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace SMMS.WebAPI.Controllers
+namespace SMMS.WebAPI.Controllers.Modules.Parent
 {
     [Authorize(Roles = "Parent")]
     [ApiController]

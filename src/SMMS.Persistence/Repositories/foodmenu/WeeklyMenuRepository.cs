@@ -12,6 +12,7 @@ using SMMS.Domain.Entities.foodmenu;
 using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.foodmenu;
+
 public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
 {
     private readonly EduMealContext _db;
@@ -41,9 +42,9 @@ public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
 
             var schedule = await _db.ScheduleMeals.AsNoTracking()
                 .Where(w => w.SchoolId == student.SchoolId
-                         && w.WeekStart <= targetDate
-                         && w.WeekEnd >= targetDate
-                         && w.Status == "Published")
+                            && w.WeekStart <= targetDate
+                            && w.WeekEnd >= targetDate
+                            && w.Status == "Published")
                 .Select(w => new
                 {
                     w.ScheduleMealId,
@@ -84,17 +85,17 @@ public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
             var dayFoods = await _db.MenuFoodItems.AsNoTracking()
                 .Where(mf => dailyMealIds.Contains(mf.DailyMealId))
                 .Join(_db.FoodItems.AsNoTracking(),
-                      mf => mf.FoodId,
-                      f => f.FoodId,
-                      (mf, f) => new
-                      {
-                          mf.DailyMealId,
-                          f.FoodId,
-                          f.FoodName,
-                          f.FoodType,
-                          f.ImageUrl,
-                          f.FoodDesc
-                      })
+                    mf => mf.FoodId,
+                    f => f.FoodId,
+                    (mf, f) => new
+                    {
+                        mf.DailyMealId,
+                        f.FoodId,
+                        f.FoodName,
+                        f.FoodType,
+                        f.ImageUrl,
+                        f.FoodDesc
+                    })
                 .ToListAsync(ct);
 
             // 5) Dị ứng của HS
@@ -192,7 +193,7 @@ public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
             if (schoolId == Guid.Empty) return Array.Empty<WeekOptionDto>();
 
             var q = _db.ScheduleMeals.AsNoTracking()
-                .Where(w => w.SchoolId == schoolId);
+                .Where(w => w.SchoolId == schoolId && w.Status == "Published");
 
             if (from.HasValue) q = q.Where(w => w.WeekEnd >= DateOnly.FromDateTime(from.Value.Date));
             if (to.HasValue) q = q.Where(w => w.WeekStart <= DateOnly.FromDateTime(to.Value.Date));
