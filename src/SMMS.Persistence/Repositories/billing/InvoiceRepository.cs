@@ -18,20 +18,40 @@ namespace SMMS.Infrastructure.Repositories
         //Lấy hóa đơn của con chưa thanh toán
         public async Task<IEnumerable<InvoiceDto>> GetUnpaidInvoicesAsync(Guid studentId)
         {
-            var query = from inv in _context.Invoices
-                        join stu in _context.Students on inv.StudentId equals stu.StudentId
-                        where stu.StudentId == studentId && inv.Status == "Unpaid"
-                        orderby inv.DateFrom descending
-                        select new InvoiceDto
-                        {
-                            InvoiceId = inv.InvoiceId,
-                            StudentName = stu.FullName,
-                            MonthNo = inv.MonthNo,
-                            DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
-                            DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
-                            AbsentDay = inv.AbsentDay,
-                            Status = inv.Status
-                        };
+            var schoolId = await _context.Students
+            .Where(s => s.StudentId == studentId)
+            .Select(s => s.SchoolId)
+            .FirstOrDefaultAsync();
+
+            if (schoolId == Guid.Empty)
+                return Enumerable.Empty<InvoiceDto>();
+
+            // 2️⃣ Lấy cấu hình thanh toán
+            var setting = await _context.SchoolPaymentSettings
+                .Where(s => s.SchoolId == schoolId && s.IsActive)
+                .FirstOrDefaultAsync();
+
+            if (setting == null)
+                return Enumerable.Empty<InvoiceDto>();
+
+            var query =
+                from inv in _context.Invoices
+                join stu in _context.Students
+                    on inv.StudentId equals stu.StudentId
+                where stu.StudentId == studentId
+                      && inv.Status == "Unpaid"
+                select new InvoiceDto
+                {
+                    InvoiceId = inv.InvoiceId,
+                    StudentName = stu.FullName,
+                    MonthNo = inv.MonthNo,
+                    DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
+                    DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
+                    AbsentDay = inv.AbsentDay,
+                    Status = inv.Status,
+                    AmountToPay = setting.TotalAmount - (inv.AbsentDay * 20000m)
+                };
+
             return await query.ToListAsync();
         }
         // ✅ Danh sách hóa đơn của các con thuộc phụ huynh

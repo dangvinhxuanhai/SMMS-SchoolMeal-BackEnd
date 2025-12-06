@@ -51,7 +51,7 @@ namespace SMMS.WebAPI.Controllers.Modules.Parent
         {
             if (studentId == Guid.Empty)
                 return BadRequest(new { message = "Vui lòng nhập StudentId hợp lệ." });
-            var invoices = await _mediator.Send(new GetUnpaidInvoicesAsync(studentId));
+            var invoices = await _mediator.Send(new GetUnpaidInvoicesQuery(studentId));
 
             if (invoices == null || !invoices.Any())
                 return NotFound(new { message = "Không có hóa đơn nào chưa thanh toán." });
