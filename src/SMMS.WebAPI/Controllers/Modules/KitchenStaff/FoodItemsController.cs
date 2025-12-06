@@ -59,6 +59,34 @@ public class FoodItemsController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get all food items, optionally filter by main dish or not.
+    /// isMainDish = null: all, true: only main dishes, false: only side dishes.
+    /// </summary>
+    [HttpGet("by-main-dish")]
+    public async Task<ActionResult<IReadOnlyList<FoodItemDto>>> GetByMainDish(
+        [FromQuery] bool? isMainDish,
+        [FromQuery] string? keyword,
+        [FromQuery] bool includeInactive = false,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var query = new GetFoodItemsByMainDishQuery(
+            GetSchoolIdFromToken(),
+            isMainDish,
+            keyword,
+            includeInactive);
+
+            var result = await _mediator.Send(query, cancellationToken);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
     // GET api/nutrition/fooditems/5
     [HttpGet("{id:int}")]
     public async Task<ActionResult<FoodItemDto>> GetById(int id)

@@ -15,13 +15,16 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
-    private void SetRefreshTokenCookie(string refreshToken)
+    private CookieOptions GetCookieOptions(DateTime? expiredTime)
     {
-        var cookieOptions = new CookieOptions
+        return new CookieOptions
         {
-            HttpOnly = true, Secure = true, SameSite = SameSiteMode.Lax, Expires = DateTime.UtcNow.AddDays(7)
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Path = "/",
+            Expires = expiredTime ?? DateTime.UtcNow.AddDays(-1)
         };
-        Response.Cookies.Append("refreshToken", refreshToken, cookieOptions);
     }
 
     [HttpPost("login")]
@@ -31,12 +34,9 @@ public class AuthController : ControllerBase
         {
             var result = await _authService.LoginAsync(request);
 
-            Response.Cookies.Append("accessToken", result.Token, new CookieOptions
-            {
-                HttpOnly = true, Secure = true, SameSite = SameSiteMode.Lax, Expires = DateTime.UtcNow.AddMinutes(30),
-            });
+            Response.Cookies.Append("accessToken", result.Token, GetCookieOptions(DateTime.UtcNow.AddMinutes(30)));
 
-            SetRefreshTokenCookie(result.RefreshToken);
+            Response.Cookies.Append("refreshToken", result.RefreshToken, GetCookieOptions(DateTime.UtcNow.AddDays(7)));
 
             return Ok(new { user = result.User });
         }
@@ -95,49 +95,27 @@ public class AuthController : ControllerBase
 
             if (string.IsNullOrEmpty(refreshToken))
             {
-                var cookieOptions = new CookieOptions
-                {
-                    HttpOnly = true,
-                    Secure = true,
-                    SameSite = SameSiteMode.Lax,
-                    Expires = DateTime.UtcNow.AddDays(-1)
-                };
-                Response.Cookies.Delete("accessToken", cookieOptions);
-                Response.Cookies.Delete("refreshToken", cookieOptions);
-
+                Response.Cookies.Delete("accessToken", GetCookieOptions(null));
+                Response.Cookies.Delete("refreshToken", GetCookieOptions(null));
                 return Unauthorized(new { message = "Phiên đăng nhập đã hết hạn" });
             }
 
             var result = await _authService.RefreshTokenAsync(refreshToken);
 
-            if (string.IsNullOrEmpty(result.Token))
-            {
-                throw new Exception("Lỗi tạo Access Token mới.");
-            }
-
-            Response.Cookies.Append("accessToken", result.Token, new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTime.UtcNow.AddMinutes(30),
-            });
+            Response.Cookies.Append("accessToken", result.Token, GetCookieOptions(DateTime.UtcNow.AddMinutes(30)));
 
             if (!string.IsNullOrEmpty(result.RefreshToken))
             {
-                SetRefreshTokenCookie(result.RefreshToken);
+                Response.Cookies.Append("refreshToken", result.RefreshToken,
+                    GetCookieOptions(DateTime.UtcNow.AddDays(7)));
             }
 
             return Ok(new { message = "Refresh token thành công" });
         }
         catch (Exception ex)
         {
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true, Secure = true, SameSite = SameSiteMode.Lax, Expires = DateTime.UtcNow.AddDays(-1)
-            };
-            Response.Cookies.Delete("refreshToken", cookieOptions);
-            Response.Cookies.Delete("accessToken", cookieOptions);
+            Response.Cookies.Delete("accessToken", GetCookieOptions(null));
+            Response.Cookies.Delete("refreshToken", GetCookieOptions(null));
 
             return Unauthorized(new { message = ex.Message });
         }
@@ -164,20 +142,13 @@ public class AuthController : ControllerBase
         {
             var refreshToken = Request.Cookies["refreshToken"];
 
-            // Xóa token trong DB nếu cần thiết
             if (!string.IsNullOrEmpty(refreshToken))
             {
                 await _authService.LogoutAsync(refreshToken);
             }
 
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true, Secure = true, SameSite = SameSiteMode.Lax, Expires = DateTime.UtcNow.AddDays(-1)
-            };
-
-            Response.Cookies.Delete("refreshToken", cookieOptions);
-            Response.Cookies.Delete("accessToken", cookieOptions);
-
+            Response.Cookies.Delete("accessToken", GetCookieOptions(null));
+            Response.Cookies.Delete("refreshToken", GetCookieOptions(null));
             return Ok(new { message = "Đăng xuất thành công" });
         }
         catch (Exception ex)

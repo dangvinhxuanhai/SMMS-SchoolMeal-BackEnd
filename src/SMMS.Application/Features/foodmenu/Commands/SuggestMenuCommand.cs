@@ -8,8 +8,8 @@ using SMMS.Application.Features.foodmenu.DTOs;
 
 namespace SMMS.Application.Features.foodmenu.Commands;
 public record SuggestMenuCommand(
-    Guid UserId,
     Guid SchoolId,
+    Guid UserId,
     List<int> MainIngredientIds,
     List<int> SideIngredientIds,
     List<int> AvoidAllergenIds,
