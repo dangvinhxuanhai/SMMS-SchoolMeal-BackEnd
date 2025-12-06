@@ -16,6 +16,7 @@ public interface ISchoolInvoiceRepository
     IQueryable<Attendance> Attendance { get; }
 
     // Command operations
+    void Update(Invoice invoice);
     Task AddInvoiceAsync(Invoice invoice, CancellationToken ct);
     Task AddInvoicesAsync(IEnumerable<Invoice> invoices, CancellationToken ct);
     Task<bool> SaveChangesAsync(CancellationToken ct);
