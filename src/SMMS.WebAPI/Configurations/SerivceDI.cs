@@ -17,6 +17,7 @@ using SMMS.Infrastructure.Security;
 using SMMS.Infrastructure.Service;
 using SMMS.Infrastructure.Services;
 using SMMS.Persistence;
+using SMMS.Persistence.Service;
 using SMMS.WebAPI.Hubs;
 
 namespace SMMS.WebAPI.Configurations;

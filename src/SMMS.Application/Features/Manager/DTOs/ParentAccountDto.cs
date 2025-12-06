@@ -16,6 +16,8 @@ public class ParentAccountDto
     public string? ClassName { get; set; }
     public string RelationName { get; set; }
     public bool IsActive { get; set; }
+    public bool IsDefaultPassword { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public List<ParentStudentDetailDto> Children { get; set; }
 
