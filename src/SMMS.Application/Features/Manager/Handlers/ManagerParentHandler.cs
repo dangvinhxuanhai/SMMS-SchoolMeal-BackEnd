@@ -130,8 +130,8 @@ public class ManagerParentHandler :
             .Where(u =>
                     u.Role.RoleName.ToLower() == "parent" &&
                     u.SchoolId == schoolId &&
-                    u.IsActive
-                // u.Students.Any(s => s.SchoolId == schoolId && s.IsActive)
+                    u.IsActive &&
+                u.Students.Any(s => s.SchoolId == schoolId && s.IsActive)
             );
 
         // Áp dụng bộ lọc lớp học nếu có

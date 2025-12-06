@@ -28,6 +28,12 @@ public class SchoolInvoiceRepository : ISchoolInvoiceRepository
         await _context.Invoices.AddAsync(invoice, ct);
     }
 
+    public void Update(Invoice invoice)
+    {
+        // Hàm này cực kỳ quan trọng
+        _context.Invoices.Update(invoice);
+    }
+
     public async Task AddInvoicesAsync(IEnumerable<Invoice> invoices, CancellationToken ct)
     {
         await _context.Invoices.AddRangeAsync(invoices, ct);
