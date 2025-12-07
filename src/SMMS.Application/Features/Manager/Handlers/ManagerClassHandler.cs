@@ -92,32 +92,49 @@ public class ManagerClassHandler :
     #region COMMAND HANDLERS
 
     // 🟡 Create
-    public async Task<ClassDto> Handle(CreateClassCommand command, CancellationToken cancellationToken)
+    public async Task<ClassDto> Handle(
+        CreateClassCommand command,
+        CancellationToken cancellationToken)
     {
         var request = command.Request;
 
-        // Check Niên khóa tồn tại không (Tránh lỗi tạo lớp vào năm học ma)
+        // 0. Check niên khóa có thuộc trường này không
         var yearExists = await _repo.AcademicYears
-            .AnyAsync(y => y.YearId == request.YearId && y.SchoolId == request.SchoolId, cancellationToken);
+            .AnyAsync(y => y.YearId == request.YearId
+                           && y.SchoolId == request.SchoolId,
+                      cancellationToken);
 
         if (!yearExists)
-            throw new InvalidOperationException($"Niên khóa (ID: {request.YearId}) không tồn tại.");
+            throw new InvalidOperationException(
+                $"Niên khóa (ID: {request.YearId}) không tồn tại trong trường này.");
 
+        // Chuẩn hóa tên lớp
+        var normalizedName = request.ClassName.Trim().ToLower();
+
+        // 1. Không cho trùng tên lớp trong CÙNG niên khóa
         var isDuplicateName = await _repo.Classes.AnyAsync(
-            c => c.SchoolId == request.SchoolId && c.YearId == request.YearId &&
-                 c.ClassName.ToLower() == request.ClassName.Trim().ToLower() && c.IsActive, cancellationToken);
+            c => c.SchoolId == request.SchoolId
+                 && c.YearId == request.YearId          // 👈 chỉ check trong cùng niên khóa
+                 && c.IsActive
+                 && c.ClassName.ToLower() == normalizedName,
+            cancellationToken);
 
         if (isDuplicateName)
         {
-            throw new InvalidOperationException($"Lớp tên '{request.ClassName}' đã tồn tại trong niên khóa này rồi!");
+            throw new InvalidOperationException(
+                $"Lớp tên '{request.ClassName}' đã tồn tại trong niên khóa này rồi!");
         }
 
-        // Check trùng giáo viên
+        // 2. Check giáo viên đã chủ nhiệm lớp khác chưa
         if (request.TeacherId.HasValue)
         {
-            var isTeacherBusy =
-                await _repo.Classes.AnyAsync(c => c.TeacherId == request.TeacherId && c.IsActive, cancellationToken);
-            if (isTeacherBusy) throw new InvalidOperationException("Giáo viên này đang chủ nhiệm lớp khác!");
+            var isTeacherBusy = await _repo.Classes.AnyAsync(
+                c => c.TeacherId == request.TeacherId
+                     && c.IsActive,
+                cancellationToken);
+
+            if (isTeacherBusy)
+                throw new InvalidOperationException("Giáo viên này đang chủ nhiệm lớp khác!");
         }
 
         var newClass = new Class
@@ -145,6 +162,7 @@ public class ManagerClassHandler :
             CreatedAt = newClass.CreatedAt
         };
     }
+
 
     // 🟠 Update
     public async Task<ClassDto?> Handle(UpdateClassCommand command, CancellationToken cancellationToken)

@@ -29,29 +29,30 @@ public class GetSchoolInvoicesHandler :
             from i in _repo.Invoices
             join s in _repo.Students on i.StudentId equals s.StudentId
             where s.SchoolId == request.SchoolId
-            select i;
+            select new { i, s };
 
         if (request.MonthNo.HasValue)
-            query = query.Where(i => i.MonthNo == request.MonthNo);
+            query = query.Where(x => x.i.MonthNo == request.MonthNo);
 
         if (request.Year.HasValue)
-            query = query.Where(i => i.DateFrom.Year == request.Year);
+            query = query.Where(x => x.i.DateFrom.Year == request.Year.Value);
 
         if (!string.IsNullOrWhiteSpace(request.Status))
-            query = query.Where(i => i.Status == request.Status);
+            query = query.Where(x => x.i.Status == request.Status);
 
         return await query
-            .Select(i => new InvoiceDto1
-            {
-                InvoiceId = i.InvoiceId,
-                StudentId = i.StudentId,
-                MonthNo = i.MonthNo,
-                DateFrom = i.DateFrom.ToDateTime(TimeOnly.MinValue),
-                DateTo = i.DateTo.ToDateTime(TimeOnly.MinValue),
-                AbsentDay = i.AbsentDay,
-                Status = i.Status
-            })
-            .ToListAsync(cancellationToken);
+         .Select(x => new InvoiceDto1
+         {
+             InvoiceId = x.i.InvoiceId,
+             StudentId = x.i.StudentId,
+             StudentName = x.s.FullName, // 👈 map tên học sinh
+             MonthNo = x.i.MonthNo,
+             DateFrom = x.i.DateFrom.ToDateTime(TimeOnly.MinValue),
+             DateTo = x.i.DateTo.ToDateTime(TimeOnly.MinValue),
+             AbsentDay = x.i.AbsentDay,
+             Status = x.i.Status
+         })
+         .ToListAsync(cancellationToken);
     }
 }
 public class GetSchoolInvoiceByIdHandler :
@@ -95,10 +96,14 @@ public class GenerateSchoolInvoicesHandler :
     IRequestHandler<GenerateSchoolInvoicesCommand, IReadOnlyList<InvoiceDto1>>
 {
     private readonly ISchoolInvoiceRepository _repo;
+    private readonly IManagerPaymentSettingRepository _paymentRepo;
 
-    public GenerateSchoolInvoicesHandler(ISchoolInvoiceRepository repo)
+    public GenerateSchoolInvoicesHandler(
+        ISchoolInvoiceRepository repo,
+        IManagerPaymentSettingRepository paymentRepo)
     {
         _repo = repo;
+        _paymentRepo = paymentRepo;
     }
 
     public async Task<IReadOnlyList<InvoiceDto1>> Handle(
@@ -108,11 +113,13 @@ public class GenerateSchoolInvoicesHandler :
         var dtFrom = request.Request.DateFrom.Date;
         var dtTo = request.Request.DateTo.Date;
 
-        // 0. Validate cơ bản
+        // 0️⃣ Validate cơ bản
         if (dtFrom > dtTo)
             throw new ArgumentException("DateFrom must be <= DateTo.");
 
-        // giống SchoolPaymentSetting: validate theo tháng
+        if (dtFrom.Year != dtTo.Year)
+            throw new ArgumentException("Không được tạo invoice cho nhiều năm khác nhau.");
+
         short fromMonth = (short)dtFrom.Month;
         short toMonth = (short)dtTo.Month;
 
@@ -122,19 +129,30 @@ public class GenerateSchoolInvoicesHandler :
             throw new ArgumentException("Tháng phải nằm trong khoảng từ 1 đến 12.");
         }
 
-        // không cho khác năm (nếu muốn nhiều năm thì sửa thêm sau)
-        if (dtFrom.Year != dtTo.Year)
+        if (fromMonth > toMonth)
+            throw new ArgumentException("Tháng bắt đầu không được lớn hơn tháng kết thúc.");
+
+        // 1️⃣ BẮT BUỘC phải trùng đúng 1 cấu hình thu phí
+        var setting = await _paymentRepo.GetExactRangeAsync(
+            request.SchoolId,
+            fromMonth,
+            toMonth,
+            ct);
+
+        if (setting == null)
         {
-            throw new ArgumentException("Không được tạo invoice cho nhiều năm khác nhau.");
+            // ❌ Không có cấu hình (fromMonth, toMonth) tương ứng
+            throw new InvalidOperationException(
+                "Nhập ngày không đúng trong cấu hình cài đặt thanh toán.");
         }
 
-        // MonthNo của invoice: lấy theo DateFrom
+        // MonthNo của invoice: lấy theo DateFrom (tức fromMonth)
         short monthNo = fromMonth;
 
         var fromD = DateOnly.FromDateTime(dtFrom);
         var toD = DateOnly.FromDateTime(dtTo);
 
-        // 1️⃣ Lấy học sinh
+        // 2️⃣ Lấy học sinh active của trường
         var students = await _repo.Students
             .Where(s => s.SchoolId == request.SchoolId && s.IsActive)
             .Select(s => s.StudentId)
@@ -143,7 +161,7 @@ public class GenerateSchoolInvoicesHandler :
         if (!students.Any())
             return Array.Empty<InvoiceDto1>();
 
-        // 2️⃣ Tính absent trong khoảng ngày
+        // 3️⃣ Tính absent trong khoảng ngày
         var absentMap = await _repo.Attendance
             .Where(a => a.AbsentDate >= fromD && a.AbsentDate <= toD)
             .Join(_repo.Students,
@@ -157,11 +175,10 @@ public class GenerateSchoolInvoicesHandler :
                 g => g.Select(x => x.AbsentDate).Distinct().Count(),
                 ct);
 
-        // 3️⃣ Invoice đã tồn tại (check chồng lấn khoảng ngày – giống HasOverlappedRangeAsync)
+        // 4️⃣ Invoice đã tồn tại (overlap khoảng ngày)
         var existedStudentIds = await _repo.Invoices
             .Where(i =>
                 students.Contains(i.StudentId) &&
-                // khoảng [i.DateFrom, i.DateTo] OVERLAP với [fromD, toD]
                 i.DateFrom <= toD &&
                 i.DateTo >= fromD)
             .Select(i => i.StudentId)
@@ -170,7 +187,7 @@ public class GenerateSchoolInvoicesHandler :
 
         var existed = existedStudentIds.ToHashSet();
 
-        // 4️⃣ Tạo invoice mới
+        // 5️⃣ Tạo invoice mới
         var newInvoices = new List<Invoice>();
 
         foreach (var sid in students)
@@ -183,7 +200,7 @@ public class GenerateSchoolInvoicesHandler :
             newInvoices.Add(new Invoice
             {
                 StudentId = sid,
-                MonthNo = monthNo,   // lấy theo DateFrom
+                MonthNo = monthNo,
                 DateFrom = fromD,
                 DateTo = toD,
                 AbsentDay = absent,
@@ -210,6 +227,7 @@ public class GenerateSchoolInvoicesHandler :
             .ToList();
     }
 }
+
 
 public class UpdateInvoiceHandler :
     IRequestHandler<UpdateInvoiceCommand, InvoiceDto1?>
