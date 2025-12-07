@@ -143,55 +143,77 @@ public class ManagerParentHandler :
                 )
             );
         }
-
-        return await query
+        // 1️⃣ Lấy list user trước
+        var users = await query
             .OrderByDescending(u => u.CreatedAt)
-            .Select(u => new ParentAccountDto
-            {
-                UserId = u.UserId,
-                FullName = u.FullName,
-                Email = u.Email,
-                Phone = u.Phone,
-                Role = u.Role.RoleName,
-                IsActive = u.IsActive,
-                CreatedAt = u.CreatedAt,
-                SchoolName = u.School != null ? u.School.SchoolName : "(Chưa gán trường)",
-
-                RelationName = u.Students
-                    .Where(s =>
-                        s.SchoolId == schoolId &&
-                        s.IsActive &&
-                        (!classIdFilter.HasValue ||
-                         s.StudentClasses.Any(sc => sc.ClassId == classIdFilter.Value))
-                    )
-                    .Select(s => s.RelationName ?? "Phụ huynh")
-                    .FirstOrDefault() ?? "Phụ huynh",
-
-                Children = u.Students
-                    .Where(s =>
-                        s.SchoolId == schoolId &&
-                        s.IsActive &&
-                        (!classIdFilter.HasValue ||
-                         s.StudentClasses.Any(sc => sc.ClassId == classIdFilter.Value))
-                    )
-                    .Select(s => new ParentAccountDto.ParentStudentDetailDto
-                    {
-                        FullName = s.FullName,
-                        Gender = s.Gender,
-                        DateOfBirth = s.DateOfBirth.HasValue
-                            ? s.DateOfBirth.Value.ToDateTime(TimeOnly.MinValue)
-                            : null,
-                        ClassId = s.StudentClasses.Any()
-                            ? s.StudentClasses.FirstOrDefault()!.ClassId
-                            : (Guid?)null,
-                        ClassName = s.StudentClasses.Any() &&
-                                    s.StudentClasses.FirstOrDefault()!.Class != null
-                                ? s.StudentClasses.FirstOrDefault()!.Class!.ClassName
-                                : "Chưa xếp lớp"
-                    })
-                    .ToList()
-            })
             .ToListAsync(cancellationToken);
+
+        // 2️⃣ Map sang DTO và gắn thêm flag mật khẩu mặc định
+        var result = users
+            .Select(u =>
+            {
+                bool isDefaultPassword = false;
+
+                if (!string.IsNullOrWhiteSpace(u.PasswordHash) &&
+                    u.PasswordHash.StartsWith("AQAAAA", StringComparison.Ordinal))
+                {
+                    var verify = _passwordHasher.VerifyHashedPassword(u, u.PasswordHash, "@1");
+                    isDefaultPassword = verify == PasswordVerificationResult.Success;
+                }
+
+                if (u.PasswordHash == "@1")
+                {
+                    isDefaultPassword = true;
+                }
+
+                return new ParentAccountDto
+                {
+                    UserId = u.UserId,
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    Phone = u.Phone,
+                    Role = u.Role.RoleName,
+                    IsActive = u.IsActive,
+                    CreatedAt = u.CreatedAt,
+                    SchoolName = u.School != null ? u.School.SchoolName : "(Chưa gán trường)",
+
+                    IsDefaultPassword = isDefaultPassword,   // 👈 gán flag
+
+                    RelationName = u.Students
+                        .Where(s =>
+                            s.SchoolId == schoolId &&
+                            s.IsActive &&
+                            (!classIdFilter.HasValue ||
+                             s.StudentClasses.Any(sc => sc.ClassId == classIdFilter.Value))
+                        )
+                        .Select(s => s.RelationName ?? "Phụ huynh")
+                        .FirstOrDefault() ?? "Phụ huynh",
+
+                    Children = u.Students
+                        .Where(s =>
+                            s.SchoolId == schoolId &&
+                            s.IsActive &&
+                            (!classIdFilter.HasValue ||
+                             s.StudentClasses.Any(sc => sc.ClassId == classIdFilter.Value))
+                        )
+                        .Select(s => new ParentAccountDto.ParentStudentDetailDto
+                        {
+                            StudentId = s.StudentId,
+                            FullName = s.FullName,
+                            Gender = s.Gender,
+                            DateOfBirth = s.DateOfBirth.HasValue
+                                ? s.DateOfBirth.Value.ToDateTime(TimeOnly.MinValue)
+                                : null,
+                            ClassId = s.StudentClasses.FirstOrDefault()?.ClassId,
+                            ClassName = s.StudentClasses.FirstOrDefault()?.Class?.ClassName
+                                ?? "Chưa xếp lớp"
+                        })
+                        .ToList()
+                };
+            })
+            .ToList();
+
+        return result;
     }
 
     #endregion
