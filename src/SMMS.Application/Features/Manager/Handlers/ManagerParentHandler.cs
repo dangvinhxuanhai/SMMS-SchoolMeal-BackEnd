@@ -31,13 +31,16 @@ public class ManagerParentHandler :
 {
     private readonly IManagerAccountRepository _repo;
     private readonly ILogger<ManagerParentHandler> _logger;
+    private readonly IManagerRepository _managerRepo;
     private readonly PasswordHasher<User> _passwordHasher;
     public ManagerParentHandler(
         IManagerAccountRepository repo,
+         IManagerRepository managerRepo,
         ILogger<ManagerParentHandler> logger)
     {
         _repo = repo;
         _logger = logger;
+        _managerRepo = managerRepo;
         _passwordHasher = new PasswordHasher<User>();
     }
 
@@ -109,6 +112,28 @@ public class ManagerParentHandler :
 
     #endregion
 
+    private async Task<Dictionary<Guid, bool>> BuildStudentUnpaidMapAsync(
+    IEnumerable<Guid> studentIds,
+    CancellationToken ct)
+    {
+        var idList = studentIds.Distinct().ToList();
+        if (!idList.Any()) return new Dictionary<Guid, bool>();
+
+        // Lấy invoice theo học sinh và xem có Unpaid hay không
+        var data = await _managerRepo.Invoices
+            .Where(i => idList.Contains(i.StudentId))
+            .GroupBy(i => i.StudentId)
+            .Select(g => new
+            {
+                StudentId = g.Key,
+                HasUnpaid = g.Any(x => x.Status == "Unpaid")
+            })
+            .ToListAsync(ct);
+
+        return data.ToDictionary(x => x.StudentId, x => x.HasUnpaid);
+    }
+
+
     #region 🟢 GetAllAsync
 
     public async Task<List<ParentAccountDto>> Handle(
@@ -144,11 +169,27 @@ public class ManagerParentHandler :
             );
         }
         // 1️⃣ Lấy list user trước
+        // 1️⃣ Lấy list user trước
         var users = await query
             .OrderByDescending(u => u.CreatedAt)
             .ToListAsync(cancellationToken);
 
-        // 2️⃣ Map sang DTO và gắn thêm flag mật khẩu mặc định
+        // 🔹 Lấy tất cả StudentId liên quan
+        var allStudentIds = users
+            .SelectMany(u => u.Students
+                .Where(s =>
+                    s.SchoolId == schoolId &&
+                    s.IsActive &&
+                    (!classIdFilter.HasValue ||
+                     s.StudentClasses.Any(sc => sc.ClassId == classIdFilter.Value)))
+                .Select(s => s.StudentId))
+            .Distinct()
+            .ToList();
+
+        // 🔹 Map StudentId -> HasUnpaid (true/false)
+        var studentUnpaidMap = await BuildStudentUnpaidMapAsync(allStudentIds, cancellationToken);
+
+        // 2️⃣ Map sang DTO
         var result = users
             .Select(u =>
             {
@@ -166,6 +207,42 @@ public class ManagerParentHandler :
                     isDefaultPassword = true;
                 }
 
+                var childrenInSchool = u.Students
+                    .Where(s =>
+                        s.SchoolId == schoolId &&
+                        s.IsActive &&
+                        (!classIdFilter.HasValue ||
+                         s.StudentClasses.Any(sc => sc.ClassId == classIdFilter.Value)))
+                    .ToList();
+
+                var childIds = childrenInSchool.Select(s => s.StudentId).ToList();
+
+                // 🔥 Tính trạng thái thanh toán cho phụ huynh
+                var hasAnyInvoice = childIds.Any(id => studentUnpaidMap.ContainsKey(id))
+                                    || childIds.Any(id => studentUnpaidMap.ContainsKey(id) == false);
+                // Có học sinh nhưng không có record trong map => chưa có invoice nào
+
+                var hasUnpaid = childIds.Any(id =>
+                    studentUnpaidMap.TryGetValue(id, out var flag) && flag);
+
+                string paymentStatus;
+                if (!childIds.Any())
+                {
+                    paymentStatus = "Chưa tạo hóa đơn";
+                }
+                else if (hasUnpaid)
+                {
+                    paymentStatus = "Chưa thanh toán";
+                }
+                else if (childIds.Any(id => studentUnpaidMap.ContainsKey(id)))
+                {
+                    paymentStatus = "Đã thanh toán";
+                }
+                else
+                {
+                    paymentStatus = "Chưa tạo hóa đơn";
+                }
+
                 return new ParentAccountDto
                 {
                     UserId = u.UserId,
@@ -177,25 +254,14 @@ public class ManagerParentHandler :
                     CreatedAt = u.CreatedAt,
                     SchoolName = u.School != null ? u.School.SchoolName : "(Chưa gán trường)",
 
-                    IsDefaultPassword = isDefaultPassword,   // 👈 gán flag
+                    IsDefaultPassword = isDefaultPassword,
+                    PaymentStatus = paymentStatus,   // 👈 Gán trạng thái thanh toán
 
-                    RelationName = u.Students
-                        .Where(s =>
-                            s.SchoolId == schoolId &&
-                            s.IsActive &&
-                            (!classIdFilter.HasValue ||
-                             s.StudentClasses.Any(sc => sc.ClassId == classIdFilter.Value))
-                        )
+                    RelationName = childrenInSchool
                         .Select(s => s.RelationName ?? "Phụ huynh")
                         .FirstOrDefault() ?? "Phụ huynh",
 
-                    Children = u.Students
-                        .Where(s =>
-                            s.SchoolId == schoolId &&
-                            s.IsActive &&
-                            (!classIdFilter.HasValue ||
-                             s.StudentClasses.Any(sc => sc.ClassId == classIdFilter.Value))
-                        )
+                    Children = childrenInSchool
                         .Select(s => new ParentAccountDto.ParentStudentDetailDto
                         {
                             StudentId = s.StudentId,
@@ -206,7 +272,7 @@ public class ManagerParentHandler :
                                 : null,
                             ClassId = s.StudentClasses.FirstOrDefault()?.ClassId,
                             ClassName = s.StudentClasses.FirstOrDefault()?.Class?.ClassName
-                                ?? "Chưa xếp lớp"
+                                        ?? "Chưa xếp lớp"
                         })
                         .ToList()
                 };
