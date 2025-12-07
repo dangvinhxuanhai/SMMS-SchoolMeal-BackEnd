@@ -281,9 +281,7 @@ public class UpdateInvoiceHandler :
         invoice.DateTo = toD;
         invoice.AbsentDay = request.Request.AbsentDay;
         invoice.Status = request.Request.Status;
-
         _repo.Update(invoice);
-
         await _repo.SaveChangesAsync(ct);
 
         return new InvoiceDto1
