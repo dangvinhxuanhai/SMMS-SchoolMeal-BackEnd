@@ -275,7 +275,6 @@ public class UpdateInvoiceHandler :
                 "Khoảng ngày này trùng với một invoice khác của học sinh.");
         }
 
-        // 3️⃣ Map lại dữ liệu: MonthNo lấy theo DateFrom
         invoice.MonthNo = (short)dtFrom.Month;
         invoice.DateFrom = fromD;
         invoice.DateTo = toD;

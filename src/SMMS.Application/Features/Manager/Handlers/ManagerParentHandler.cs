@@ -32,6 +32,7 @@ public class ManagerParentHandler :
     private readonly IManagerAccountRepository _repo;
     private readonly ILogger<ManagerParentHandler> _logger;
     private readonly PasswordHasher<User> _passwordHasher;
+
     public ManagerParentHandler(
         IManagerAccountRepository repo,
         ILogger<ManagerParentHandler> logger)
@@ -41,7 +42,7 @@ public class ManagerParentHandler :
         _passwordHasher = new PasswordHasher<User>();
     }
 
-   #region 🔍 SearchAsync
+    #region 🔍 SearchAsync
 
     public async Task<List<ParentAccountDto>> Handle(
         SearchParentsQuery request,
@@ -56,8 +57,8 @@ public class ManagerParentHandler :
             .Include(u => u.Role)
             .Include(u => u.School)
             .Include(u => u.Students)
-                .ThenInclude(s => s.StudentClasses)
-                    .ThenInclude(sc => sc.Class)
+            .ThenInclude(s => s.StudentClasses)
+            .ThenInclude(sc => sc.Class)
             .Where(u =>
                 u.SchoolId == request.SchoolId &&
                 u.Role.RoleName.ToLower() == "parent" &&
@@ -122,12 +123,12 @@ public class ManagerParentHandler :
             .Include(u => u.Role)
             .Include(u => u.School)
             .Include(u => u.Students)
-                .ThenInclude(s => s.StudentClasses)
-                    .ThenInclude(sc => sc.Class)
+            .ThenInclude(s => s.StudentClasses)
+            .ThenInclude(sc => sc.Class)
             .Where(u =>
                 u.Role.RoleName.ToLower() == "parent" &&
                 u.IsActive && // nếu chỉ muốn phụ huynh active
-                              // ❗ chỉ tính các con active ở đúng school
+                // ❗ chỉ tính các con active ở đúng school
                 u.Students.Any(s => s.SchoolId == schoolId && s.IsActive)
             );
 
@@ -156,6 +157,9 @@ public class ManagerParentHandler :
                 IsActive = u.IsActive,
                 CreatedAt = u.CreatedAt,
                 SchoolName = u.School != null ? u.School.SchoolName : "(Chưa gán trường)",
+                IsDefaultPassword =
+                    !string.IsNullOrEmpty(u.PasswordHash) &&
+                    _passwordHasher.VerifyHashedPassword(u, u.PasswordHash, "@1") == PasswordVerificationResult.Success,
 
                 RelationName = u.Students
                     .Where(s =>
@@ -166,7 +170,6 @@ public class ManagerParentHandler :
                     )
                     .Select(s => s.RelationName ?? "Phụ huynh")
                     .FirstOrDefault() ?? "Phụ huynh",
-
                 Children = u.Students
                     .Where(s =>
                         s.SchoolId == schoolId &&
@@ -186,8 +189,8 @@ public class ManagerParentHandler :
                             : (Guid?)null,
                         ClassName = s.StudentClasses.Any() &&
                                     s.StudentClasses.FirstOrDefault()!.Class != null
-                                ? s.StudentClasses.FirstOrDefault()!.Class!.ClassName
-                                : "Chưa xếp lớp"
+                            ? s.StudentClasses.FirstOrDefault()!.Class!.ClassName
+                            : "Chưa xếp lớp"
                     })
                     .ToList()
             })
@@ -251,7 +254,7 @@ public class ManagerParentHandler :
                 Email = normalizedEmail,
                 Phone = request.Phone.Trim(),
                 RoleId = role.RoleId,
-                SchoolId = request.SchoolId,   // trường đầu tiên mà phụ huynh được tạo
+                SchoolId = request.SchoolId, // trường đầu tiên mà phụ huynh được tạo
                 LanguagePref = "vi",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
@@ -275,8 +278,8 @@ public class ManagerParentHandler :
                 DateOfBirth = child.DateOfBirth != null
                     ? DateOnly.FromDateTime(child.DateOfBirth.Value)
                     : null,
-                SchoolId = request.SchoolId,        // 🔁 trường hiện tại đang add (trường 2)
-                ParentId = parent.UserId,           // 🔁 gắn với phụ huynh đã tìm được / vừa tạo
+                SchoolId = request.SchoolId, // 🔁 trường hiện tại đang add (trường 2)
+                ParentId = parent.UserId, // 🔁 gắn với phụ huynh đã tìm được / vừa tạo
                 RelationName = request.RelationName ?? "Phụ huynh",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow,
@@ -318,7 +321,7 @@ public class ManagerParentHandler :
         var user = await _repo.Users
             .Include(u => u.Role)
             .Include(u => u.Students)
-                .ThenInclude(s => s.StudentClasses)
+            .ThenInclude(s => s.StudentClasses)
             .FirstOrDefaultAsync(u => u.UserId == command.UserId, cancellationToken);
 
         if (user == null || user.Role.RoleName.ToLower() != "parent")
@@ -347,6 +350,7 @@ public class ManagerParentHandler :
         {
             user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
         }
+
         if (!string.IsNullOrWhiteSpace(request.Gender))
             user.LanguagePref = request.Gender;
 
@@ -493,7 +497,7 @@ public class ManagerParentHandler :
         var user = await _repo.Users
             .Include(u => u.Role)
             .Include(u => u.Students)
-                .ThenInclude(s => s.StudentClasses)
+            .ThenInclude(s => s.StudentClasses)
             .FirstOrDefaultAsync(u => u.UserId == command.UserId, cancellationToken);
 
         if (user == null ||
@@ -522,6 +526,7 @@ public class ManagerParentHandler :
             // xoá hẳn học sinh ở TRƯỜNG NÀY
             await _repo.DeleteStudentAsync(student);
         }
+
         await _repo.DeleteNotificationRecipientsByUserIdAsync(user.UserId);
 
         // ✅ Sau khi xoá con ở trường này, kiểm tra xem parent còn con ở trường nào khác không
@@ -544,6 +549,7 @@ public class ManagerParentHandler :
     }
 
     #endregion
+
     #region 📥 ImportFromExcelAsync
 
     public async Task<List<AccountDto>> Handle(
@@ -590,11 +596,12 @@ public class ManagerParentHandler :
                 var classIdStr = sheet.Cell(row, 11).GetString()?.Trim();
 
                 if (string.IsNullOrWhiteSpace(fullNameParent) || string.IsNullOrWhiteSpace(phone))
-                    throw new InvalidOperationException($"Thiếu thông tin bắt buộc tại dòng {row}: FullName_Parent hoặc Phone.");
+                    throw new InvalidOperationException(
+                        $"Thiếu thông tin bắt buộc tại dòng {row}: FullName_Parent hoặc Phone.");
 
                 var normalizedEmail = string.IsNullOrWhiteSpace(email)
-                ? null
-                : email.ToLower();
+                    ? null
+                    : email.ToLower();
                 var exists = await _repo.Users.AnyAsync(
                     u => normalizedEmail != null && u.Email == normalizedEmail || u.Phone == phone,
                     cancellationToken);
@@ -688,16 +695,9 @@ public class ManagerParentHandler :
         var sheet = workbook.Worksheets.Add("Danh sách phụ huynh");
         var headers = new[]
         {
-            "FullName_Parent (Họ và tên phụ huynh)",
-            "Email",
-            "Phone",
-            "Password(Nên để mặc định @1)",
-            "Gender_Parent (M/F)",
-            "DateOfBirth_Parent (dd/MM/yyyy)",
-            "RelationName (Cha/Mẹ/Giám hộ)",
-            "FullName_Child (Họ và tên con)",
-            "Gender_Child (M/F)",
-            "DateOfBirth_Child (dd/MM/yyyy)",
+            "FullName_Parent (Họ và tên phụ huynh)", "Email", "Phone", "Password(Nên để mặc định @1)",
+            "Gender_Parent (M/F)", "DateOfBirth_Parent (dd/MM/yyyy)", "RelationName (Cha/Mẹ/Giám hộ)",
+            "FullName_Child (Họ và tên con)", "Gender_Child (M/F)", "DateOfBirth_Child (dd/MM/yyyy)",
             "ClassId (ID lớp học)"
         };
 

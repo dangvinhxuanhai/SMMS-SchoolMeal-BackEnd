@@ -18,7 +18,6 @@ public interface ISchoolInvoiceRepository
     void Update(Invoice invoice);
 
     // Command operations
-    void Update(Invoice invoice);
     Task AddInvoiceAsync(Invoice invoice, CancellationToken ct);
     Task AddInvoicesAsync(IEnumerable<Invoice> invoices, CancellationToken ct);
     Task<bool> SaveChangesAsync(CancellationToken ct);

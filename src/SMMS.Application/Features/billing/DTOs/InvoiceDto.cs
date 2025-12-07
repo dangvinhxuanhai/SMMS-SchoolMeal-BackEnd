@@ -9,8 +9,9 @@ namespace SMMS.Application.Features.billing.DTOs
     public class InvoiceDto
     {
         public long InvoiceId { get; set; }
-
+        public string InvoiceCode { get; set; } = string.Empty;
         public string StudentName { get; set; } = string.Empty;
+        public string ClassName { get; set; } = string.Empty;
         public short MonthNo { get; set; }
         public DateTime DateFrom { get; set; }
         public DateTime DateTo { get; set; }
@@ -18,4 +19,6 @@ namespace SMMS.Application.Features.billing.DTOs
         public string Status { get; set; } = string.Empty;
         public decimal AmountToPay { get; set; }
     }
+
+
 }
