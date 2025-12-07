@@ -169,7 +169,6 @@ public class ManagerParentHandler :
             );
         }
         // 1️⃣ Lấy list user trước
-        // 1️⃣ Lấy list user trước
         var users = await query
             .OrderByDescending(u => u.CreatedAt)
             .ToListAsync(cancellationToken);
