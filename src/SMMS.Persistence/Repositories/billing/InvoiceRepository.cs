@@ -50,7 +50,7 @@ namespace SMMS.Infrastructure.Repositories
                     DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
                     AbsentDay = inv.AbsentDay,
                     Status = inv.Status,
-                    AmountToPay = setting.TotalAmount - (inv.AbsentDay * 20000m)
+                    AmountToPay = Math.Max(0, setting.TotalAmount - (inv.AbsentDay) * 2000)
                 };
 
             return await query.ToListAsync();
@@ -127,7 +127,7 @@ namespace SMMS.Infrastructure.Repositories
                     Status = inv.Status,
 
                     // Số tiền phải đóng
-                    AmountToPay = setting.TotalAmount - (inv.AbsentDay * 20000m),
+                    AmountToPay = Math.Max(0, setting.TotalAmount - (inv.AbsentDay) * 2000),
 
                     // 🏦 Thông tin ngân hàng của trường
                     SettlementBankCode = sch.SettlementBankCode ?? string.Empty,

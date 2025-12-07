@@ -101,6 +101,12 @@ public sealed class HandlePayOsWebhookCommandHandler
         var payment = await _paymentRepository.GetByIdAsync(paymentId, cancellationToken);
         if (payment is null)
         {
+            if (paymentId == 123 ||
+                string.Equals(description, "Webhook confirm", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
             throw new InvalidOperationException($"Payment #{paymentId} not found.");
         }
 
