@@ -1,4 +1,5 @@
 using System.Text.Json;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.auth.DTOs;
@@ -131,7 +132,17 @@ namespace SMMS.Persistence.Repositories.auth
 
             var newUrl = await _cloudinary.UploadImageAsync(file);
 
-            student.AvatarUrl = newUrl;
+            if (newUrl == null)
+                throw new Exception("Upload failed");
+
+            // Cập nhật URL avatar vào DB
+            var user = await _dbContext.Students.FindAsync(studentId); // hoặc table Parent nếu riêng
+            if (user != null)
+            {
+                user.AvatarUrl = newUrl;
+                user.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+            }
 
             // Chỉ trả URL, không SaveChangesAsync() ở đây
             return newUrl;
