@@ -28,6 +28,7 @@ public class UpdateInvoiceRequest
 public class InvoiceDto1
 {
     public long InvoiceId { get; set; }
+    public string StudentName { get; set; } = string.Empty;
     public Guid StudentId { get; set; }
     public short MonthNo { get; set; }
     public DateTime DateFrom { get; set; }

@@ -1,8 +1,5 @@
 using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using MediatR;
 using SMMS.Application.Abstractions;
@@ -11,8 +8,8 @@ using SMMS.Application.Features.billing.Helpers;
 using SMMS.Application.Features.billing.Interfaces;
 
 namespace SMMS.Application.Features.billing.Handlers;
-public sealed class HandlePayOsWebhookCommandHandler
-    : IRequestHandler<HandlePayOsWebhookCommand>
+
+public sealed class HandlePayOsWebhookCommandHandler : IRequestHandler<HandlePayOsWebhookCommand>
 {
     private readonly IPaymentRepository _paymentRepository;
     private readonly IInvoiceRepository _invoiceRepository;
@@ -31,135 +28,89 @@ public sealed class HandlePayOsWebhookCommandHandler
         _unitOfWork = unitOfWork;
     }
 
-    public async Task Handle(
-        HandlePayOsWebhookCommand request,
-        CancellationToken cancellationToken)
+    public async Task Handle(HandlePayOsWebhookCommand request, CancellationToken cancellationToken)
     {
         var payload = request.Payload;
+        var data = payload.Data;
 
-        // 1. Chỉ xử lý khi success + code="00"
+        // 1. Nếu giao dịch thất bại hoặc lỗi -> Bỏ qua
         if (!payload.Success || !string.Equals(payload.Code, "00", StringComparison.OrdinalIgnoreCase))
         {
-            // Có thể log event failed / canceled ở đây
             return;
         }
 
-        var data = payload.Data;
-
-        // 2. Lấy orderCode = PaymentId
-        if (!data.TryGetProperty("orderCode", out var orderCodeElement))
+        // 2. Lấy OrderCode (chính là PaymentId trong hệ thống của bạn)
+        if (!data.TryGetProperty("orderCode", out var orderCodeElement) ||
+            !orderCodeElement.TryGetInt64(out long paymentId))
         {
-            throw new InvalidOperationException("Webhook data missing orderCode.");
+            return; // Không có orderCode thì không xử lý được
         }
 
-        if (!orderCodeElement.TryGetInt64(out long paymentId))
+        // Lấy số tiền thực trả
+        int paidAmountInt = 0;
+        if (data.TryGetProperty("amount", out var amountElement))
         {
-            throw new InvalidOperationException("orderCode must be an integer (PaymentId).");
+            amountElement.TryGetInt32(out paidAmountInt);
         }
+        decimal paidAmount = paidAmountInt;
 
-        if (!data.TryGetProperty("amount", out var amountElement))
-        {
-            throw new InvalidOperationException("Webhook data missing amount.");
-        }
-
-        if (!amountElement.TryGetInt32(out int amountInt))
-        {
-            throw new InvalidOperationException("amount must be an integer.");
-        }
-
-        decimal paidAmount = amountInt; // VND, không có lẻ
-
-        // Một số field khác (optional)
-        string description = data.TryGetProperty("description", out var descEl)
-            ? descEl.GetString() ?? string.Empty
-            : string.Empty;
-
-        string reference = data.TryGetProperty("reference", out var refEl)
-            ? refEl.GetString() ?? string.Empty
-            : string.Empty;
-
-        string transactionDateTimeRaw = data.TryGetProperty("transactionDateTime", out var timeEl)
-            ? timeEl.GetString() ?? string.Empty
-            : string.Empty;
-
-        DateTime paidAt;
-        if (!string.IsNullOrWhiteSpace(transactionDateTimeRaw) &&
-            DateTime.TryParseExact(transactionDateTimeRaw,
-                "yyyy-MM-dd HH:mm:ss",
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.AssumeLocal,
-                out var parsed))
-        {
-            paidAt = parsed;
-        }
-        else
-        {
-            paidAt = DateTime.UtcNow;
-        }
-
-        // 3. Tìm Payment
+        // 3. Tìm Payment trong Database
         var payment = await _paymentRepository.GetByIdAsync(paymentId, cancellationToken);
+
+        // --- XỬ LÝ TEST WEBHOOK CỦA PAYOS ---
         if (payment is null)
         {
+            string description = data.TryGetProperty("description", out var d) ? d.GetString() : "";
+            if (paymentId == 123 || string.Equals(description, "Webhook confirm", StringComparison.OrdinalIgnoreCase))
+            {
+                return; // Trả về thành công để PayOS biết kết nối OK
+            }
             throw new InvalidOperationException($"Payment #{paymentId} not found.");
         }
 
+        // --- IDEMPOTENCY: CHỐNG TRÙNG LẶP ---
         if (string.Equals(payment.PaymentStatus, "paid", StringComparison.OrdinalIgnoreCase))
         {
-            // Đã xử lý rồi → bỏ qua để idempotent
             return;
         }
 
-        // 4. Tìm Invoice
+        // 4. Tìm Invoice tương ứng
+        // Biến 'invoice' được khai báo ở đây để dùng chung
         var invoice = await _invoiceRepository.GetByIdAsync(payment.InvoiceId, cancellationToken);
         if (invoice is null)
         {
             throw new InvalidOperationException($"Invoice #{payment.InvoiceId} not found.");
         }
 
-        // 5. Lấy gateway PayOS đúng trường qua StudentId của Invoice
-        var gateway = await _gatewayRepository.GetPayOsGatewayByStudentIdAsync(
-            invoice.StudentId,
-            cancellationToken);
+        // 5. Xác thực chữ ký (Signature)
+        var gateway = await _gatewayRepository.GetPayOsGatewayByStudentIdAsync(invoice.StudentId, cancellationToken);
+        if (gateway == null) throw new InvalidOperationException("Gateway configuration not found.");
 
-        if (gateway is null)
+        bool isValid = PayOsSignatureHelper.Verify(payload.Data, payload.Signature, gateway.ChecksumKey);
+
+        if (!isValid)
         {
-            throw new InvalidOperationException("Không tìm thấy PayOS gateway cho học sinh / trường này.");
+            throw new InvalidOperationException("Invalid Signature. Checksum Key mismatch.");
         }
 
-        // 6. Verify signature
-        bool isValidSignature = PayOsSignatureHelper.Verify(
-            payload.Data,
-            payload.Signature,
-            gateway.ChecksumKey);
-
-        if (!isValidSignature)
+        // 6. CẬP NHẬT TRẠNG THÁI (UPDATE DATABASE)
+        try
         {
-            throw new InvalidOperationException("Invalid PayOS webhook signature.");
-        }
+            // A. Cập nhật bảng Payment
+            payment.PaymentStatus = "paid";
+            payment.PaidAmount = paidAmount;
+            payment.PaidAt = DateTime.UtcNow;
 
-        // (Optional) 7. Kiểm tra amount có khớp không
-        if (payment.ExpectedAmount > 0 && payment.ExpectedAmount != paidAmount)
+            // B. Cập nhật bảng Invoice
+            // (SỬA LỖI Ở ĐÂY: Dùng lại biến 'invoice' ở bước 4, không khai báo lại, không check null sai logic)
+            invoice.Status = "Paid";
+
+            // C. Lưu thay đổi
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (Exception ex)
         {
-            // Tùy nghiệp vụ: có thể throw hoặc chỉ log warning
-            // Ở đây mình cho throw để tránh nhận sai tiền
-            throw new InvalidOperationException(
-                $"Amount mismatch. Expected {payment.ExpectedAmount}, actual {paidAmount}.");
+            throw new InvalidOperationException($"Database Update Failed: {ex.Message}");
         }
-
-        // 8. Update Payment
-        payment.PaidAmount = paidAmount;
-        payment.PaymentStatus = "paid";
-        payment.Method = "Bank"; // PayOS là chuyển khoản ngân hàng
-        payment.ReferenceNo = reference;
-        payment.PaymentContent = string.IsNullOrWhiteSpace(description)
-            ? payment.PaymentContent
-            : description;
-        payment.PaidAt = paidAt;
-
-        // 9. Update Invoice
-        invoice.Status = "Paid";
-
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
     }
 }

@@ -43,7 +43,7 @@ namespace SMMS.WebAPI.Controllers.Modules.Parent
             var result = await _mediator.Send(command);
             return Ok(result);
         }
-        // PUT: Cập nhật children profile 
+        // PUT: Cập nhật children profile
         [HttpPut("child")]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<bool>> UpdateChildProfile([FromForm] ChildProfileDto  dto)

@@ -23,5 +23,5 @@ public class UpdateChildDto
     public string FullName { get; set; } = null!;
     public string? Gender { get; set; }
     public DateTime? DateOfBirth { get; set; }
-    public Guid ClassId { get; set; }
+    public Guid? ClassId { get; set; }
 }

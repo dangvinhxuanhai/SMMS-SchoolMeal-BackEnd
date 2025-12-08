@@ -27,7 +27,12 @@ public class SchoolInvoiceRepository : ISchoolInvoiceRepository
     {
         await _context.Invoices.AddAsync(invoice, ct);
     }
-
+    public void Update(Invoice invoice)
+    {
+        // nếu Invoices ở trên là AsNoTracking thì dòng này sẽ Attach + mark Modified
+        _context.Invoices.Update(invoice);
+        // hoặc: _context.Entry(invoice).State = EntityState.Modified;
+    }
     public async Task AddInvoicesAsync(IEnumerable<Invoice> invoices, CancellationToken ct)
     {
         await _context.Invoices.AddRangeAsync(invoices, ct);

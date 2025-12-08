@@ -10,7 +10,7 @@ namespace SMMS.Application.Features.billing.Interfaces
     {
         Task<Invoice?> GetByIdAsync(long invoiceId, CancellationToken ct);
         Task<IEnumerable<InvoiceDto>> GetInvoicesByParentAsync(Guid studentId);
-        Task<InvoiceDto?> GetInvoiceDetailAsync(long invoiceId, Guid studentId);
+        Task<InvoiceDetailDto?> GetInvoiceDetailAsync(long invoiceId, Guid studentId);
         Task<IEnumerable<InvoiceDto>> GetUnpaidInvoicesAsync(Guid studentId);
     }
 }
