@@ -16,7 +16,7 @@ public record FilterInvoicesByStatusQuery(Guid SchoolId, string Status)
     : IRequest<List<InvoiceDto>>;
 
 // 3️⃣ Tổng hợp tài chính (invoice + purchase)
-public record GetFinanceSummaryQuery(Guid SchoolId, int Month, int Year)
+public record GetFinanceSummaryQuery(Guid SchoolId, int Year)
     : IRequest<FinanceSummaryDto>;
 
 // 4️⃣ Danh sách hóa đơn của trường
