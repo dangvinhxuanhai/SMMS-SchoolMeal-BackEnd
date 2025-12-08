@@ -359,7 +359,7 @@ public partial class EduMealContext : DbContext
 
         modelBuilder.Entity<Invoice>(entity =>
         {
-            entity.HasKey(e => e.InvoiceId).HasName("PK__Invoices__D796AAB52E5E911D");
+            entity.Property(e => e.InvoiceCode).HasDefaultValueSql("(newid())");
 
             entity.HasOne(d => d.Student).WithMany(p => p.Invoices)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -464,15 +464,14 @@ public partial class EduMealContext : DbContext
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A38D0267A58");
-
             entity.Property(e => e.ExpectedAmount).HasDefaultValue(600m);
             entity.Property(e => e.PaidAt).HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.PaymentCode).HasDefaultValueSql("(newid())");
             entity.Property(e => e.PaymentStatus).HasDefaultValue("pending");
 
             entity.HasOne(d => d.Invoice).WithMany(p => p.Payments)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Payments__Invoic__7C1A6C5A");
+                .HasConstraintName("FK_Payments_Invoices");
         });
 
         modelBuilder.Entity<PurchaseOrder>(entity =>

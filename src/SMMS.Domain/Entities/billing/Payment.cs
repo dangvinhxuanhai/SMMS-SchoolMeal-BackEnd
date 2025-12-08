@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace SMMS.Domain.Entities.billing;
 
 [Table("Payments", Schema = "billing")]
+[Index("PaymentCode", Name = "IX_Payments_PaymentCode", IsUnique = true)]
 public partial class Payment
 {
     [Key]
@@ -33,6 +34,8 @@ public partial class Payment
 
     [StringLength(100)]
     public string? ReferenceNo { get; set; }
+
+    public Guid PaymentCode { get; set; }
 
     [ForeignKey("InvoiceId")]
     [InverseProperty("Payments")]

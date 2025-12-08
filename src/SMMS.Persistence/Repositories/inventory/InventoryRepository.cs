@@ -55,15 +55,25 @@ public class InventoryRepository : IInventoryRepository
     }
 
     public async Task<InventoryItem> AddOrIncreaseAsync(
-        Guid schoolId,
-        int ingredientId,
-        decimal quantityGram,
-        DateOnly? expirationDate,
-        string? batchNo,
-        string? origin,
-        Guid? createdBy,
-        CancellationToken ct = default)
+    Guid schoolId,
+    int ingredientId,
+    decimal quantityGram,
+    DateOnly? expirationDate,
+    string? batchNo,
+    string? origin,
+    Guid? createdBy,
+    CancellationToken ct = default)
     {
+        // Lấy tên nguyên liệu theo id
+        var ingredientInfo = await _context.Ingredients
+            .AsNoTracking()
+            .Where(i => i.IngredientId == ingredientId)
+            .Select(i => new { i.IngredientId, i.IngredientName })
+            .FirstOrDefaultAsync(ct);
+
+        if (ingredientInfo == null)
+            throw new InvalidOperationException($"Ingredient {ingredientId} not found");
+
         // Tìm 1 lô hàng trong kho theo Ingredient + ExpirationDate + BatchNo
         var query = _context.InventoryItems
             .Where(x => x.SchoolId == schoolId && x.IngredientId == ingredientId);
@@ -88,7 +98,7 @@ public class InventoryRepository : IInventoryRepository
             {
                 SchoolId = schoolId,
                 IngredientId = ingredientId,
-                ItemName = null, // có thể set sau bằng tên nguyên liệu
+                ItemName = ingredientInfo.IngredientName,
                 QuantityGram = quantityGram,
                 ExpirationDate = expirationDate,
                 BatchNo = batchNo,
@@ -102,6 +112,12 @@ public class InventoryRepository : IInventoryRepository
         }
         else
         {
+            // Nếu item cũ chưa có tên thì fill vào luôn
+            if (string.IsNullOrEmpty(item.ItemName))
+            {
+                item.ItemName = ingredientInfo.IngredientName;
+            }
+
             item.QuantityGram += quantityGram;
             item.LastUpdated = now;
 
@@ -110,6 +126,7 @@ public class InventoryRepository : IInventoryRepository
 
         return item;
     }
+
 
     public async Task AddInboundTransactionAsync(
         InventoryItem item,

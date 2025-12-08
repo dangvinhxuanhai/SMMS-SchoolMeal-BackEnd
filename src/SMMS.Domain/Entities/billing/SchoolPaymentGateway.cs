@@ -44,9 +44,6 @@ public partial class SchoolPaymentGateway
 
     public Guid? UpdatedBy { get; set; }
 
-    // [StringLength(200)]
-    // public string? WebhookSecureToken { get; set; }
-
     [ForeignKey("CreatedBy")]
     [InverseProperty("SchoolPaymentGatewayCreatedByNavigations")]
     public virtual User? CreatedByNavigation { get; set; }

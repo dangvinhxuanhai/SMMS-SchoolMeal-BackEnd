@@ -22,6 +22,9 @@ public partial class SchoolPaymentSetting
     [Column(TypeName = "decimal(18, 2)")]
     public decimal TotalAmount { get; set; }
 
+    [Column(TypeName = "decimal(18, 2)")]
+    public decimal MealPricePerDay { get; set; }
+
     [StringLength(200)]
     public string? Note { get; set; }
 
