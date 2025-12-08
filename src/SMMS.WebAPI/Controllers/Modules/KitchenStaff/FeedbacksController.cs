@@ -1,9 +1,8 @@
 using System.Security.Claims;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.foodmenu.Queries;
-using SMMS.Application.Features.nutrition.Queries;
-using SMMS.Application.Features.Wardens.DTOs;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
@@ -47,7 +46,7 @@ public class FeedbacksController : ControllerBase
     /// GET /api/Feedbacks?schoolId=...&keyword=com&fromCreatedAt=2025-11-01&sortBy=CreatedAt&sortDesc=true
     /// </remarks>
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<FeedbackDto>>> Search(
+    public async Task<ActionResult<IReadOnlyList<FeedbackKsDto>>> Search(
         [FromQuery] SearchFeedbacksQuery query)
     {
         try
@@ -67,7 +66,7 @@ public class FeedbacksController : ControllerBase
     /// Xem chi tiết 1 feedback
     /// </summary>
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<FeedbackDto>> GetById(int id)
+    public async Task<ActionResult<FeedbackKsDto>> GetById(int id)
     {
         try
         {
