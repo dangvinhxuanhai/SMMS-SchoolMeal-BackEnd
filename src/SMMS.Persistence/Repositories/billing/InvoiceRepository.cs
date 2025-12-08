@@ -44,13 +44,14 @@ namespace SMMS.Infrastructure.Repositories
                 select new InvoiceDto
                 {
                     InvoiceId = inv.InvoiceId,
+                    InvoiceCode = inv.InvoiceCode,
                     StudentName = stu.FullName,
                     MonthNo = inv.MonthNo,
                     DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
                     DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
                     AbsentDay = inv.AbsentDay,
                     Status = inv.Status,
-                    AmountToPay = Math.Max(0, setting.TotalAmount - (inv.AbsentDay) * 2000)
+                    AmountToPay = Math.Max(0, setting.TotalAmount - (inv.AbsentDay) * setting.MealPricePerDay)
                 };
 
             return await query.ToListAsync();
@@ -116,6 +117,7 @@ namespace SMMS.Infrastructure.Repositories
                 select new InvoiceDetailDto
                 {
                     InvoiceId = inv.InvoiceId,
+                    InvoiceCode = inv.InvoiceCode,
                     StudentName = stu.FullName,
                     ClassName = cls.ClassName,
                     SchoolName = sch.SchoolName,
@@ -127,7 +129,7 @@ namespace SMMS.Infrastructure.Repositories
                     Status = inv.Status,
 
                     // Số tiền phải đóng
-                    AmountToPay = Math.Max(0, setting.TotalAmount - (inv.AbsentDay) * 2000),
+                    AmountToPay = Math.Max(0, setting.TotalAmount - (inv.AbsentDay) * setting.MealPricePerDay),
 
                     // 🏦 Thông tin ngân hàng của trường
                     SettlementBankCode = sch.SettlementBankCode ?? string.Empty,
