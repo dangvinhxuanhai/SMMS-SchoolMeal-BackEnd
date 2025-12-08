@@ -122,6 +122,7 @@ public class FeedbackRepository : IFeedbackRepository
             {
                 FeedbackId = 0,
                 SenderId = dto.SenderId,               // id user đang đăng nhập
+                Rating = dto.Rating,
                 TargetType = "Meal",                    // luôn là Meal
                 TargetRef = targetRef,                 // Tự build
                 Content = dto.Content,
@@ -135,6 +136,7 @@ public class FeedbackRepository : IFeedbackRepository
             return new FeedbackDto(
                 entity.FeedbackId,
                 entity.SenderId,
+                entity.Rating,
                 entity.TargetType,
                 entity.TargetRef,
                 entity.Content,
@@ -152,6 +154,7 @@ public class FeedbackRepository : IFeedbackRepository
                 .Select(f => new FeedbackDto(
                     f.FeedbackId,
                     f.SenderId,
+                    f.Rating,
                     f.TargetType,
                     f.TargetRef,
                     f.Content,
