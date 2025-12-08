@@ -12,6 +12,7 @@ public class SchoolPaymentSettingDto
     public byte FromMonth { get; set; }
     public byte ToMonth { get; set; }
     public decimal TotalAmount { get; set; }
+    public decimal MealPricePerDay { get; set; }
     public string? Note { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -23,6 +24,7 @@ public class CreateSchoolPaymentSettingRequest
     public byte FromMonth { get; set; }
     public byte ToMonth { get; set; }
     public decimal TotalAmount { get; set; }
+    public decimal MealPricePerDay { get; set; }
     public string? Note { get; set; }
 }
 
@@ -31,6 +33,7 @@ public class UpdateSchoolPaymentSettingRequest
     public byte FromMonth { get; set; }
     public byte ToMonth { get; set; }
     public decimal TotalAmount { get; set; }
+    public decimal MealPricePerDay { get; set; }
     public string? Note { get; set; }
     public bool IsActive { get; set; }
 }
