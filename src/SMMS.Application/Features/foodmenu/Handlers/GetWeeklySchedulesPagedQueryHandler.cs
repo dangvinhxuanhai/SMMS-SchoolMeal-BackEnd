@@ -63,6 +63,23 @@ public class GetWeeklySchedulesPagedQueryHandler : IRequestHandler<GetWeeklySche
         // Lấy menu food items cho các dailyMealIds
         var menuFoods = await _scheduleRepo.GetMenuFoodItemsForDailyMealsAsync(dailyMealIds, ct);
 
+        // Lấy list FoodId để query nguyên liệu
+        var allFoodIds = menuFoods
+            .Select(m => m.FoodId)
+            .Distinct()
+            .ToList();
+
+        // Lấy danh sách nguyên liệu + gram cho tất cả món trong tuần
+        var foodIngredients = await _scheduleRepo.GetFoodIngredientsForFoodsAsync(allFoodIds, ct);
+
+        // Group theo FoodId để dễ map
+        var ingredientsByFood = foodIngredients
+            .GroupBy(fi => fi.FoodId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.ToList()
+            );
+
         // group dữ liệu để map sang DTO
         var menuFoodsByDaily = menuFoods
             .GroupBy(m => m.DailyMealId)
@@ -89,15 +106,31 @@ public class GetWeeklySchedulesPagedQueryHandler : IRequestHandler<GetWeeklySche
                     {
                         menuFoodsByDaily.TryGetValue(dm.DailyMealId, out var foodsForDay);
                         var foodDtos = (foodsForDay ?? new List<MenuFoodItemInfo>())
-                            .Select(f => new ScheduledFoodItemDto
+                            .Select(f =>
                             {
-                                FoodId = f.FoodId,
-                                FoodName = f.FoodName,
-                                FoodType = f.FoodType,
-                                IsMainDish = f.IsMainDish,
-                                ImageUrl = f.ImageUrl,
-                                FoodDesc = f.FoodDesc,
-                                SortOrder = f.SortOrder
+                                ingredientsByFood.TryGetValue(f.FoodId, out var ingForFood);
+
+                                var ingredientDtos = (ingForFood ?? new List<FoodIngredientInfo>())
+                                    .Select(i => new ScheduledFoodIngredientDto
+                                    {
+                                        IngredientId = i.IngredientId,
+                                        IngredientName = i.IngredientName,
+                                        QuantityGram = i.QuantityGram
+                                    })
+                                    .ToList()
+                                    .AsReadOnly();
+
+                                return new ScheduledFoodItemDto
+                                {
+                                    FoodId = f.FoodId,
+                                    FoodName = f.FoodName,
+                                    FoodType = f.FoodType,
+                                    IsMainDish = f.IsMainDish,
+                                    ImageUrl = f.ImageUrl,
+                                    FoodDesc = f.FoodDesc,
+                                    SortOrder = f.SortOrder,
+                                    Ingredients = ingredientDtos
+                                };
                             })
                             .ToList();
 
