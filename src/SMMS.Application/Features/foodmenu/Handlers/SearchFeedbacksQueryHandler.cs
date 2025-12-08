@@ -31,22 +31,26 @@ public class SearchFeedbacksQueryHandler
             request.Keyword,
             request.FromCreatedAt,
             request.ToCreatedAt,
+            request.Rating,       // ✨ NEW
             request.SortBy,
             request.SortDesc,
             cancellationToken);
 
+
         return list
             .Select(f => new FeedbackKsDto
             {
-                FeedbackId = f.FeedbackId,
-                SenderId = f.SenderId,
-                TargetType = f.TargetType,
-                TargetRef = f.TargetRef,
-                Content = f.Content,
-                CreatedAt = f.CreatedAt,
-                DailyMealId = f.DailyMealId
+                FeedbackId  = f.FeedbackId,
+                SenderId    = f.SenderId,
+                TargetType  = f.TargetType,
+                TargetRef   = f.TargetRef,
+                Content     = f.Content,
+                CreatedAt   = f.CreatedAt,
+                DailyMealId = f.DailyMealId,
+                Rating      = f.Rating      // ✨ NEW
             })
             .ToList()
             .AsReadOnly();
+
     }
 }
