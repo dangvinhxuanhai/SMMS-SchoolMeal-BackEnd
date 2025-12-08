@@ -9,6 +9,7 @@ using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.Manager.Queries;
 using SMMS.Domain.Entities.billing;
+using SMMS.Domain.Entities.school;
 
 namespace SMMS.Application.Features.Manager.Handlers;
 public class GetSchoolInvoicesHandler :
@@ -44,6 +45,7 @@ public class GetSchoolInvoicesHandler :
          .Select(x => new InvoiceDto1
          {
              InvoiceId = x.i.InvoiceId,
+             InvoiceCode = x.i.InvoiceCode,
              StudentId = x.i.StudentId,
              StudentName = x.s.FullName, // 👈 map tên học sinh
              MonthNo = x.i.MonthNo,
@@ -83,7 +85,8 @@ public class GetSchoolInvoiceByIdHandler :
         return new InvoiceDto1
         {
             InvoiceId = invoice.InvoiceId,
-            StudentId = invoice.StudentId,
+            InvoiceCode = invoice.InvoiceCode,
+            StudentId = invoice.StudentId,          
             MonthNo = invoice.MonthNo,
             DateFrom = invoice.DateFrom.ToDateTime(TimeOnly.MinValue),
             DateTo = invoice.DateTo.ToDateTime(TimeOnly.MinValue),
@@ -199,6 +202,7 @@ public class GenerateSchoolInvoicesHandler :
 
             newInvoices.Add(new Invoice
             {
+                InvoiceCode = Guid.NewGuid(),
                 StudentId = sid,
                 MonthNo = monthNo,
                 DateFrom = fromD,
@@ -217,6 +221,7 @@ public class GenerateSchoolInvoicesHandler :
             .Select(i => new InvoiceDto1
             {
                 InvoiceId = i.InvoiceId,
+                InvoiceCode = i.InvoiceCode,
                 StudentId = i.StudentId,
                 MonthNo = i.MonthNo,
                 DateFrom = i.DateFrom.ToDateTime(TimeOnly.MinValue),
@@ -304,6 +309,7 @@ public class UpdateInvoiceHandler :
         return new InvoiceDto1
         {
             InvoiceId = invoice.InvoiceId,
+            InvoiceCode = invoice.InvoiceCode,
             StudentId = invoice.StudentId,
             MonthNo = invoice.MonthNo,
             DateFrom = invoice.DateFrom.ToDateTime(TimeOnly.MinValue),

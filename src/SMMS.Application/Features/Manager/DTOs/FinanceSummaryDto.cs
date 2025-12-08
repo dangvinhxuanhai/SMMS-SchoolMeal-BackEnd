@@ -8,13 +8,9 @@ namespace SMMS.Application.Features.Manager.DTOs;
 public class FinanceSummaryDto
 {
     public Guid SchoolId { get; set; }
-    public int Month { get; set; }
     public int Year { get; set; }
 
     public decimal TotalInvoices { get; set; }
-    public decimal PaidInvoices { get; set; }
-    public decimal UnpaidInvoices { get; set; }
-
     public decimal TotalPurchaseCost { get; set; }
     public List<SupplierExpenseDto> SupplierBreakdown { get; set; } = new();
 }
