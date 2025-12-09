@@ -60,15 +60,16 @@ builder.Services.AddSwaggerGen(options =>
         return type.FullName!.Replace(".", "_").Replace("+", "_");
     });
     // ✅ Thêm cấu hình để Swagger nhập JWT token
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-    {
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Nhập token JWT vào đây (ví dụ: Bearer abcdef12345)",
-        Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        BearerFormat = "JWT",
-        Scheme = "Bearer"
-    });
+    options.AddSecurityDefinition("Bearer",
+        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        {
+            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            Description = "Nhập token JWT vào đây (ví dụ: Bearer abcdef12345)",
+            Name = "Authorization",
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+            BearerFormat = "JWT",
+            Scheme = "Bearer"
+        });
 
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
@@ -102,12 +103,7 @@ builder.Services.AddSwaggerGen(options =>
         // Non-generic: SMMS_Application_Features_school_DTOs_CreateSchoolDto
         return $"{ns}_{type.Name}";
     });
-    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
-    {
-        Title = "EduMeal API",
-        Version = "v1"
-    });
-
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo { Title = "EduMeal API", Version = "v1" });
 });
 
 // JWT Authentication
@@ -121,42 +117,43 @@ builder.Services.AddAuthentication(options =>
         options.RequireHttpsMetadata = false;
         options.SaveToken = true;
 
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
-        ),
-        NameClaimType = "UserId",
-        RoleClaimType = ClaimTypes.Role
-    };
-
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            if (context.Request.Cookies.ContainsKey("accessToken"))
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+            ),
+            NameClaimType = "UserId",
+            RoleClaimType = ClaimTypes.Role
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
             {
-                context.Token = context.Request.Cookies["accessToken"];
-            }
-            return Task.CompletedTask;
-        }
-    };
+                if (context.Request.Cookies.ContainsKey("accessToken"))
+                {
+                    context.Token = context.Request.Cookies["accessToken"];
+                }
 
-    // Đó test lại r em mở comment cái dòng dưới hình như cần để phía be allow nhận token từ cookie
-    /*options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
-    {
-        OnMessageReceived = context =>
+                return Task.CompletedTask;
+            }
+        };
+
+        // Đó test lại r em mở comment cái dòng dưới hình như cần để phía be allow nhận token từ cookie
+        /*options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
         {
-            context.Token = context.Request.Cookies["jwt"];
-            return Task.CompletedTask;
-        }
-    };*/
+            OnMessageReceived = context =>
+            {
+                context.Token = context.Request.Cookies["jwt"];
+                return Task.CompletedTask;
+            }
+        };*/
     });
 
 builder.Services.AddControllers().AddJsonOptions(x =>
@@ -172,7 +169,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.SetIsOriginAllowed(origin =>
+            {
+                var allowed = new[] { "http://localhost:3000", "https://smms-school-meal-fe.vercel.app" };
+                return allowed.Contains(origin) || origin.EndsWith(".ngrok-free.dev");
+            })
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -190,6 +191,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.UseHttpsRedirection();
 
@@ -208,8 +210,7 @@ app.UseCors("AllowFrontend");
 
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(uploadFolderPath),
-    RequestPath = "/uploads"
+    FileProvider = new PhysicalFileProvider(uploadFolderPath), RequestPath = "/uploads"
 });
 
 app.UseAuthentication();
