@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using SMMS.Application.Features.foodmenu.Interfaces;
 
 namespace SMMS.Infrastructure.ExternalService.AiMenu;
+// SMMS.Infrastructure/ExternalService/AiMenuAdminClient.cs
 public class AiMenuAdminClient : IAiMenuAdminClient
 {
     private readonly HttpClient _httpClient;
@@ -25,37 +26,32 @@ public class AiMenuAdminClient : IAiMenuAdminClient
         _logger = logger;
     }
 
-    public async Task RebuildIndexAndGraphAsync(
-        Guid schoolId,
-        bool rebuildIndex = true,
-        bool rebuildGraph = true,
-        CancellationToken ct = default)
+    /// <summary>
+    /// Gửi request sang Python để gen file AI cho tất cả trường NeedRebuildAiIndex = 0.
+    /// </summary>
+    public async Task RebuildForPendingSchoolsAsync(CancellationToken ct = default)
     {
-        var requestBody = new
-        {
-            school_id = schoolId.ToString(),
-            rebuild_index = rebuildIndex,
-            rebuild_graph = rebuildGraph
-        };
+        // nếu HttpClient chưa có BaseAddress thì có thể đặt ở DI:
+        // _httpClient.BaseAddress = new Uri(_options.BaseUrl);
 
-        using var response = await _httpClient.PostAsJsonAsync(
-            "/api/v1/admin/rebuild",
-            requestBody,
-            ct);
+        using var response = await _httpClient.PostAsync(
+            "/api/v1/admin/ai/rebuild",
+            content: null,  
+            cancellationToken: ct);
+
+        var content = await response.Content.ReadAsStringAsync(ct);
 
         if (!response.IsSuccessStatusCode)
         {
-            var content = await response.Content.ReadAsStringAsync(ct);
             _logger.LogError("AI rebuild failed ({StatusCode}): {Content}",
                 response.StatusCode, content);
 
-            // Prod: có thể downgrade thành warning để không chặn CRUD
             throw new ApplicationException(
                 $"AI rebuild failed ({(int)response.StatusCode}): {content}");
         }
 
-        // Nếu muốn log response
-        var result = await response.Content.ReadAsStringAsync(ct);
-        _logger.LogInformation("AI rebuild success for school {SchoolId}: {Result}", schoolId, result);
+        _logger.LogInformation("AI rebuild success for pending schools: {Result}", content);
     }
+
 }
+
