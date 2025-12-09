@@ -22,6 +22,7 @@ internal static class SchoolPaymentSettingMapping
             FromMonth = e.FromMonth,
             ToMonth = e.ToMonth,
             TotalAmount = e.TotalAmount,
+            MealPricePerDay = e.MealPricePerDay,
             Note = e.Note,
             IsActive = e.IsActive,
             CreatedAt = e.CreatedAt
@@ -102,6 +103,10 @@ public class ManagerPaymentSettingHandler
                 throw new ArgumentException("Tháng bắt đầu không được lớn hơn tháng kết thúc.");
             }
 
+            // Validate MealPricePerDay
+            if (r.MealPricePerDay < 0)
+                throw new ArgumentException("MealPricePerDay không được âm.");
+
             // Check trùng, Create => excludeSettingId = null
             var isOverlapped = await _repo.HasOverlappedRangeAsync(
                 r.SchoolId,
@@ -122,6 +127,7 @@ public class ManagerPaymentSettingHandler
                 FromMonth = r.FromMonth,
                 ToMonth = r.ToMonth,
                 TotalAmount = r.TotalAmount,
+                MealPricePerDay = r.MealPricePerDay,
                 Note = r.Note,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
@@ -163,6 +169,9 @@ public class ManagerPaymentSettingHandler
             {
                 throw new ArgumentException("Tháng bắt đầu không được lớn hơn tháng kết thúc.");
             }
+            // Validate MealPricePerDay
+            if (r.MealPricePerDay < 0)
+                throw new ArgumentException("MealPricePerDay không được âm.");
 
             // 2. Check trùng (bỏ qua chính nó)
             var isOverlapped = await _repo.HasOverlappedRangeAsync(
@@ -182,6 +191,7 @@ public class ManagerPaymentSettingHandler
             entity.FromMonth = r.FromMonth;
             entity.ToMonth = r.ToMonth;
             entity.TotalAmount = r.TotalAmount;
+            entity.MealPricePerDay = r.MealPricePerDay;
             entity.Note = r.Note;
             entity.IsActive = r.IsActive;
 

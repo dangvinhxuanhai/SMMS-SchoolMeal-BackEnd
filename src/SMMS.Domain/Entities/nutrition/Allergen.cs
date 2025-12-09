@@ -9,7 +9,6 @@ using SMMS.Domain.Entities.school;
 namespace SMMS.Domain.Entities.nutrition;
 
 [Table("Allergens", Schema = "nutrition")]
-[Index("AllergenName", Name = "UQ__Allergen__7D9886190081153F", IsUnique = true)]
 public partial class Allergen
 {
     [Key]

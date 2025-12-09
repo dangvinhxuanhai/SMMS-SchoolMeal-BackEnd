@@ -22,7 +22,10 @@ public sealed record SearchFeedbacksQuery : IRequest<IReadOnlyList<FeedbackKsDto
     public DateTime? FromCreatedAt { get; set; }
     public DateTime? ToCreatedAt { get; set; }
 
+    // ✨ NEW: filter rating (1–5). Null = không lọc
+    public byte? Rating { get; set; }
+
     // Sort
-    public string SortBy { get; set; } = "CreatedAt";   // CreatedAt / Sender / TargetType
+    public string SortBy { get; set; } = "CreatedAt";   // CreatedAt / Sender / TargetType / Rating
     public bool SortDesc { get; set; } = true;
 }

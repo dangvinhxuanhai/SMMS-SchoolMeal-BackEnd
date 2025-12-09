@@ -8,6 +8,7 @@ using SMMS.Domain.Entities.school;
 namespace SMMS.Domain.Entities.billing;
 
 [Table("Invoices", Schema = "billing")]
+[Index("InvoiceCode", Name = "IX_Invoices_InvoiceCode", IsUnique = true)]
 public partial class Invoice
 {
     [Key]
@@ -25,6 +26,8 @@ public partial class Invoice
 
     [StringLength(20)]
     public string Status { get; set; } = null!;
+
+    public Guid InvoiceCode { get; set; }
 
     [InverseProperty("Invoice")]
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();

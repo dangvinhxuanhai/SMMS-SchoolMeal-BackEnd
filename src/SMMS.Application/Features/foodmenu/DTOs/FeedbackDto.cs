@@ -8,6 +8,7 @@ namespace SMMS.Application.Features.foodmenu.DTOs
 {
     public record CreateFeedbackDto(
      Guid SenderId,
+     byte? Rating,
      string TargetType,
      string TargetRef,
      string Content,
@@ -16,6 +17,7 @@ namespace SMMS.Application.Features.foodmenu.DTOs
     public record FeedbackDto(
     int FeedbackId,
     Guid SenderId,
+     byte? Rating,
     string TargetType,
     string TargetRef,
     string Content,
@@ -24,6 +26,7 @@ namespace SMMS.Application.Features.foodmenu.DTOs
 );
     public record CreateFeedbackRequestDto(
        string Content,
+       byte? Rating,
        int? DailyMealId
    );
 }

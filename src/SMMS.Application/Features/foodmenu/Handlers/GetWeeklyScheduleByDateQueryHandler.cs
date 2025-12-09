@@ -40,6 +40,21 @@ public sealed class GetWeeklyScheduleByDateQueryHandler
                 g => g.Key,
                 g => g.OrderBy(x => x.SortOrder ?? int.MaxValue).ToList());
 
+        // Lấy nguyên liệu cho tất cả món trong tuần
+        var allFoodIds = menuFoods
+            .Select(m => m.FoodId)
+            .Distinct()
+            .ToList();
+
+        var foodIngredients = await _scheduleRepo.GetFoodIngredientsForFoodsAsync(allFoodIds, ct);
+
+        var ingredientsByFood = foodIngredients
+            .GroupBy(fi => fi.FoodId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.ToList()
+            );
+
         // 4. Map ra DTO – GỘP THEO NGÀY
         var groupedByDate = dailyMeals
             .GroupBy(dm => dm.MealDate)               // group theo DATE
@@ -61,15 +76,31 @@ public sealed class GetWeeklyScheduleByDateQueryHandler
                     .ToList();
 
                 var foodDtos = allFoodsForDay
-                    .Select(f => new ScheduledFoodItemDto
+                    .Select(f =>
                     {
-                        FoodId = f.FoodId,
-                        FoodName = f.FoodName,
-                        FoodType = f.FoodType,
-                        IsMainDish = f.IsMainDish,
-                        ImageUrl = f.ImageUrl,
-                        FoodDesc = f.FoodDesc,
-                        SortOrder = f.SortOrder
+                        ingredientsByFood.TryGetValue(f.FoodId, out var ingForFood);
+
+                        var ingredientDtos = (ingForFood ?? new List<FoodIngredientInfo>())
+                            .Select(i => new ScheduledFoodIngredientDto
+                            {
+                                IngredientId = i.IngredientId,
+                                IngredientName = i.IngredientName,
+                                QuantityGram = i.QuantityGram
+                            })
+                            .ToList()
+                            .AsReadOnly();
+
+                        return new ScheduledFoodItemDto
+                        {
+                            FoodId = f.FoodId,
+                            FoodName = f.FoodName,
+                            FoodType = f.FoodType,
+                            IsMainDish = f.IsMainDish,
+                            ImageUrl = f.ImageUrl,
+                            FoodDesc = f.FoodDesc,
+                            SortOrder = f.SortOrder,
+                            Ingredients = ingredientDtos
+                        };
                     })
                     .ToList();
 

@@ -26,16 +26,17 @@ public class FeedbackRepository : IFeedbackRepository
     }
 
     public async Task<IReadOnlyList<Feedback>> SearchAsync(
-        Guid? schoolId,
-        Guid? senderId,
-        int? dailyMealId,
-        string? targetType,
-        string? keyword,
-        DateTime? fromCreatedAt,
-        DateTime? toCreatedAt,
-        string sortBy,
-        bool sortDesc,
-        CancellationToken cancellationToken = default)
+            Guid? schoolId,
+            Guid? senderId,
+            int? dailyMealId,
+            string? targetType,
+            string? keyword,
+            DateTime? fromCreatedAt,
+            DateTime? toCreatedAt,
+            byte? rating,              // ✨ NEW
+            string sortBy,
+            bool sortDesc,
+            CancellationToken cancellationToken = default)
     {
         IQueryable<Feedback> query;
 
@@ -88,6 +89,11 @@ public class FeedbackRepository : IFeedbackRepository
             query = query.Where(f => f.CreatedAt <= toCreatedAt.Value);
         }
 
+        if (rating.HasValue)
+        {
+            query = query.Where(f => f.Rating == rating.Value);
+        }
+
         // Sort
         switch (sortBy?.Trim().ToLowerInvariant())
         {
@@ -103,6 +109,11 @@ public class FeedbackRepository : IFeedbackRepository
                     : query.OrderBy(f => f.TargetType);
                 break;
 
+            case "rating":
+                query = sortDesc
+                    ? query.OrderByDescending(f => f.Rating)
+                    : query.OrderBy(f => f.Rating);
+                break;
             case "createdat":
             default:
                 query = sortDesc
@@ -122,6 +133,7 @@ public class FeedbackRepository : IFeedbackRepository
             {
                 FeedbackId = 0,
                 SenderId = dto.SenderId,               // id user đang đăng nhập
+                Rating = dto.Rating,
                 TargetType = "Meal",                    // luôn là Meal
                 TargetRef = targetRef,                 // Tự build
                 Content = dto.Content,
@@ -135,6 +147,7 @@ public class FeedbackRepository : IFeedbackRepository
             return new FeedbackDto(
                 entity.FeedbackId,
                 entity.SenderId,
+                entity.Rating,
                 entity.TargetType,
                 entity.TargetRef,
                 entity.Content,
@@ -152,6 +165,7 @@ public class FeedbackRepository : IFeedbackRepository
                 .Select(f => new FeedbackDto(
                     f.FeedbackId,
                     f.SenderId,
+                    f.Rating,
                     f.TargetType,
                     f.TargetRef,
                     f.Content,
