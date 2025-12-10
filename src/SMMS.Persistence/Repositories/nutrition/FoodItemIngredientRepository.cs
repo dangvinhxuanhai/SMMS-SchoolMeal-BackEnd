@@ -19,6 +19,26 @@ public class FoodItemIngredientRepository : IFoodItemIngredientRepository
         _context = context;
     }
 
+    private async Task MarkSchoolNeedRebuildAiIndexByFoodAsync(
+    int foodId,
+    CancellationToken ct)
+    {
+        var food = await _context.FoodItems
+            .AsNoTracking()
+            .FirstOrDefaultAsync(f => f.FoodId == foodId, ct);
+
+        if (food == null)
+            return;
+
+        var school = await _context.Schools
+            .FirstOrDefaultAsync(s => s.SchoolId == food.SchoolId, ct);
+
+        if (school != null)
+        {
+            school.NeedRebuildAiIndex = false;
+        }
+    }
+
     public async Task<IReadOnlyList<FoodItemIngredient>> GetByFoodIdAsync(
         int foodId,
         CancellationToken cancellationToken = default)
@@ -39,5 +59,8 @@ public class FoodItemIngredientRepository : IFoodItemIngredientRepository
 
         // Thêm record mới
         await _context.FoodItemIngredients.AddRangeAsync(newItems, cancellationToken);
+
+        // Đánh dấu school cần rebuild AI index (theo foodId)
+        await MarkSchoolNeedRebuildAiIndexByFoodAsync(foodId, cancellationToken);
     }
 }

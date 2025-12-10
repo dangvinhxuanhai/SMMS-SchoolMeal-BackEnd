@@ -19,6 +19,17 @@ public class IngredientRepository : IIngredientRepository
         _context = context;
     }
 
+    private async Task MarkSchoolNeedRebuildAiIndexAsync(Guid schoolId, CancellationToken ct)
+{
+    var school = await _context.Schools
+        .FirstOrDefaultAsync(s => s.SchoolId == schoolId, ct);
+
+    if (school != null)
+    {
+        school.NeedRebuildAiIndex = false; // hoặc = 0
+    }
+}
+
     public Task<Ingredient?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return _context.Ingredients
@@ -52,19 +63,20 @@ public class IngredientRepository : IIngredientRepository
     public async Task AddAsync(Ingredient entity, CancellationToken cancellationToken = default)
     {
         await _context.Ingredients.AddAsync(entity, cancellationToken);
+        await MarkSchoolNeedRebuildAiIndexAsync(entity.SchoolId, cancellationToken);
     }
 
-    public Task UpdateAsync(Ingredient entity, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(Ingredient entity, CancellationToken cancellationToken = default)
     {
         _context.Ingredients.Update(entity);
-        return Task.CompletedTask;
+        await MarkSchoolNeedRebuildAiIndexAsync(entity.SchoolId, cancellationToken);
     }
 
-    public Task SoftDeleteAsync(Ingredient entity, CancellationToken cancellationToken = default)
+    public async Task SoftDeleteAsync(Ingredient entity, CancellationToken cancellationToken = default)
     {
         entity.IsActive = false;
         _context.Ingredients.Update(entity);
-        return Task.CompletedTask;
+        await MarkSchoolNeedRebuildAiIndexAsync(entity.SchoolId, cancellationToken);
     }
 
     public async Task HardDeleteWithRelationsAsync(
@@ -121,5 +133,8 @@ public class IngredientRepository : IIngredientRepository
 
         // 8) Cuối cùng: xóa chính Ingredient
         _context.Ingredients.Remove(entity);
+
+        // set flag cho school
+        await MarkSchoolNeedRebuildAiIndexAsync(entity.SchoolId, cancellationToken);
     }
 }
