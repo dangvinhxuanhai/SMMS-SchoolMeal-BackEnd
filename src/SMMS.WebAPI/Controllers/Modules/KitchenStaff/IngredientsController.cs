@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.nutrition.Commands;
 using SMMS.Application.Features.nutrition.DTOs;
@@ -9,6 +10,7 @@ using SMMS.Domain.Entities.school;
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 [ApiController]
 [Route("api/nutrition/[controller]")]
+[Authorize(Roles = "KitchenStaff")]
 public class IngredientsController : ControllerBase
 {
     private readonly IMediator _mediator;

@@ -44,7 +44,7 @@ public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
                 .Where(w => w.SchoolId == student.SchoolId
                             && w.WeekStart <= targetDate
                             && w.WeekEnd >= targetDate
-                            && w.Status == "Published")
+                            && w.Status == "Confirmed")
                 .Select(w => new
                 {
                     w.ScheduleMealId,
@@ -193,7 +193,7 @@ public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
             if (schoolId == Guid.Empty) return Array.Empty<WeekOptionDto>();
 
             var q = _db.ScheduleMeals.AsNoTracking()
-                .Where(w => w.SchoolId == schoolId && w.Status == "Published");
+                .Where(w => w.SchoolId == schoolId && w.Status == "Confirmed");
 
             if (from.HasValue) q = q.Where(w => w.WeekEnd >= DateOnly.FromDateTime(from.Value.Date));
             if (to.HasValue) q = q.Where(w => w.WeekStart <= DateOnly.FromDateTime(to.Value.Date));

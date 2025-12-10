@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Azure.Core;
 using DocumentFormat.OpenXml.Office2016.Excel;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.nutrition.Commands;
 using SMMS.Application.Features.nutrition.DTOs;
@@ -13,6 +14,7 @@ namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
 [ApiController]
 [Route("api/nutrition/[controller]")]
+[Authorize(Roles = "KitchenStaff")]
 public class FoodItemsController : ControllerBase
 {
     private readonly IMediator _mediator;

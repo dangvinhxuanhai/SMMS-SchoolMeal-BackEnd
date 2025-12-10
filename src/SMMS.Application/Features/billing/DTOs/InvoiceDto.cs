@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -9,6 +10,7 @@ namespace SMMS.Application.Features.billing.DTOs
     public class InvoiceDto
     {
         public long InvoiceId { get; set; }
+        public Guid InvoiceCode { get; set; }
         public string StudentName { get; set; } = string.Empty;
         public short MonthNo { get; set; }
         public DateTime DateFrom { get; set; }
@@ -20,6 +22,7 @@ namespace SMMS.Application.Features.billing.DTOs
     public class InvoiceDetailDto
     {
         public long InvoiceId { get; set; }
+        public Guid InvoiceCode { get; set; }
         public string StudentName { get; set; } = string.Empty;
         public string ClassName { get; set; } = string.Empty;
         public string SchoolName { get; set; } = string.Empty;
