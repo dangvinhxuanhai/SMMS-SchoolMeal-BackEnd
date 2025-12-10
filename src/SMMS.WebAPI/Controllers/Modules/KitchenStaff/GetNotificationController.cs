@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.Wardens.Queries;
@@ -8,6 +9,7 @@ namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize(Roles = "KitchenStaff")]
     public class GetNotificationController : ControllerBase
     {
         private readonly IMediator _mediator;

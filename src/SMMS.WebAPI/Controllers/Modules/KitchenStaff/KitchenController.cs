@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using DocumentFormat.OpenXml.Bibliography;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.foodmenu.Queries;
@@ -10,6 +11,7 @@ namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
 [ApiController]
 [Route("api/kitchen")]
+[Authorize(Roles = "KitchenStaff")]
 public class KitchenController : ControllerBase
 {
     private readonly IMediator _mediator;

@@ -11,7 +11,7 @@ using SMMS.WebAPI.DTOs;
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 [ApiController]
 [Route("api/purchase-plans")]
-[Authorize]
+[Authorize(Roles = "KitchenStaff")]
 public class PurchasePlansController : ControllerBase
 {
     private readonly IMediator _mediator;

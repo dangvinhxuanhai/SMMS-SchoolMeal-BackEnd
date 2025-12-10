@@ -10,4 +10,15 @@ namespace SMMS.Application.Features.billing.Commands
 {
     public record CreateNotificationCommand(CreateNotificationDto Dto, Guid AdminId) : IRequest<AdminNotificationDto>;
     public record DeleteNotificationCommand(long NotificationId, Guid AdminId) : IRequest<bool>;
+    public class MarkNotificationReadCommand : IRequest<bool>
+    {
+        public long NotificationId { get; }
+        public Guid UserId { get; }
+
+        public MarkNotificationReadCommand(long notificationId, Guid userId)
+        {
+            NotificationId = notificationId;
+            UserId = userId;
+        }
+    }
 }

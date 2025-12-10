@@ -17,7 +17,8 @@ namespace SMMS.Application.Features.billing.Handlers
         IRequestHandler<CreateNotificationCommand, AdminNotificationDto>,
         IRequestHandler<GetNotificationHistoryQuery, IEnumerable<NotificationDto>>,
         IRequestHandler<GetNotificationByIdQuery, NotificationDetailDto?>,
-        IRequestHandler<DeleteNotificationCommand, bool>
+        IRequestHandler<DeleteNotificationCommand, bool>,
+        IRequestHandler<MarkNotificationReadCommand, bool>
     {
         private readonly INotificationRepository _notificationRepo;
 
@@ -115,6 +116,11 @@ namespace SMMS.Application.Features.billing.Handlers
                 throw new UnauthorizedAccessException("Bạn không có quyền xóa thông báo này.");
 
             await _notificationRepo.DeleteNotificationAsync(notification);
+            return true;
+        }
+        public async Task<bool> Handle(MarkNotificationReadCommand request, CancellationToken cancellationToken)
+        {
+            await _notificationRepo.MarkAsReadAsync(request.NotificationId, request.UserId);
             return true;
         }
     }
