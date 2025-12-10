@@ -21,6 +21,7 @@ public class SuggestMenuCommandHandler
     private readonly IMenuRecommendSessionRepository _sessionRepo;
     private readonly IMenuRecommendResultRepository _resultRepo;
     private readonly IStudentHealthRepository _studentHealthRepo;
+    private readonly IStudentAllergenRepository _studentAllergenRepo;
 
     private const double DefaultMainKcal = 650;
     private const double DefaultSideKcal = 350;
@@ -30,13 +31,15 @@ public class SuggestMenuCommandHandler
         IClassStudentRepository classStudentRepo,
         IMenuRecommendSessionRepository sessionRepo,
         IMenuRecommendResultRepository resultRepo,
-        IStudentHealthRepository studentHealthRepo)
+        IStudentHealthRepository studentHealthRepo,
+        IStudentAllergenRepository studentAllergenRepo)
     {
         _aiMenuClient = aiMenuClient;
         _classStudentRepo = classStudentRepo;
         _sessionRepo = sessionRepo;
         _resultRepo = resultRepo;
         _studentHealthRepo = studentHealthRepo;
+        _studentAllergenRepo = studentAllergenRepo;
     }
 
     public async Task<AiMenuRecommendResponse> Handle(
@@ -51,13 +54,17 @@ public class SuggestMenuCommandHandler
                 request.MaxSideKcal,
                 cancellationToken);
 
+        // 2. Lấy danh sách allergen của trường (từ StudentAllergens)
+        var schoolAllergenIds = await _studentAllergenRepo
+            .GetAllergenIdsForSchoolAsync(request.SchoolId, cancellationToken);
+
         var aiRequest = new AiMenuRecommendRequest
         {
             UserId = request.UserId,
             SchoolId = request.SchoolId,
             MainIngredientIds = request.MainIngredientIds,
             SideIngredientIds = request.SideIngredientIds,
-            AvoidAllergenIds = request.AvoidAllergenIds,
+            AvoidAllergenIds = schoolAllergenIds?.ToList() ?? new List<int>(),
             MaxMainKcal = request.MaxMainKcal,
             MaxSideKcal = request.MaxSideKcal,
             TopKMain = request.TopKMain,

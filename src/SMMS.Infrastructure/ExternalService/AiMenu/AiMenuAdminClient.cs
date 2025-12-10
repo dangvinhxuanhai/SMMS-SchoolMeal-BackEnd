@@ -35,7 +35,7 @@ public class AiMenuAdminClient : IAiMenuAdminClient
         // _httpClient.BaseAddress = new Uri(_options.BaseUrl);
 
         using var response = await _httpClient.PostAsync(
-            "/api/v1/admin/ai/rebuild",
+            "/api/v1/admin/rebuild",
             content: null,  
             cancellationToken: ct);
 
