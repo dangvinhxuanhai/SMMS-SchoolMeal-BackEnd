@@ -6,11 +6,11 @@ using SMMS.Domain.Entities.billing;
 using SMMS.Domain.Entities.foodmenu;
 using SMMS.Domain.Entities.fridge;
 using SMMS.Domain.Entities.inventory;
+using SMMS.Domain.Entities.Logs;
 using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.purchasing;
 using SMMS.Domain.Entities.rag;
 using SMMS.Domain.Entities.school;
-using SMMS.Domain.Entities.Logs;
 
 namespace SMMS.Persistence.Data;
 
@@ -94,6 +94,8 @@ public partial class EduMealContext : DbContext
     public virtual DbSet<ScheduleMeal> ScheduleMeals { get; set; }
 
     public virtual DbSet<School> Schools { get; set; }
+
+    public virtual DbSet<SchoolPaymentGateway> SchoolPaymentGateways { get; set; }
 
     public virtual DbSet<SchoolPaymentSetting> SchoolPaymentSettings { get; set; }
 
@@ -357,7 +359,7 @@ public partial class EduMealContext : DbContext
 
         modelBuilder.Entity<Invoice>(entity =>
         {
-            entity.HasKey(e => e.InvoiceId).HasName("PK__Invoices__D796AAB52E5E911D");
+            entity.Property(e => e.InvoiceCode).HasDefaultValueSql("(newid())");
 
             entity.HasOne(d => d.Student).WithMany(p => p.Invoices)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -462,15 +464,14 @@ public partial class EduMealContext : DbContext
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A38D0267A58");
-
             entity.Property(e => e.ExpectedAmount).HasDefaultValue(600m);
             entity.Property(e => e.PaidAt).HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.PaymentCode).HasDefaultValueSql("(newid())");
             entity.Property(e => e.PaymentStatus).HasDefaultValue("pending");
 
             entity.HasOne(d => d.Invoice).WithMany(p => p.Payments)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Payments__Invoic__7C1A6C5A");
+                .HasConstraintName("FK_Payments_Invoices");
         });
 
         modelBuilder.Entity<PurchaseOrder>(entity =>
@@ -575,6 +576,22 @@ public partial class EduMealContext : DbContext
             entity.Property(e => e.SchoolId).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+        });
+
+        modelBuilder.Entity<SchoolPaymentGateway>(entity =>
+        {
+            entity.HasKey(e => e.GatewayId).HasName("PK__SchoolPa__66BCD8A094CD1017");
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.SchoolPaymentGatewayCreatedByNavigations).HasConstraintName("FK_SPG_CreatedBy");
+
+            entity.HasOne(d => d.School).WithMany(p => p.SchoolPaymentGateways)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_SPG_School");
+
+            entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.SchoolPaymentGatewayUpdatedByNavigations).HasConstraintName("FK_SPG_UpdatedBy");
         });
 
         modelBuilder.Entity<SchoolPaymentSetting>(entity =>
@@ -754,6 +771,7 @@ public partial class EduMealContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__UserExter__UserI__59FA5E80");
         });
+
         OnModelCreatingPartial(modelBuilder);
     }
 

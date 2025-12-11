@@ -51,7 +51,7 @@ namespace SMMS.WebAPI.Controllers.Modules.Admin
         {
             var userId = GetCurrentUserId();
             var schoolId = await _mediator.Send(new CreateSchoolCommand(dto, userId));
-            return CreatedAtAction(nameof(GetById), new { id = schoolId }, null);
+            return CreatedAtAction(nameof(GetById), new { id = schoolId }, new { id = schoolId });
         }
 
         [HttpPut("{id}")]

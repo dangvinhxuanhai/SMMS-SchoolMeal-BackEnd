@@ -64,12 +64,12 @@ public class ManagerFinanceController : ControllerBase
     // 📊 Tổng quan tài chính
     // GET: /api/ManagerFinance/summary?schoolId=xxx&month=11&year=2025
     [HttpGet("summary")]
-    public async Task<IActionResult> GetFinanceSummary([FromQuery] int month, [FromQuery] int year)
+    public async Task<IActionResult> GetFinanceSummary([FromQuery] int year)
     {
         try
         {
             var schoolId = GetSchoolIdFromToken();
-            var result = await _mediator.Send(new GetFinanceSummaryQuery(schoolId, month, year));
+            var result = await _mediator.Send(new GetFinanceSummaryQuery(schoolId, year));
             return Ok(result);
         }
         catch (Exception ex)

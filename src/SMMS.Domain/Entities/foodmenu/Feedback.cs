@@ -28,6 +28,8 @@ public partial class Feedback
 
     public int? DailyMealId { get; set; }
 
+    public byte? Rating { get; set; }
+
     [ForeignKey("DailyMealId")]
     [InverseProperty("Feedbacks")]
     public virtual DailyMeal? DailyMeal { get; set; }

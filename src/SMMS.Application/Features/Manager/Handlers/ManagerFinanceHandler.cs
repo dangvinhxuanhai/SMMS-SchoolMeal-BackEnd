@@ -141,17 +141,18 @@ public class ManagerFinanceHandler :
 
     #endregion
 
-    #region 3️⃣ GetFinanceSummaryAsync
+    #region 3️⃣ GetFinanceSummaryAsync (theo năm)
 
     public async Task<FinanceSummaryDto> Handle(
         GetFinanceSummaryQuery request,
         CancellationToken cancellationToken)
     {
-        var (schoolId, month, year) = (request.SchoolId, request.Month, request.Year);
+        var schoolId = request.SchoolId;
+        var year = request.Year;
 
-        // 1️⃣ Lấy hóa đơn & thanh toán trong tháng (theo MonthNo)
+        // 1️⃣ Lấy hóa đơn & thanh toán trong NĂM (theo DateFrom.Year)
         var invoiceIds = await _repo.Invoices
-            .Where(inv => inv.MonthNo == month)
+            .Where(inv => inv.DateFrom.Year == year)
             .Select(inv => inv.InvoiceId)
             .ToListAsync(cancellationToken);
 
@@ -159,41 +160,46 @@ public class ManagerFinanceHandler :
             .Where(p => invoiceIds.Contains(p.InvoiceId))
             .ToListAsync(cancellationToken);
 
+        // Tổng doanh thu dự kiến trong năm
         decimal totalInvoices = payments.Sum(p => p.ExpectedAmount);
-        decimal totalPaid = payments.Sum(p => p.PaidAmount);
-        decimal totalUnpaid = totalInvoices - totalPaid;
 
-        // 2️⃣ Lấy chi phí đi chợ
+        // 2️⃣ Lấy chi phí đi chợ trong NĂM
         var purchases = await (
             from po in _repo.PurchaseOrders
             join pol in _repo.PurchaseOrderLines on po.OrderId equals pol.OrderId
             where po.SchoolId == schoolId
-                  && po.OrderDate.Month == month
                   && po.OrderDate.Year == year
-            select new { po.SupplierName, Amount = (pol.UnitPrice ?? 0m) * (pol.QuantityGram / 1000m) }
+            select new
+            {
+                po.SupplierName,
+                Amount = (pol.UnitPrice ?? 0m) * (pol.QuantityGram / 1000m)
+            }
         ).ToListAsync(cancellationToken);
 
         decimal totalPurchaseCost = purchases.Sum(p => p.Amount);
 
         var supplierBreakdown = purchases
             .GroupBy(p => p.SupplierName)
-            .Select(g => new SupplierExpenseDto { Supplier = g.Key, Total = g.Sum(x => x.Amount) })
+            .Select(g => new SupplierExpenseDto
+            {
+                Supplier = g.Key,
+                Total = g.Sum(x => x.Amount)
+            })
             .ToList();
 
+        // 3️⃣ Trả về summary theo NĂM
         return new FinanceSummaryDto
         {
             SchoolId = schoolId,
-            Month = month,
             Year = year,
             TotalInvoices = totalInvoices,
-            PaidInvoices = totalPaid,
-            UnpaidInvoices = totalUnpaid,
             TotalPurchaseCost = totalPurchaseCost,
             SupplierBreakdown = supplierBreakdown
         };
     }
 
     #endregion
+
 
     #region 4️⃣ GetInvoicesAsync
 

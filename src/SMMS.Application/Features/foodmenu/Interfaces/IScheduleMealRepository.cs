@@ -17,7 +17,9 @@ public interface IScheduleMealRepository
         int pageIndex,
         int pageSize,
         CancellationToken ct = default);
-
+    Task<IReadOnlyList<ScheduleMeal>> GetAllBySchoolAsync(
+        Guid schoolId,
+        CancellationToken ct = default);
     Task<ScheduleMeal?> GetForDateAsync(
         Guid schoolId,
         DateTime date,
@@ -39,4 +41,12 @@ public interface IScheduleMealRepository
     Task AddAsync(ScheduleMeal scheduleMeal, CancellationToken ct = default);
     Task<IReadOnlyList<MenuFoodItemInfo>> GetMenuFoodItemsForDailyMealsAsync(
         IEnumerable<int> dailyMealIds, CancellationToken ct = default);
+
+    Task<ScheduleMeal?> GetByIdAsync(
+        long scheduleMealId,
+        CancellationToken ct = default);
+
+    Task<IReadOnlyList<FoodIngredientInfo>> GetFoodIngredientsForFoodsAsync(
+    IEnumerable<int> foodIds,
+    CancellationToken ct = default);
 }

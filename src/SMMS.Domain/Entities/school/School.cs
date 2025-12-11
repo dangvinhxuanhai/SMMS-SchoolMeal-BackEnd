@@ -49,6 +49,8 @@ public partial class School
 
     public Guid? UpdatedBy { get; set; }
 
+    public bool NeedRebuildAiIndex { get; set; }
+
     [InverseProperty("School")]
     public virtual ICollection<AcademicYear> AcademicYears { get; set; } = new List<AcademicYear>();
 
@@ -78,6 +80,9 @@ public partial class School
 
     [InverseProperty("School")]
     public virtual ICollection<ScheduleMeal> ScheduleMeals { get; set; } = new List<ScheduleMeal>();
+
+    [InverseProperty("School")]
+    public virtual ICollection<SchoolPaymentGateway> SchoolPaymentGateways { get; set; } = new List<SchoolPaymentGateway>();
 
     [InverseProperty("School")]
     public virtual ICollection<SchoolPaymentSetting> SchoolPaymentSettings { get; set; } = new List<SchoolPaymentSetting>();

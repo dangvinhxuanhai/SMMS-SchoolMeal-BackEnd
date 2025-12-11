@@ -71,9 +71,14 @@ public static class RepositoryDI
         services.AddScoped<IScheduleMealRepository, ScheduleMealRepository>(); 
         services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
+        services.AddScoped<ISchoolPaymentGatewayRepository, SchoolPaymentGatewayRepository>();
+        services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<IMenuRepository, MenuRepository>();
-                services.AddScoped<IManagerAcademicYearRepository, ManagerAcademicYearRepository>();
+        services.AddScoped<IManagerAcademicYearRepository, ManagerAcademicYearRepository>();
         services.AddScoped<IStudentImageRepository, StudentImageRepository>();
+        services.AddScoped<ISchoolInvoiceRepository, SchoolInvoiceRepository>();
+        services.AddScoped<IStudentAllergenRepository, StudentAllergenRepository>();
+
         return services;
     }
 }

@@ -77,16 +77,9 @@
     <Folder Include="Common\Behaviors\" />
     <Folder Include="Common\Exceptions\" />
     <Folder Include="Common\Validators\" />
-    <Folder Include="Features\Menu\Interfaces\" />
-    <Folder Include="Features\Menu\Search\" />
-    <Folder Include="Features\Inventory\Service\" />
-    <Folder Include="Features\Inventory\Validators\" />
     <Folder Include="Features\Menus\Interfaces\" />
     <Folder Include="Features\Menus\Search\" />
-    <Folder Include="Features\Notifications\" />
     <Folder Include="Features\nutrition\Validators\" />
-    <Folder Include="Features\Menu\Interfaces\" />
-    <Folder Include="Features\Menu\Search\" />
     <Folder Include="Features\Skeleton\Interface\" />
     <Folder Include="Features\Skeleton\Service\" />
   </ItemGroup>
@@ -105,6 +98,7 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.20" />
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="8.0.2" />
+    <PackageReference Include="payOS" Version="2.0.1" />
   </ItemGroup>
 
   <ItemGroup>

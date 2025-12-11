@@ -34,8 +34,9 @@ namespace SMMS.WebAPI.Controllers.Modules.Parent
 
             var dto = new CreateFeedbackDto(
                 SenderId: senderId,
+                Rating : requestDto.Rating,
                 TargetType: "Meal",
-                TargetRef: requestDto.DailyMealId.HasValue ? $"DailyMeal-{requestDto.DailyMealId.Value}" : null,
+                TargetRef: $"DailyMeal-{requestDto.DailyMealId}",
                 Content: requestDto.Content,
                 DailyMealId: requestDto.DailyMealId
             );

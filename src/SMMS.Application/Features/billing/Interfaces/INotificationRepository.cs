@@ -8,5 +8,7 @@ namespace SMMS.Application.Features.notification.Interfaces
         Task AddNotificationAsync(Notification notification);
         Task<Notification?> GetByIdAsync(long id);
         Task DeleteNotificationAsync(Notification notification);
+        Task MarkAsReadAsync(long notificationId, Guid userId);
+
     }
 }

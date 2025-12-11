@@ -34,7 +34,8 @@ public class GetFeedbackByIdQueryHandler
             TargetRef = f.TargetRef,
             Content = f.Content,
             CreatedAt = f.CreatedAt,
-            DailyMealId = f.DailyMealId
+            DailyMealId = f.DailyMealId,
+            Rating = f.Rating      // ✨ NEW
         };
     }
 }

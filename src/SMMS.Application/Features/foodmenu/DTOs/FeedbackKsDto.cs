@@ -14,4 +14,7 @@ public class FeedbackKsDto
     public string Content { get; set; } = default!;
     public DateTime CreatedAt { get; set; }
     public int? DailyMealId { get; set; }
+
+    // ✨ NEW: Rating 1–5 sao (nullable)
+    public byte? Rating { get; set; }
 }

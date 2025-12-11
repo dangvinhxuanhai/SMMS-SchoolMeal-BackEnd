@@ -1,13 +1,15 @@
 using System.Security.Claims;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.foodmenu.Queries;
-using SMMS.Application.Features.Wardens.DTOs;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "KitchenStaff")]
 public class FeedbacksController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -24,6 +26,7 @@ public class FeedbacksController : ControllerBase
             throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
 
         return Guid.Parse(schoolIdClaim);
+
     }
 
     private Guid GetCurrentUserId()
@@ -45,23 +48,37 @@ public class FeedbacksController : ControllerBase
     /// GET /api/Feedbacks?schoolId=...&keyword=com&fromCreatedAt=2025-11-01&sortBy=CreatedAt&sortDesc=true
     /// </remarks>
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<FeedbackDto>>> Search(
+    public async Task<ActionResult<IReadOnlyList<FeedbackKsDto>>> Search(
         [FromQuery] SearchFeedbacksQuery query)
     {
-        query.SchoolId = GetSchoolIdFromToken();
-        // query.SenderId = GetCurrentUserId();
-        var result = await _mediator.Send(query);
-        return Ok(result);
+        try
+        {
+            query.SchoolId = GetSchoolIdFromToken();
+            // query.SenderId = GetCurrentUserId();
+            var result = await _mediator.Send(query);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>
     /// Xem chi tiết 1 feedback
     /// </summary>
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<FeedbackDto>> GetById(int id)
+    public async Task<ActionResult<FeedbackKsDto>> GetById(int id)
     {
-        var result = await _mediator.Send(new GetFeedbackByIdQuery(id));
-        if (result == null) return NotFound();
-        return Ok(result);
+        try
+        {
+            var result = await _mediator.Send(new GetFeedbackByIdQuery(id));
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }

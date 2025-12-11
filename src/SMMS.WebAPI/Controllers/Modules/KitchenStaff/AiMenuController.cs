@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.foodmenu.Commands;
 using SMMS.Application.Features.foodmenu.DTOs;
@@ -9,6 +10,7 @@ namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "KitchenStaff")]
 public class AiMenuController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -46,20 +48,27 @@ public class AiMenuController : ControllerBase
         [FromBody] SuggestMenuRequest request,
         CancellationToken ct)
     {
-        var command = new SuggestMenuCommand(
-            GetSchoolIdFromToken(),
-            GetCurrentUserId(),
-            request.MainIngredientIds ?? new(),
-            request.SideIngredientIds ?? new(),
-            request.AvoidAllergenIds ?? new(),
-            request.MaxMainKcal,
-            request.MaxSideKcal,
-            request.TopKMain ?? 5,
-            request.TopKSide ?? 5
-        );
 
-        var result = await _mediator.Send(command, ct);
-        return Ok(result); // chứa session_id + danh sách món
+        try
+        {
+            var command = new SuggestMenuCommand(
+                GetSchoolIdFromToken(),
+                GetCurrentUserId(),
+                request.MainIngredientIds ?? new(),
+                request.SideIngredientIds ?? new(),
+                request.AvoidAllergenIds ?? new(),
+                request.MaxMainKcal,
+                request.MaxSideKcal,
+                request.TopKMain ?? 5,
+                request.TopKSide ?? 5
+            );
+            var result = await _mediator.Send(command, ct);
+            return Ok(result); // chứa session_id + danh sách món
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     /// <summary>
@@ -70,13 +79,19 @@ public class AiMenuController : ControllerBase
         [FromBody] LogAiSelectionRequest request,
         CancellationToken ct)
     {
-        var command = new LogAiSelectionCommand(
-            GetCurrentUserId(),
-            request.SessionId,
-            request.SelectedItems
-        );
-
-        await _mediator.Send(command, ct);
-        return NoContent();
+        try
+        {
+            var command = new LogAiSelectionCommand(
+                GetCurrentUserId(),
+                request.SessionId,
+                request.SelectedItems
+            );
+            await _mediator.Send(command, ct);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }

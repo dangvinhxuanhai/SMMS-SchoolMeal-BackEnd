@@ -43,5 +43,3 @@ public class CloudinaryService
         return uploadResult.SecureUrl?.ToString();
     }
 }
-
-

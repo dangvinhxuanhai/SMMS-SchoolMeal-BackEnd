@@ -2,16 +2,19 @@ using System.Security.Claims;
 using Azure.Core;
 using DocumentFormat.OpenXml.Office2016.Excel;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.nutrition.Commands;
 using SMMS.Application.Features.nutrition.DTOs;
 using SMMS.Application.Features.nutrition.Queries;
+using SMMS.Persistence;
 using SMMS.Persistence.Service;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
 [ApiController]
 [Route("api/nutrition/[controller]")]
+[Authorize(Roles = "KitchenStaff")]
 public class FoodItemsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -48,8 +51,43 @@ public class FoodItemsController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<FoodItemDto>>> GetList(
         [FromQuery] string? keyword)
     {
-        var result = await _mediator.Send(new GetFoodItemsQuery(GetSchoolIdFromToken(), keyword));
-        return Ok(result);
+        try
+        {
+            var result = await _mediator.Send(new GetFoodItemsQuery(GetSchoolIdFromToken(), keyword));
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get all food items, optionally filter by main dish or not.
+    /// isMainDish = null: all, true: only main dishes, false: only side dishes.
+    /// </summary>
+    [HttpGet("by-main-dish")]
+    public async Task<ActionResult<IReadOnlyList<FoodItemDto>>> GetByMainDish(
+        [FromQuery] bool? isMainDish,
+        [FromQuery] string? keyword,
+        [FromQuery] bool includeInactive = false,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var query = new GetFoodItemsByMainDishQuery(
+            GetSchoolIdFromToken(),
+            isMainDish,
+            keyword,
+            includeInactive);
+
+            var result = await _mediator.Send(query, cancellationToken);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // GET api/nutrition/fooditems/5
@@ -66,35 +104,41 @@ public class FoodItemsController : ControllerBase
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<FoodItemDto>> Create([FromForm] CreateFoodItemRequest request)
     {
-        var schoolId = GetSchoolIdFromToken();
-        var userId = GetCurrentUserId();
-
-        string imageUrl="";       
-
-        if (request.ImageFile != null)
+        try
         {
-            var uploadedUrl = await _cloudinary.UploadImageAsync(request.ImageFile);
-            if (!string.IsNullOrWhiteSpace(uploadedUrl))
+            var schoolId = GetSchoolIdFromToken();
+            var userId = GetCurrentUserId();
+
+            string imageUrl = "";
+
+            if (request.ImageFile != null)
             {
-                imageUrl = uploadedUrl;
+                var uploadedUrl = await _cloudinary.UploadImageAsync(request.ImageFile);
+                if (!string.IsNullOrWhiteSpace(uploadedUrl))
+                {
+                    imageUrl = uploadedUrl;
+                }
             }
+
+            // 3. Tạo command gửi xuống Application
+            var command = new CreateFoodItemCommand
+            {
+                SchoolId = schoolId,
+                CreatedBy = userId,
+                FoodName = request.FoodName,
+                FoodType = request.FoodType,
+                FoodDesc = request.FoodDesc,
+                ImageUrl = imageUrl,
+                IsMainDish = request.IsMainDish,
+                Ingredients = request.Ingredients
+            };
+            var created = await _mediator.Send(command);
+            return CreatedAtAction(nameof(GetById), new { id = created.FoodId }, created);
         }
-
-        // 3. Tạo command gửi xuống Application
-        var command = new CreateFoodItemCommand
+        catch (Exception ex)
         {
-            SchoolId = schoolId,
-            CreatedBy = userId,
-            FoodName = request.FoodName,
-            FoodType = request.FoodType,
-            FoodDesc = request.FoodDesc,
-            ImageUrl = imageUrl,
-            IsMainDish = request.IsMainDish,
-            Ingredients = request.Ingredients
-        };
-
-        var created = await _mediator.Send(command);
-        return CreatedAtAction(nameof(GetById), new { id = created.FoodId }, created);
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // PUT api/nutrition/fooditems/5
@@ -103,8 +147,15 @@ public class FoodItemsController : ControllerBase
         int id,
         [FromBody] UpdateFoodItemCommand command)
     {
-        var updated = await _mediator.Send(command);
-        return Ok(updated);
+        try
+        {
+            var updated = await _mediator.Send(command);
+            return Ok(updated);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // DELETE api/nutrition/fooditems/5
@@ -113,11 +164,18 @@ public class FoodItemsController : ControllerBase
         int id,
         [FromQuery] bool hardDeleteIfNoRelation = false)
     {
-        await _mediator.Send(new DeleteFoodItemCommand
+        try
         {
-            FoodId = id,
-            HardDeleteIfNoRelation = hardDeleteIfNoRelation
-        });
-        return NoContent();
+            await _mediator.Send(new DeleteFoodItemCommand
+            {
+                FoodId = id,
+                HardDeleteIfNoRelation = hardDeleteIfNoRelation
+            });
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }

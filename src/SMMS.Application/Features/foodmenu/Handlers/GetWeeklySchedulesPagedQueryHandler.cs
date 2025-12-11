@@ -10,23 +10,22 @@ using SMMS.Application.Features.foodmenu.Queries;
 using SMMS.Domain.Entities.foodmenu;
 
 namespace SMMS.Application.Features.foodmenu.Handlers;
-public sealed class GetWeeklySchedulesQueryHandler
-        : IRequestHandler<GetWeeklySchedulesPagedQuery, PagedResult<WeeklyScheduleDto>>
+public class GetWeeklySchedulesPagedQueryHandler : IRequestHandler<GetWeeklySchedulesPagedQuery, PagedResult<WeeklyScheduleDto>>
 {
     private readonly IScheduleMealRepository _scheduleRepo;
+    private const int MAX_FETCH_ALL = 5000; // giới hạn tối đa khi getAll = true
 
-    public GetWeeklySchedulesQueryHandler(IScheduleMealRepository scheduleRepo)
+    public GetWeeklySchedulesPagedQueryHandler(IScheduleMealRepository scheduleRepo)
     {
         _scheduleRepo = scheduleRepo;
     }
 
-    public async Task<PagedResult<WeeklyScheduleDto>> Handle(
-        GetWeeklySchedulesPagedQuery request,
-        CancellationToken ct)
+    public async Task<PagedResult<WeeklyScheduleDto>> Handle(GetWeeklySchedulesPagedQuery request, CancellationToken ct)
     {
+        if (request == null) throw new ArgumentNullException(nameof(request));
+
         var totalCount = await _scheduleRepo.CountBySchoolAsync(request.SchoolId, ct);
 
-        // Nếu không có dữ liệu, trả về PagedResult rỗng nhưng vẫn set PageIndex/PageSize
         if (totalCount == 0)
         {
             return new PagedResult<WeeklyScheduleDto>
@@ -38,32 +37,56 @@ public sealed class GetWeeklySchedulesQueryHandler
             };
         }
 
-        // 1. Lấy các ScheduleMeal theo tuần (đã phân trang)
-        var schedules = await _scheduleRepo.GetPagedBySchoolAsync(
-            request.SchoolId,
-            request.PageIndex,
-            request.PageSize,
-            ct);
+        // Nếu client yêu cầu getAll, kiểm tra giới hạn
+        if (request.GetAll && totalCount > MAX_FETCH_ALL)
+        {
+            // Bạn có thể đổi thành throw custom exception; controller sẽ bắt và trả BadRequest
+            throw new InvalidOperationException($"Requested to fetch all records but totalCount ({totalCount}) exceeds allowed maximum ({MAX_FETCH_ALL}). Use paging or export.");
+        }
+
+        IReadOnlyList<ScheduleMeal> schedules;
+        if (request.GetAll)
+        {
+            schedules = await _scheduleRepo.GetAllBySchoolAsync(request.SchoolId, ct);
+        }
+        else
+        {
+            schedules = await _scheduleRepo.GetPagedBySchoolAsync(request.SchoolId, request.PageIndex, request.PageSize, ct);
+        }
 
         var scheduleIds = schedules.Select(s => s.ScheduleMealId).ToList();
 
-        // 2. Lấy toàn bộ DailyMeals thuộc các ScheduleMeal này
+        // Lấy dailyMeals cho các schedule đã lấy
         var dailyMeals = await _scheduleRepo.GetDailyMealsForSchedulesAsync(scheduleIds, ct);
         var dailyMealIds = dailyMeals.Select(d => d.DailyMealId).ToList();
 
-        // 3. Lấy toàn bộ Food (MenuFoodItems + FoodItems) cho các DailyMeal
+        // Lấy menu food items cho các dailyMealIds
         var menuFoods = await _scheduleRepo.GetMenuFoodItemsForDailyMealsAsync(dailyMealIds, ct);
 
-        // 4. Group dữ liệu để map sang DTO
+        // Lấy list FoodId để query nguyên liệu
+        var allFoodIds = menuFoods
+            .Select(m => m.FoodId)
+            .Distinct()
+            .ToList();
 
-        // group món theo DailyMealId
+        // Lấy danh sách nguyên liệu + gram cho tất cả món trong tuần
+        var foodIngredients = await _scheduleRepo.GetFoodIngredientsForFoodsAsync(allFoodIds, ct);
+
+        // Group theo FoodId để dễ map
+        var ingredientsByFood = foodIngredients
+            .GroupBy(fi => fi.FoodId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.ToList()
+            );
+
+        // group dữ liệu để map sang DTO
         var menuFoodsByDaily = menuFoods
             .GroupBy(m => m.DailyMealId)
             .ToDictionary(
                 g => g.Key,
                 g => g.OrderBy(x => x.SortOrder ?? int.MaxValue).ToList());
 
-        // group DailyMeals theo ScheduleMealId
         var dailyBySchedule = dailyMeals
             .GroupBy(d => d.ScheduleMealId)
             .ToDictionary(
@@ -72,7 +95,7 @@ public sealed class GetWeeklySchedulesQueryHandler
                       .ThenBy(d => d.MealType)
                       .ToList());
 
-        // 5. Map ra WeeklyScheduleDto đầy đủ
+        // Map schedules -> WeeklyScheduleDto
         var items = schedules
             .OrderByDescending(s => s.WeekStart)
             .Select(s =>
@@ -83,15 +106,31 @@ public sealed class GetWeeklySchedulesQueryHandler
                     {
                         menuFoodsByDaily.TryGetValue(dm.DailyMealId, out var foodsForDay);
                         var foodDtos = (foodsForDay ?? new List<MenuFoodItemInfo>())
-                            .Select(f => new ScheduledFoodItemDto
+                            .Select(f =>
                             {
-                                FoodId = f.FoodId,
-                                FoodName = f.FoodName,
-                                FoodType = f.FoodType,
-                                IsMainDish = f.IsMainDish,
-                                ImageUrl = f.ImageUrl,
-                                FoodDesc = f.FoodDesc,
-                                SortOrder = f.SortOrder
+                                ingredientsByFood.TryGetValue(f.FoodId, out var ingForFood);
+
+                                var ingredientDtos = (ingForFood ?? new List<FoodIngredientInfo>())
+                                    .Select(i => new ScheduledFoodIngredientDto
+                                    {
+                                        IngredientId = i.IngredientId,
+                                        IngredientName = i.IngredientName,
+                                        QuantityGram = i.QuantityGram
+                                    })
+                                    .ToList()
+                                    .AsReadOnly();
+
+                                return new ScheduledFoodItemDto
+                                {
+                                    FoodId = f.FoodId,
+                                    FoodName = f.FoodName,
+                                    FoodType = f.FoodType,
+                                    IsMainDish = f.IsMainDish,
+                                    ImageUrl = f.ImageUrl,
+                                    FoodDesc = f.FoodDesc,
+                                    SortOrder = f.SortOrder,
+                                    Ingredients = ingredientDtos
+                                };
                             })
                             .ToList();
 
@@ -120,11 +159,14 @@ public sealed class GetWeeklySchedulesQueryHandler
             })
             .ToList();
 
-        // 6. Trả về PagedResult với Items đã map
+        // Nếu client lấy all, trả PageIndex = 1, PageSize = totalCount để client hiểu
+        var resultPageIndex = request.GetAll ? 1 : request.PageIndex;
+        var resultPageSize = request.GetAll ? items.Count : request.PageSize;
+
         return new PagedResult<WeeklyScheduleDto>
         {
-            PageIndex = request.PageIndex,
-            PageSize = request.PageSize,
+            PageIndex = resultPageIndex,
+            PageSize = resultPageSize,
             TotalCount = totalCount,
             Items = items
         };

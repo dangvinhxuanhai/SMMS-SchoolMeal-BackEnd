@@ -1,4 +1,5 @@
 using System.Text.Json;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.auth.DTOs;
@@ -9,18 +10,25 @@ using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.school;
 using SMMS.Persistence.Data;
 using  SMMS.Persistence.Repositories.Skeleton;
+using SMMS.Persistence.Service;
+
 namespace SMMS.Persistence.Repositories.auth
 {
     public class UserProfileRepository : Repository<User>, IUserProfileRepository
     {
-        private readonly IFileStorageService _fileStorageService;
+        private readonly CloudinaryService _cloudinary;
+        private readonly IFileStorageService _fileStorage;
+        private readonly EduMealContext _context;
 
         public UserProfileRepository(
-            EduMealContext dbContext,
-            IFileStorageService fileStorageService)
-            : base(dbContext)
+    EduMealContext context,
+    CloudinaryService cloudinary,
+    IFileStorageService fileStorage
+) : base(context)     // ⭐ QUAN TRỌNG – truyền DB vào Repository cha
         {
-            _fileStorageService = fileStorageService;
+            _context = context;
+            _cloudinary = cloudinary;
+            _fileStorage = fileStorage;
         }
 
         public async Task<UserProfileResponseDto> GetUserProfileAsync(Guid userId)
@@ -96,56 +104,48 @@ namespace SMMS.Persistence.Repositories.auth
         }
         public async Task<string> UploadUserAvatarAsync(IFormFile file, Guid userId)
         {
-            if (file == null || file.Length == 0)
-                return null;
-            // Lấy thông tin file
-            var fileName = file.FileName;
-            using var ms = new MemoryStream();
-            await file.CopyToAsync(ms);
-            var fileData = ms.ToArray();
-            // Tạo tên file mới để tránh trùng
-            var newFileName = $"user_{userId}_{DateTime.UtcNow:yyyyMMddHHmmss}";
-            // Upload lên storage
-            var avatarUrl = await _fileStorageService.SaveFileAsync(
-                fileName,
-                fileData,
-                "edu-meal/user-avatars", // folder lưu avatar user
-                newFileName
-            );
+            var parent = await _context.Users.FindAsync(userId);
+            if (parent == null) throw new Exception("User not found");
+
+            // Upload lên Cloudinary
+            var newUrl = await _cloudinary.UploadImageAsync(file);
+
+            if (newUrl == null)
+                throw new Exception("Upload failed");
 
             // Cập nhật URL avatar vào DB
             var user = await _dbContext.Users.FindAsync(userId); // hoặc table Parent nếu riêng
             if (user != null)
             {
-                user.AvatarUrl = avatarUrl;
+                user.AvatarUrl = newUrl;
                 user.UpdatedAt = DateTime.UtcNow;
                 await _dbContext.SaveChangesAsync();
             }
 
-            return avatarUrl;
+            return newUrl;
         }
 
         public async Task<string> UploadChildAvatarAsync(IFormFile file, Guid studentId)
         {
-            if (file == null || file.Length == 0)
-                return null;
+            var student = await _context.Students.FindAsync(studentId);
+            if (student == null) throw new Exception("Student not found");
 
-            var fileName = file.FileName;
-            using var ms = new MemoryStream();
-            await file.CopyToAsync(ms);
-            var fileData = ms.ToArray();
+            var newUrl = await _cloudinary.UploadImageAsync(file);
 
-            var newFileName = $"student_{studentId}_{DateTime.UtcNow:yyyyMMddHHmmss}";
+            if (newUrl == null)
+                throw new Exception("Upload failed");
 
-            var url = await _fileStorageService.SaveFileAsync(
-                fileName,
-                fileData,
-                "edu-meal/student-avatars",
-                newFileName
-            );
+            // Cập nhật URL avatar vào DB
+            var user = await _dbContext.Students.FindAsync(studentId); // hoặc table Parent nếu riêng
+            if (user != null)
+            {
+                user.AvatarUrl = newUrl;
+                user.UpdatedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+            }
 
             // Chỉ trả URL, không SaveChangesAsync() ở đây
-            return url;
+            return newUrl;
         }
 
 

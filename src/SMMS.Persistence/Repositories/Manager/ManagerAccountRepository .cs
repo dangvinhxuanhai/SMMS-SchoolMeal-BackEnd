@@ -197,7 +197,14 @@ public class ManagerAccountRepository : IManagerAccountRepository
             .ToListAsync();
         _context.Attendances.RemoveRange(attendances);
 
-
+        // 6. Xoá StudentClasses (cái này đang gây lỗi)
+        var studentClasses = await _context.StudentClasses
+            .Where(sc => sc.StudentId == studentId)
+            .ToListAsync();
+        if (studentClasses.Count > 0)
+        {
+            _context.StudentClasses.RemoveRange(studentClasses);
+        }
         // 3. Xoá student
         _context.Students.Remove(student);
 

@@ -59,6 +59,18 @@ namespace SMMS.Infrastructure.Repositories
 
             await _context.SaveChangesAsync();
         }
+        public async Task MarkAsReadAsync(long notificationId, Guid userId)
+        {
+            var recipient = await _context.NotificationRecipients
+                .FirstOrDefaultAsync(r =>
+                    r.NotificationId == notificationId &&
+                    r.UserId == userId);
 
+            if (recipient == null)
+                return;
+
+            recipient.IsRead = true;
+            await _context.SaveChangesAsync();
+        }
     }
 }

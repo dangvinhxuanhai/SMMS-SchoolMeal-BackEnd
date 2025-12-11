@@ -18,4 +18,8 @@ public sealed class ScheduledFoodItemDto
     /// Thứ tự hiển thị trong bữa ăn.
     /// </summary>
     public int? SortOrder { get; set; }
+
+    // ✨ NEW: danh sách nguyên liệu và gram trong 1 món
+    public IReadOnlyList<ScheduledFoodIngredientDto> Ingredients { get; set; }
+        = Array.Empty<ScheduledFoodIngredientDto>();
 }

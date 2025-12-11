@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.foodmenu.Queries;
@@ -9,6 +10,7 @@ namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
 [ApiController]
 [Route("api/meal/[controller]")]
+[Authorize(Roles = "KitchenStaff")]
 public class ScheduleMealsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -27,6 +29,7 @@ public class ScheduleMealsController : ControllerBase
     public async Task<ActionResult<PagedResult<WeeklyScheduleDto>>> GetPaged(
         [FromQuery] int pageIndex = 1,
         [FromQuery] int pageSize = 4,
+        [FromQuery] bool GetAll = false,
         CancellationToken ct = default)
     {
         var schoolId = GetSchoolIdFromToken();
@@ -34,10 +37,13 @@ public class ScheduleMealsController : ControllerBase
         var query = new GetWeeklySchedulesPagedQuery(
             SchoolId: schoolId,
             PageIndex: pageIndex,
-            PageSize: pageSize
+            PageSize: pageSize,
+            GetAll: GetAll
         );
 
         var result = await _mediator.Send(query, ct);
+        if (result == null)
+            return NotFound();
         return Ok(result);
     }
 
@@ -80,12 +86,19 @@ public class ScheduleMealsController : ControllerBase
         [FromBody] CreateScheduleMealCommand command,
         CancellationToken ct)
     {
-        // Lấy SchoolId & UserId từ token, không tin từ client
-        command.SchoolId = GetSchoolIdFromToken();
-        command.CreatedByUserId = GetCurrentUserId();
 
-        var id = await _mediator.Send(command, ct);
-        return Ok(new { scheduleMealId = id });
+        try
+        {
+            // Lấy SchoolId & UserId từ token, không tin từ client
+            command.SchoolId = GetSchoolIdFromToken();
+            command.CreatedByUserId = GetCurrentUserId();
+            var id = await _mediator.Send(command, ct);
+            return Ok(new { scheduleMealId = id });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     private Guid GetCurrentUserId()

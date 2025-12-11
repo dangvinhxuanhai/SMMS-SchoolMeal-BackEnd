@@ -9,7 +9,7 @@ using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace SMMS.WebAPI.Controllers
+namespace SMMS.WebAPI.Controllers.Modules.Parent
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -43,7 +43,7 @@ namespace SMMS.WebAPI.Controllers
             var result = await _mediator.Send(command);
             return Ok(result);
         }
-        // PUT: Cập nhật children profile 
+        // PUT: Cập nhật children profile
         [HttpPut("child")]
         [Consumes("multipart/form-data")]
         public async Task<ActionResult<bool>> UpdateChildProfile([FromForm] ChildProfileDto  dto)

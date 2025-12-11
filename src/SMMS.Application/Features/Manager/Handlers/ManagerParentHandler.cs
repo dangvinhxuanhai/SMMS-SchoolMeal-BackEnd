@@ -31,13 +31,16 @@ public class ManagerParentHandler :
 {
     private readonly IManagerAccountRepository _repo;
     private readonly ILogger<ManagerParentHandler> _logger;
+    private readonly IManagerRepository _managerRepo;
     private readonly PasswordHasher<User> _passwordHasher;
     public ManagerParentHandler(
         IManagerAccountRepository repo,
+         IManagerRepository managerRepo,
         ILogger<ManagerParentHandler> logger)
     {
         _repo = repo;
         _logger = logger;
+        _managerRepo = managerRepo;
         _passwordHasher = new PasswordHasher<User>();
     }
 
@@ -109,66 +112,28 @@ public class ManagerParentHandler :
 
     #endregion
 
-    //#region 🟢 GetAllAsync
+    private async Task<Dictionary<Guid, bool>> BuildStudentUnpaidMapAsync(
+    IEnumerable<Guid> studentIds,
+    CancellationToken ct)
+    {
+        var idList = studentIds.Distinct().ToList();
+        if (!idList.Any()) return new Dictionary<Guid, bool>();
 
-    //public async Task<List<ParentAccountDto>> Handle(
-    //    GetParentsQuery request,
-    //    CancellationToken cancellationToken)
-    //{
-    //    var query = _repo.Users
-    //        .Include(u => u.Role)
-    //        .Include(u => u.School)
-    //        .Include(u => u.Students)
-    //            .ThenInclude(s => s.StudentClasses)
-    //                .ThenInclude(sc => sc.Class)
-    //        .Where(u => u.SchoolId == request.SchoolId &&
-    //                    u.Role.RoleName.ToLower() == "parent");
+        // Lấy invoice theo học sinh và xem có Unpaid hay không
+        var data = await _managerRepo.Invoices
+            .Where(i => idList.Contains(i.StudentId))
+            .GroupBy(i => i.StudentId)
+            .Select(g => new
+            {
+                StudentId = g.Key,
+                HasUnpaid = g.Any(x => x.Status == "Unpaid")
+            })
+            .ToListAsync(ct);
 
-    //    if (request.ClassId.HasValue)
-    //    {
-    //        var classId = request.ClassId.Value;
-    //        query = query.Where(u => u.Students
-    //            .Any(s => s.StudentClasses.Any(sc => sc.ClassId == classId)));
-    //    }
+        return data.ToDictionary(x => x.StudentId, x => x.HasUnpaid);
+    }
 
-    //    return await query
-    //        .OrderByDescending(u => u.CreatedAt)
-    //        .Select(u => new ParentAccountDto
-    //        {
-    //            UserId = u.UserId,
-    //            FullName = u.FullName,
-    //            Email = u.Email,
-    //            Phone = u.Phone,
-    //            Role = u.Role.RoleName,
-    //            IsActive = u.IsActive,
-    //            CreatedAt = u.CreatedAt,
-    //            SchoolName = u.School != null ? u.School.SchoolName : "(Chưa gán trường)",
 
-    //            RelationName = u.Students.Any()
-    //                ? (u.Students.FirstOrDefault()!.RelationName ?? "Phụ huynh")
-    //                : "Phụ huynh",
-
-    //            Children = u.Students.Select(s => new ParentAccountDto.ParentStudentDetailDto
-    //            {
-    //                FullName = s.FullName,
-    //                Gender = s.Gender,
-    //                DateOfBirth = s.DateOfBirth.HasValue
-    //                    ? s.DateOfBirth.Value.ToDateTime(TimeOnly.MinValue)
-    //                    : null,
-
-    //                ClassId = s.StudentClasses.Any()
-    //                    ? s.StudentClasses.FirstOrDefault()!.ClassId
-    //                    : (Guid?)null,
-
-    //                ClassName = s.StudentClasses.Any() && s.StudentClasses.FirstOrDefault()!.Class != null
-    //                    ? s.StudentClasses.FirstOrDefault()!.Class!.ClassName
-    //                    : "Chưa xếp lớp"
-    //            }).ToList()
-    //        })
-    //        .ToListAsync(cancellationToken);
-    //}
-
-    //#endregion
     #region 🟢 GetAllAsync
 
     public async Task<List<ParentAccountDto>> Handle(
@@ -203,151 +168,121 @@ public class ManagerParentHandler :
                 )
             );
         }
-
-        return await query
+        // 1️⃣ Lấy list user trước
+        var users = await query
             .OrderByDescending(u => u.CreatedAt)
-            .Select(u => new ParentAccountDto
-            {
-                UserId = u.UserId,
-                FullName = u.FullName,
-                Email = u.Email,
-                Phone = u.Phone,
-                Role = u.Role.RoleName,
-                IsActive = u.IsActive,
-                CreatedAt = u.CreatedAt,
-                SchoolName = u.School != null ? u.School.SchoolName : "(Chưa gán trường)",
-
-                RelationName = u.Students
-                    .Where(s =>
-                        s.SchoolId == schoolId &&
-                        s.IsActive &&
-                        (!classIdFilter.HasValue ||
-                         s.StudentClasses.Any(sc => sc.ClassId == classIdFilter.Value))
-                    )
-                    .Select(s => s.RelationName ?? "Phụ huynh")
-                    .FirstOrDefault() ?? "Phụ huynh",
-
-                Children = u.Students
-                    .Where(s =>
-                        s.SchoolId == schoolId &&
-                        s.IsActive &&
-                        (!classIdFilter.HasValue ||
-                         s.StudentClasses.Any(sc => sc.ClassId == classIdFilter.Value))
-                    )
-                    .Select(s => new ParentAccountDto.ParentStudentDetailDto
-                    {
-                        FullName = s.FullName,
-                        Gender = s.Gender,
-                        DateOfBirth = s.DateOfBirth.HasValue
-                            ? s.DateOfBirth.Value.ToDateTime(TimeOnly.MinValue)
-                            : null,
-                        ClassId = s.StudentClasses.Any()
-                            ? s.StudentClasses.FirstOrDefault()!.ClassId
-                            : (Guid?)null,
-                        ClassName = s.StudentClasses.Any() &&
-                                    s.StudentClasses.FirstOrDefault()!.Class != null
-                                ? s.StudentClasses.FirstOrDefault()!.Class!.ClassName
-                                : "Chưa xếp lớp"
-                    })
-                    .ToList()
-            })
             .ToListAsync(cancellationToken);
+
+        // 🔹 Lấy tất cả StudentId liên quan
+        var allStudentIds = users
+            .SelectMany(u => u.Students
+                .Where(s =>
+                    s.SchoolId == schoolId &&
+                    s.IsActive &&
+                    (!classIdFilter.HasValue ||
+                     s.StudentClasses.Any(sc => sc.ClassId == classIdFilter.Value)))
+                .Select(s => s.StudentId))
+            .Distinct()
+            .ToList();
+
+        // 🔹 Map StudentId -> HasUnpaid (true/false)
+        var studentUnpaidMap = await BuildStudentUnpaidMapAsync(allStudentIds, cancellationToken);
+
+        // 2️⃣ Map sang DTO
+        var result = users
+            .Select(u =>
+            {
+                bool isDefaultPassword = false;
+
+                if (!string.IsNullOrWhiteSpace(u.PasswordHash) &&
+                    u.PasswordHash.StartsWith("AQAAAA", StringComparison.Ordinal))
+                {
+                    var verify = _passwordHasher.VerifyHashedPassword(u, u.PasswordHash, "@1");
+                    isDefaultPassword = verify == PasswordVerificationResult.Success;
+                }
+
+                if (u.PasswordHash == "@1")
+                {
+                    isDefaultPassword = true;
+                }
+
+                var childrenInSchool = u.Students
+                    .Where(s =>
+                        s.SchoolId == schoolId &&
+                        s.IsActive &&
+                        (!classIdFilter.HasValue ||
+                         s.StudentClasses.Any(sc => sc.ClassId == classIdFilter.Value)))
+                    .ToList();
+
+                var childIds = childrenInSchool.Select(s => s.StudentId).ToList();
+
+                // 🔥 Tính trạng thái thanh toán cho phụ huynh
+                var hasAnyInvoice = childIds.Any(id => studentUnpaidMap.ContainsKey(id))
+                                    || childIds.Any(id => studentUnpaidMap.ContainsKey(id) == false);
+                // Có học sinh nhưng không có record trong map => chưa có invoice nào
+
+                var hasUnpaid = childIds.Any(id =>
+                    studentUnpaidMap.TryGetValue(id, out var flag) && flag);
+
+                string paymentStatus;
+                if (!childIds.Any())
+                {
+                    paymentStatus = "Chưa tạo hóa đơn";
+                }
+                else if (hasUnpaid)
+                {
+                    paymentStatus = "Chưa thanh toán";
+                }
+                else if (childIds.Any(id => studentUnpaidMap.ContainsKey(id)))
+                {
+                    paymentStatus = "Đã thanh toán";
+                }
+                else
+                {
+                    paymentStatus = "Chưa tạo hóa đơn";
+                }
+
+                return new ParentAccountDto
+                {
+                    UserId = u.UserId,
+                    FullName = u.FullName,
+                    Email = u.Email,
+                    Phone = u.Phone,
+                    Role = u.Role.RoleName,
+                    IsActive = u.IsActive,
+                    CreatedAt = u.CreatedAt,
+                    SchoolName = u.School != null ? u.School.SchoolName : "(Chưa gán trường)",
+
+                    IsDefaultPassword = isDefaultPassword,
+                    PaymentStatus = paymentStatus,   // 👈 Gán trạng thái thanh toán
+
+                    RelationName = childrenInSchool
+                        .Select(s => s.RelationName ?? "Phụ huynh")
+                        .FirstOrDefault() ?? "Phụ huynh",
+
+                    Children = childrenInSchool
+                        .Select(s => new ParentAccountDto.ParentStudentDetailDto
+                        {
+                            StudentId = s.StudentId,
+                            FullName = s.FullName,
+                            Gender = s.Gender,
+                            DateOfBirth = s.DateOfBirth.HasValue
+                                ? s.DateOfBirth.Value.ToDateTime(TimeOnly.MinValue)
+                                : null,
+                            ClassId = s.StudentClasses.FirstOrDefault()?.ClassId,
+                            ClassName = s.StudentClasses.FirstOrDefault()?.Class?.ClassName
+                                        ?? "Chưa xếp lớp"
+                        })
+                        .ToList()
+                };
+            })
+            .ToList();
+
+        return result;
     }
 
     #endregion
 
-
-
-    //#region 🟡 CreateAsync
-
-    //public async Task<AccountDto> Handle(
-    //    CreateParentCommand command,
-    //    CancellationToken cancellationToken)
-    //{
-    //    var request = command.Request;
-
-    //    var role = await _repo.Roles
-    //        .FirstOrDefaultAsync(r => r.RoleName.ToLower() == "parent", cancellationToken);
-
-    //    if (role == null)
-    //        throw new InvalidOperationException("Không tìm thấy vai trò 'Parent'.");
-
-    //    var normalizedEmail = string.IsNullOrWhiteSpace(request.Email)
-    //        ? null
-    //        : request.Email.Trim().ToLower();
-
-    //    var exists = await _repo.Users.AnyAsync(
-    //        u => (normalizedEmail != null && u.Email == normalizedEmail) || u.Phone == request.Phone,
-    //        cancellationToken);
-
-    //    if (exists)
-    //        throw new InvalidOperationException(
-    //            normalizedEmail == null
-    //                ? "Số điện thoại đã tồn tại."
-    //                : "Email hoặc số điện thoại đã tồn tại."
-    //        );
-
-    //    var parent = new User
-    //    {
-    //        UserId = Guid.NewGuid(),
-    //        FullName = request.FullName.Trim(),
-    //        Email = normalizedEmail,
-    //        Phone = request.Phone.Trim(),
-    //        RoleId = role.RoleId,
-    //        SchoolId = request.SchoolId,
-    //        LanguagePref = "vi",
-    //        IsActive = true,
-    //        CreatedAt = DateTime.UtcNow,
-    //        CreatedBy = request.CreatedBy
-    //    };
-    //    // ✅ dùng PasswordHasher
-    //    parent.PasswordHash = _passwordHasher.HashPassword(parent, request.Password);
-
-
-    //    await _repo.AddAsync(parent);
-
-    //    // tạo con
-    //    foreach (var child in request.Children)
-    //    {
-    //        var student = new Student
-    //        {
-    //            StudentId = Guid.NewGuid(),
-    //            FullName = child.FullName.Trim(),
-    //            Gender = child.Gender,
-    //            DateOfBirth = child.DateOfBirth != null
-    //                ? DateOnly.FromDateTime(child.DateOfBirth.Value)
-    //                : null,
-    //            SchoolId = request.SchoolId,
-    //            ParentId = parent.UserId,
-    //            RelationName = request.RelationName ?? "Phụ huynh",
-    //            IsActive = true,
-    //            CreatedAt = DateTime.UtcNow,
-    //        };
-    //        await _repo.AddStudentAsync(student);
-
-    //        var studentClass = new StudentClass
-    //        {
-    //            StudentId = student.StudentId,
-    //            ClassId = child.ClassId,
-    //            JoinedDate = DateOnly.FromDateTime(DateTime.UtcNow),
-    //            RegistStatus = true
-    //        };
-    //        await _repo.AddStudentClassAsync(studentClass);
-    //    }
-
-    //    return new AccountDto
-    //    {
-    //        UserId = parent.UserId,
-    //        FullName = parent.FullName,
-    //        Email = parent.Email ?? string.Empty,
-    //        Phone = parent.Phone,
-    //        Role = "Parent",
-    //        IsActive = parent.IsActive,
-    //        CreatedAt = parent.CreatedAt
-    //    };
-    //}
-
-    //#endregion
     #region 🟡 CreateAsync
 
     public async Task<AccountDto> Handle(
@@ -459,113 +394,7 @@ public class ManagerParentHandler :
 
     #endregion
 
-
-    //#region 🟠 UpdateAsync
-
-    //public async Task<AccountDto?> Handle(
-    //    UpdateParentCommand command,
-    //    CancellationToken cancellationToken)
-    //{
-    //    var request = command.Request;
-
-    //    var user = await _repo.Users
-    //        .Include(u => u.Role)
-    //        .Include(u => u.Students)
-    //            .ThenInclude(s => s.StudentClasses)
-    //        .FirstOrDefaultAsync(u => u.UserId == command.UserId, cancellationToken);
-
-    //    if (user == null || user.Role.RoleName.ToLower() != "parent")
-    //        return null;
-
-    //    // update parent
-    //    if (!string.IsNullOrWhiteSpace(request.FullName))
-    //        user.FullName = request.FullName.Trim();
-    //    if (!string.IsNullOrWhiteSpace(request.Email))
-    //        user.Email = request.Email.Trim().ToLower();
-    //    if (!string.IsNullOrWhiteSpace(request.Phone))
-    //        user.Phone = request.Phone.Trim();
-    //    if (!string.IsNullOrWhiteSpace(request.Password))
-    //    {
-    //        // ✅ đổi mật khẩu dùng PasswordHasher
-    //        user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
-    //    }
-    //    if (!string.IsNullOrWhiteSpace(request.Gender))
-    //        user.LanguagePref = request.Gender; // (theo code cũ của bạn)
-
-    //    user.UpdatedBy = request.UpdatedBy;
-    //    user.UpdatedAt = DateTime.UtcNow;
-
-    //    await _repo.UpdateAsync(user);
-
-    //    // update / tạo con
-    //    if (request.Children != null && request.Children.Any())
-    //    {
-    //        foreach (var childDto in request.Children)
-    //        {
-    //            var existingChild = user.Students.FirstOrDefault(s => s.FullName == childDto.FullName);
-
-    //            if (existingChild != null)
-    //            {
-    //                if (!string.IsNullOrWhiteSpace(childDto.FullName))
-    //                    existingChild.FullName = childDto.FullName.Trim();
-
-    //                if (!string.IsNullOrWhiteSpace(childDto.Gender))
-    //                    existingChild.Gender = childDto.Gender;
-
-    //                if (childDto.DateOfBirth.HasValue)
-    //                    existingChild.DateOfBirth = DateOnly.FromDateTime(childDto.DateOfBirth.Value);
-
-    //                existingChild.RelationName = request.RelationName ?? "Phụ huynh";
-    //                existingChild.UpdatedAt = DateTime.UtcNow;
-
-    //                await _repo.UpdateStudentAsync(existingChild);
-    //            }
-    //            else
-    //            {
-    //                var newStudent = new Student
-    //                {
-    //                    StudentId = Guid.NewGuid(),
-    //                    FullName = childDto.FullName.Trim(),
-    //                    Gender = childDto.Gender,
-    //                    DateOfBirth = childDto.DateOfBirth != null
-    //                        ? DateOnly.FromDateTime(childDto.DateOfBirth.Value)
-    //                        : null,
-    //                    SchoolId = user.SchoolId!.Value,
-    //                    ParentId = user.UserId,
-    //                    RelationName = request.RelationName ?? "Phụ huynh",
-    //                    IsActive = true,
-    //                    CreatedAt = DateTime.UtcNow,
-    //                };
-
-    //                await _repo.AddStudentAsync(newStudent);
-
-    //                var studentClass = new StudentClass
-    //                {
-    //                    StudentId = newStudent.StudentId,
-    //                    ClassId = childDto.ClassId,
-    //                    JoinedDate = DateOnly.FromDateTime(DateTime.UtcNow),
-    //                    RegistStatus = true
-    //                };
-
-    //                await _repo.AddStudentClassAsync(studentClass);
-    //            }
-    //        }
-    //    }
-
-    //    return new AccountDto
-    //    {
-    //        UserId = user.UserId,
-    //        FullName = user.FullName,
-    //        Email = user.Email ?? string.Empty,
-    //        Phone = user.Phone ?? string.Empty,
-    //        Role = "Parent",
-    //        IsActive = user.IsActive,
-    //        CreatedAt = user.CreatedAt
-    //    };
-    //}
-
-    //#endregion
-    #region 🟠 UpdateAsync 
+    #region 🟠 UpdateAsync
 
     public async Task<AccountDto?> Handle(
         UpdateParentCommand command,
@@ -647,6 +476,33 @@ public class ManagerParentHandler :
                     await _repo.UpdateStudentAsync(existingChild);
 
                     // (option) nếu muốn update luôn lớp: xoá class cũ / thêm class mới ở đây
+                    // ⬇⬇⬇ THÊM ĐOẠN NÀY Ở SAU VÒNG foreach ⬇⬇⬇
+
+                    // Các StudentId còn muốn giữ lại (chỉ lấy những thằng có StudentId)
+                    var keepIds = request.Children
+                        .Where(c => c.StudentId.HasValue)
+                        .Select(c => c.StudentId!.Value)
+                        .ToHashSet();
+
+                    // Những đứa đang tồn tại mà không còn trong danh sách keepIds => xoá
+                    var childrenToDelete = user.Students
+                        .Where(s => !keepIds.Contains(s.StudentId))
+                        .ToList();
+
+                    foreach (var child in childrenToDelete)
+                    {
+                        // nếu có StudentClasses và bạn muốn xoá luôn thì làm thêm:
+                        // foreach (var sc in child.StudentClasses.ToList())
+                        // {
+                        //     await _repo.DeleteStudentClassAsync(sc);
+                        // }
+
+                        await _repo.DeleteStudentAsync(child); // hard delete
+
+                        // hoặc soft delete:
+                        // child.IsActive = false;
+                        // await _repo.UpdateStudentAsync(child);
+                    }
                 }
                 else
                 {
@@ -671,7 +527,7 @@ public class ManagerParentHandler :
                     var studentClass = new StudentClass
                     {
                         StudentId = newStudent.StudentId,
-                        ClassId = childDto.ClassId,
+                        ClassId = childDto.ClassId.Value,
                         JoinedDate = DateOnly.FromDateTime(DateTime.UtcNow),
                         RegistStatus = true
                     };
@@ -715,39 +571,6 @@ public class ManagerParentHandler :
 
     #endregion
 
-    //#region 🔴 DeleteAsync
-
-    //public async Task<bool> Handle(
-    //    DeleteParentCommand command,
-    //    CancellationToken cancellationToken)
-    //{
-    //    var user = await _repo.Users
-    //        .Include(u => u.Students)
-    //            .ThenInclude(s => s.StudentClasses)
-    //        .FirstOrDefaultAsync(u => u.UserId == command.UserId, cancellationToken);
-
-    //    if (user == null)
-    //        return false;
-
-    //    var studentsToDelete = user.Students.ToList();
-
-    //    foreach (var student in studentsToDelete)
-    //    {
-    //        var studentClassesToDelete = student.StudentClasses.ToList();
-
-    //        foreach (var sc in studentClassesToDelete)
-    //        {
-    //            await _repo.DeleteStudentClassAsync(sc);
-    //        }
-
-    //        await _repo.DeleteStudentAsync(student);
-    //    }
-
-    //    await _repo.DeleteAsync(user);
-    //    return true;
-    //}
-
-    //#endregion
     #region 🔴 DeleteAsync
 
     public async Task<bool> Handle(
@@ -1011,6 +834,4 @@ public class ManagerParentHandler :
     }
 
     #endregion
-
-
 }

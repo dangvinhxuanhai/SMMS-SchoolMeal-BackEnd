@@ -26,6 +26,15 @@ public class ScheduleMealRepository : IScheduleMealRepository
             .Where(x => x.SchoolId == schoolId)
             .CountAsync(ct);
     }
+    public async Task<IReadOnlyList<ScheduleMeal>> GetAllBySchoolAsync(
+        Guid schoolId,
+        CancellationToken ct = default)
+    {
+        return await _context.ScheduleMeals
+            .Where(x => x.SchoolId == schoolId)
+            .OrderByDescending(x => x.WeekStart)
+            .ToListAsync(ct);
+    }
 
     public async Task<IReadOnlyList<ScheduleMeal>> GetPagedBySchoolAsync(
         Guid schoolId,
@@ -126,6 +135,40 @@ public class ScheduleMealRepository : IScheduleMealRepository
             })
             .OrderBy(x => x.DailyMealId)
             .ThenBy(x => x.SortOrder ?? int.MaxValue)
+            .ToListAsync(ct);
+    }
+
+    public Task<ScheduleMeal?> GetByIdAsync(
+        long scheduleMealId,
+        CancellationToken ct = default)
+    {
+        return _context.ScheduleMeals
+            .FirstOrDefaultAsync(x => x.ScheduleMealId == scheduleMealId, ct);
+        // Nếu sau này cần DailyMeals thì có thể đổi thành:
+        // return _context.ScheduleMeals
+        //     .Include(s => s.DailyMeals)
+        //     .FirstOrDefaultAsync(x => x.ScheduleMealId == scheduleMealId, ct);
+    }
+
+    public async Task<IReadOnlyList<FoodIngredientInfo>> GetFoodIngredientsForFoodsAsync(
+    IEnumerable<int> foodIds,
+    CancellationToken ct = default)
+    {
+        var ids = foodIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return Array.Empty<FoodIngredientInfo>();
+
+        return await _context.FoodItemIngredients
+            .Where(fi => ids.Contains(fi.FoodId))
+            .Select(fi => new FoodIngredientInfo
+            {
+                FoodId = fi.FoodId,
+                IngredientId = fi.IngredientId,
+                IngredientName = fi.Ingredient.IngredientName,
+                QuantityGram = fi.QuantityGram
+            })
+            .OrderBy(x => x.FoodId)
+            .ThenBy(x => x.IngredientName)
             .ToListAsync(ct);
     }
 }

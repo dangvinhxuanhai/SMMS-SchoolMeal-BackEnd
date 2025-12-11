@@ -35,4 +35,10 @@ public interface IManagerPaymentSettingRepository
            byte toMonth,
            int? excludeSettingId = null,
            CancellationToken cancellationToken = default);
+    /// Lấy cấu hình thu phí trùng chính xác khoảng tháng [fromMonth, toMonth]
+    Task<SchoolPaymentSetting?> GetExactRangeAsync(
+        Guid schoolId,
+        short fromMonth,
+        short toMonth,
+        CancellationToken ct);
 }

@@ -30,6 +30,7 @@ namespace SMMS.Application.Features.auth.DTOs
     public class UpdateUserProfileDto
     {
         public string FullName { get; set; }
+        public string? AvatarUrl { get; set; }     // Hứng link ảnh (nếu không upload file mới)
         public string Email { get; set; }
         public string Phone { get; set; }
         public IFormFile? AvatarFile { get; set; }
@@ -43,6 +44,7 @@ namespace SMMS.Application.Features.auth.DTOs
         public string? FullName { get; set; }
         public IFormFile? AvatarFile { get; set; }
         public string Relation { get; set; }
+        public string? AvatarUrl { get; set; }     // Hứng link ảnh (nếu không upload file mới)
         public DateOnly? DateOfBirth { get; set; }
         public List<string>? AllergyFoods { get; set; } = new();
         public string? Gender { get; set; }

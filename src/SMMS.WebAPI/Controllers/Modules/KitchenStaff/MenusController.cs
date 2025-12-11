@@ -1,15 +1,19 @@
 using System.Security.Claims;
+using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.ExtendedProperties;
+using DocumentFormat.OpenXml.Office2010.Excel;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.Meal.Command;
 using SMMS.Application.Features.Meal.DTOs;
 using SMMS.Application.Features.Meal.Queries;
+using SMMS.Application.Features.Plan.Commands;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "KitchenStaff")]
 public class MenusController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -26,17 +30,24 @@ public class MenusController : ControllerBase
         [FromQuery] short? weekNo,
         CancellationToken ct)
     {
-        var schoolId = GetSchoolIdFromToken();
-
-        var query = new GetMenuListQuery
+        try
         {
-            SchoolId = schoolId,
-            YearId = yearId,
-            WeekNo = weekNo
-        };
+            var schoolId = GetSchoolIdFromToken();
 
-        var result = await _mediator.Send(query, ct);
-        return Ok(result);
+            var query = new GetMenuListQuery
+            {
+                SchoolId = schoolId,
+                YearId = yearId,
+                WeekNo = weekNo
+            };
+
+            var result = await _mediator.Send(query, ct);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // GET api/menus/{id}
@@ -45,24 +56,38 @@ public class MenusController : ControllerBase
         int id,
         CancellationToken ct)
     {
-        var schoolId = GetSchoolIdFromToken();
-
-        var query = new GetMenuDetailQuery
+        try
         {
-            MenuId = id,
-            SchoolId = schoolId
-        };
+            var schoolId = GetSchoolIdFromToken();
 
-        var result = await _mediator.Send(query, ct);
-        return Ok(result);
+            var query = new GetMenuDetailQuery
+            {
+                MenuId = id,
+                SchoolId = schoolId
+            };
+
+            var result = await _mediator.Send(query, ct);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // DELETE api/menus/{id}/hard
     [HttpDelete("{id:int}/hard")]
     public async Task<IActionResult> HardDelete(int id)
     {
-        await _mediator.Send(new DeleteMenuHardCommand(id));
-        return NoContent();
+        try
+        {
+            await _mediator.Send(new DeleteMenuHardCommand(id));
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // ================= helper lấy claim =================

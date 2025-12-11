@@ -20,18 +20,15 @@ public class CreateFoodItemCommandHandler
     private readonly IFoodItemRepository _foodItemRepository;
     private readonly IFoodItemIngredientRepository _foodItemIngredientRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IAiMenuAdminClient _aiMenuAdmin;
 
     public CreateFoodItemCommandHandler(
         IFoodItemRepository foodItemRepository,
         IFoodItemIngredientRepository foodItemIngredientRepository,
-        IUnitOfWork unitOfWork,
-        IAiMenuAdminClient aiMenuAdmin)
+        IUnitOfWork unitOfWork)
     {
         _foodItemRepository = foodItemRepository;
         _foodItemIngredientRepository = foodItemIngredientRepository;
         _unitOfWork = unitOfWork;
-        _aiMenuAdmin = aiMenuAdmin;
     }
 
     public async Task<FoodItemDto> Handle(
@@ -91,11 +88,6 @@ public class CreateFoodItemCommandHandler
             }).ToList()
         };
 
-        // 2. Gọi AI rebuild cho trường đó
-        // MVP: gọi trực tiếp (chấp nhận hơi chậm)
-        await _aiMenuAdmin.RebuildIndexAndGraphAsync(request.SchoolId, rebuildIndex: true, rebuildGraph: true, cancellationToken);
-
-
         return dto;
     }
 }
@@ -106,18 +98,15 @@ public class UpdateFoodItemCommandHandler
     private readonly IFoodItemRepository _foodItemRepository;
     private readonly IFoodItemIngredientRepository _foodItemIngredientRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IAiMenuAdminClient _aiMenuAdmin;
 
     public UpdateFoodItemCommandHandler(
         IFoodItemRepository foodItemRepository,
         IFoodItemIngredientRepository foodItemIngredientRepository,
-        IUnitOfWork unitOfWork,
-        IAiMenuAdminClient aiMenuAdmin)
+        IUnitOfWork unitOfWork)
     {
         _foodItemRepository = foodItemRepository;
         _foodItemIngredientRepository = foodItemIngredientRepository;
         _unitOfWork = unitOfWork;
-        _aiMenuAdmin = aiMenuAdmin;
     }
 
     public async Task<FoodItemDto> Handle(
@@ -176,10 +165,6 @@ public class UpdateFoodItemCommandHandler
             }).ToList()
         };
 
-        // 2. Gọi AI rebuild cho trường đó
-        // MVP: gọi trực tiếp (chấp nhận hơi chậm)
-        await _aiMenuAdmin.RebuildIndexAndGraphAsync(food.SchoolId, rebuildIndex: true, rebuildGraph: true, cancellationToken);
-
         return dto;
     }
 }
@@ -189,16 +174,13 @@ public class DeleteFoodItemCommandHandler
 {
     private readonly IFoodItemRepository _repository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IAiMenuAdminClient _aiMenuAdmin;
 
     public DeleteFoodItemCommandHandler(
         IFoodItemRepository repository,
-        IUnitOfWork unitOfWork,
-        IAiMenuAdminClient aiMenuAdmin)
+        IUnitOfWork unitOfWork)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
-        _aiMenuAdmin = aiMenuAdmin;
     }
 
     public async Task Handle(
@@ -228,10 +210,6 @@ public class DeleteFoodItemCommandHandler
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        // 2. Gọi AI rebuild cho trường đó
-        // MVP: gọi trực tiếp (chấp nhận hơi chậm)
-        await _aiMenuAdmin.RebuildIndexAndGraphAsync(entity.SchoolId, rebuildIndex: true, rebuildGraph: true, cancellationToken);
 
     }
 }

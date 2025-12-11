@@ -20,6 +20,6 @@ public interface IManagerNotificationRepository
     Task UpdateAsync(Notification entity);
     Task DeleteAsync(Notification entity);
     Task<List<NotificationRecipient>> GetRecipientsAsync(long notificationId);
-
+    Task<long> CountBySenderAsync(Guid senderId);
     Task SaveChangesAsync();
 }

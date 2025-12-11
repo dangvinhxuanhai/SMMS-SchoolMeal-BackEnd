@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using DocumentFormat.OpenXml.ExtendedProperties;
+using DocumentFormat.OpenXml.Wordprocessing;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -48,7 +50,9 @@ public class PurchaseOrdersController : ControllerBase
     public async Task<ActionResult<KsPurchaseOrderDto>> CreateFromPlan(
         [FromBody] CreatePurchaseOrderFromPlanDto request)
     {
-        var command = new CreatePurchaseOrderFromPlanCommand
+        try
+        {
+            var command = new CreatePurchaseOrderFromPlanCommand
         {
             PlanId = request.PlanId,
             SupplierName = request.SupplierName,
@@ -58,6 +62,11 @@ public class PurchaseOrdersController : ControllerBase
         };
         var result = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { orderId = result.OrderId }, result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message});
+        }
     }
 
     // GET list
@@ -87,18 +96,31 @@ public class PurchaseOrdersController : ControllerBase
         int orderId,
         [FromBody] UpdatePurchaseOrderHeaderCommand body)
     {
-        var cmd = body with { OrderId = orderId, SchoolId = GetSchoolIdFromToken() };
-        var result = await _mediator.Send(cmd);
-        return Ok(result);
+        try {
+            var cmd = body with { OrderId = orderId, SchoolId = GetSchoolIdFromToken() };
+            var result = await _mediator.Send(cmd);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message});
+        }
     }
 
     // DELETE order
     [HttpDelete("{orderId:int}")]
     public async Task<IActionResult> Delete(int orderId)
     {
-        var cmd = new DeletePurchaseOrderCommand(orderId, GetSchoolIdFromToken());
-        await _mediator.Send(cmd);
-        return NoContent();
+        try
+        {
+            var cmd = new DeletePurchaseOrderCommand(orderId, GetSchoolIdFromToken());
+            await _mediator.Send(cmd);
+            return NoContent();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is KeyNotFoundException)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // PUT lines
@@ -107,14 +129,21 @@ public class PurchaseOrdersController : ControllerBase
         int orderId,
         [FromBody] List<SMMS.Application.Features.Plan.DTOs.PurchaseOrderLineUpdateDto> lines)
     {
-        var cmd = new UpdatePurchaseOrderLinesCommand(
-            orderId,
-            GetSchoolIdFromToken(),
-            GetCurrentUserId(),
-            lines);
+        try
+        {
+            var cmd = new UpdatePurchaseOrderLinesCommand(
+                orderId,
+                GetSchoolIdFromToken(),
+                GetCurrentUserId(),
+                lines);
 
-        var result = await _mediator.Send(cmd);
-        return Ok(result);
+            var result = await _mediator.Send(cmd);
+            return Ok(result);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is KeyNotFoundException)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 
     // DELETE 1 line
@@ -123,8 +152,15 @@ public class PurchaseOrdersController : ControllerBase
         int orderId,
         int linesId)
     {
-        var cmd = new DeletePurchaseOrderLineCommand(orderId, linesId, GetSchoolIdFromToken());
-        await _mediator.Send(cmd);
-        return NoContent();
+        try
+        {
+            var cmd = new DeletePurchaseOrderLineCommand(orderId, linesId, GetSchoolIdFromToken());
+            await _mediator.Send(cmd);
+            return NoContent();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException || ex is ArgumentException || ex is KeyNotFoundException)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
     }
 }

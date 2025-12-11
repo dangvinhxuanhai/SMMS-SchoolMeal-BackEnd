@@ -82,4 +82,19 @@ public class ManagerPaymentSettingRepository : IManagerPaymentSettingRepository
                 && toMonth >= x.FromMonth,
                 cancellationToken);
     }
+    public async Task<SchoolPaymentSetting?> GetExactRangeAsync(
+    Guid schoolId,
+    short fromMonth,
+    short toMonth,
+    CancellationToken ct)
+    {
+        return await _context.SchoolPaymentSettings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(
+                x => x.SchoolId == schoolId
+                     && x.IsActive
+                     && x.FromMonth == fromMonth
+                     && x.ToMonth == toMonth,
+                ct);
+    }
 }
