@@ -65,36 +65,6 @@ public class ManagerNotificationsController : ControllerBase
         var result = await _mediator.Send(
             new CreateManagerNotificationCommand(request, senderId, schoolId));
 
-        try
-        {
-            var userIdsToNotify = new List<Guid>();
-            if (request.SendToTeachers)
-            {
-                var teacherIds = await _userRepository.GetIdsByRoleAsync("Warden");
-                userIdsToNotify.AddRange(teacherIds);
-            }
-            if (request.SendToParents)
-            {
-                var parentIds = await _userRepository.GetIdsByRoleAsync("Parent");
-                userIdsToNotify.AddRange(parentIds);
-            }
-
-            if (request.SendToKitchenStaff)
-            {
-                var kitchenIds = await _userRepository.GetIdsByRoleAsync("KitchenStaff");
-                userIdsToNotify.AddRange(kitchenIds);
-            }
-            userIdsToNotify = userIdsToNotify.Distinct().ToList();
-            if (userIdsToNotify.Any())
-            {
-                await _realtimeService.SendToUsersAsync(userIdsToNotify, result);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[SignalR Error] {ex.Message}");
-        }
-
         return Ok(new { message = "Tạo thông báo thành công!", data = result });
     }
 

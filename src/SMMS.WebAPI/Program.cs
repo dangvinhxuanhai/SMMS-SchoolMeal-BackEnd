@@ -169,11 +169,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.SetIsOriginAllowed(origin =>
-            {
-                var allowed = new[] { "http://localhost:3000", "https://smms-school-meal-fe.vercel.app" };
-                return allowed.Contains(origin) || origin.EndsWith(".ngrok-free.dev");
-            })
+        policy.WithOrigins("http://localhost:3000", "https://edumeal.id.vn")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();

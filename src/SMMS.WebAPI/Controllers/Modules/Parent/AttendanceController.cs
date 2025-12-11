@@ -8,6 +8,7 @@ using SMMS.Application.Features.Wardens.Queries;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using SMMS.Application.Features.Manager.Commands;
 
 namespace SMMS.WebAPI.Controllers.Modules.Parent
 {
