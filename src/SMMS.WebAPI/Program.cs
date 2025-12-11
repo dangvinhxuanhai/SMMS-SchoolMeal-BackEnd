@@ -205,4 +205,7 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+app.MapGet("/index", () => "Hello from .NET 8 Minimal API!");
+
 app.Run();
+
