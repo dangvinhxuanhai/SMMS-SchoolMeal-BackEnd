@@ -6,6 +6,7 @@ using SMMS.Application.Common.Interfaces;
 using SMMS.Application.Common.Validators;
 using SMMS.Application.Features.auth.Handlers;
 using SMMS.Application.Features.auth.Interfaces;
+using SMMS.Application.Features.billing.Commands;
 using SMMS.Application.Features.billing.Handlers;
 using SMMS.Application.Features.foodmenu.Handlers;
 using SMMS.Application.Features.Identity.Interfaces;
@@ -49,7 +50,6 @@ public static class SerivceDI
         //  mediatr
         services.AddMediatR(cfg =>
         {
-            cfg.RegisterServicesFromAssembly(typeof(MarkNotificationReadCommand).Assembly);
             cfg.RegisterServicesFromAssemblyContaining<ManagerAccountHandler>();
             cfg.RegisterServicesFromAssemblyContaining<ManagerClassHandler>();
             cfg.RegisterServicesFromAssemblyContaining<ManagerFinanceHandler>();

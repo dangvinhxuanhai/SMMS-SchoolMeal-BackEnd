@@ -25,5 +25,3 @@ public record DeleteManagerNotificationCommand(
     long NotificationId,
     Guid SenderId
 ) : IRequest<bool>;
-
-public record MarkNotificationReadCommand(long NotificationId, Guid UserId) : IRequest<bool>;
