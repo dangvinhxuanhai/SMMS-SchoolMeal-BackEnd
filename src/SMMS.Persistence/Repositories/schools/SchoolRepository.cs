@@ -4,6 +4,7 @@ using SMMS.Persistence.Data;
 using SMMS.Domain.Entities.school;
 using SMMS.Domain.Entities.auth;
 using Microsoft.AspNetCore.Identity;
+using DocumentFormat.OpenXml.ExtendedProperties;
 
 namespace SMMS.Persistence.Repositories.schools
 {
@@ -22,6 +23,7 @@ namespace SMMS.Persistence.Repositories.schools
         {
             return _context.Schools
                 .Include(s => s.Students)
+                .Include(s => s.Users)
                 .AsNoTracking();
         }
 
@@ -48,6 +50,7 @@ namespace SMMS.Persistence.Repositories.schools
         {
             return await _context.Schools
                 .Include(s => s.Students)
+                .Include(s => s.Users)
                 .FirstOrDefaultAsync(s => s.SchoolId == id);
         }
 
@@ -89,18 +92,33 @@ namespace SMMS.Persistence.Repositories.schools
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateAsync(School school)
+        public async Task UpdateAsync(School school, bool? managerIsActive = null)
         {
-            // ❌ Kiểm tra trùng Email (ngoài trường hiện tại)
-            var emailExists = await _context.Schools
-                .AnyAsync(s => s.ContactEmail == school.ContactEmail && s.SchoolId != school.SchoolId);
-            if (emailExists)
-                throw new Exception("Email trường đã tồn tại. Vui lòng chọn email khác.");
-            // ❌ Kiểm tra trùng Hotline (ngoài trường hiện tại)
-            var phoneExists = await _context.Schools
-                .AnyAsync(s => s.Hotline == school.Hotline && s.SchoolId != school.SchoolId);
-            if (phoneExists)
-                throw new Exception("Số điện thoại trường đã tồn tại. Vui lòng chọn số khác.");
+            var manager = await _context.Users
+             .FirstOrDefaultAsync(u => u.SchoolId == school.SchoolId && u.RoleId == 2);
+            if (manager != null)
+            {
+                // Nếu Hotline của school thay đổi, update luôn phone của manager
+                if (!string.IsNullOrEmpty(school.Hotline) && school.Hotline != manager.Phone)
+                {
+                    manager.Phone = school.Hotline;
+                    manager.UpdatedAt = DateTime.Now;
+                }
+                if (!string.IsNullOrEmpty(school.ContactEmail) && school.ContactEmail != manager.Email)
+                {
+                    manager.Email = school.ContactEmail;
+                    manager.UpdatedAt = DateTime.Now;
+                }
+                // Nếu cần update trạng thái manager
+                if (managerIsActive.HasValue)
+                {
+                    manager.IsActive = managerIsActive.Value;
+                    manager.UpdatedAt = DateTime.Now;
+                }
+
+                _context.Users.Update(manager);
+            }
+
             _context.Schools.Update(school);
             await _context.SaveChangesAsync();
         }
