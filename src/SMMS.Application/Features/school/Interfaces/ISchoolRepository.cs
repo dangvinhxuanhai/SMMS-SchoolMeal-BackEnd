@@ -14,5 +14,10 @@ namespace SMMS.Application.Features.school.Interfaces
         Task DeleteAsync(Guid id);
         Task<bool> UpdateManagerStatusAsync(Guid schoolId, bool isActive);
         Task<bool?> GetManagerStatusAsync(Guid schoolId);
+
+        /// <summary>
+        /// Trả về true nếu có ít nhất 1 School có NeedRebuildAiIndex = false
+        /// </summary>
+        Task<bool> AnyNeedRebuildAsync(CancellationToken cancellationToken = default);
     }
 }

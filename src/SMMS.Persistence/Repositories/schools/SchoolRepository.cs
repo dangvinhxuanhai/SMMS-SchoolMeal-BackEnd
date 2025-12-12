@@ -140,5 +140,11 @@ namespace SMMS.Persistence.Repositories.schools
 
             return manager.IsActive;
         }
+
+        public async Task<bool> AnyNeedRebuildAsync(CancellationToken cancellationToken = default)
+        {
+            return await _context.Schools.AnyAsync(s => s.NeedRebuildAiIndex == false, cancellationToken);
+            // schools có NeedRebuildAiIndex = false nghia la truong do can dc build lai AI index
+        }
     }
 }
