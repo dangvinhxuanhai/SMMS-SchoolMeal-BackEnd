@@ -32,13 +32,15 @@ builder.Services.Configure<AiMenuOptions>(
 builder.Services.AddHttpClient<IAiMenuClient, AiMenuClient>((sp, client) =>
 {
     var options = sp.GetRequiredService<IOptions<AiMenuOptions>>().Value;
-    client.BaseAddress = new Uri(options.BaseUrl);
+    if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+        client.BaseAddress = new Uri(options.BaseUrl);
     client.Timeout = TimeSpan.FromSeconds(30);
 });
-builder.Services.AddHttpClient<IAiMenuAdminClient, AiMenuAdminClient>((sp, http) =>
+builder.Services.AddHttpClient<IAiMenuAdminClient, AiMenuAdminClient>((sp, client) =>
 {
     var opts = sp.GetRequiredService<IOptions<AiMenuOptions>>().Value;
-    http.BaseAddress = new Uri(opts.BaseUrl);
+    if (!string.IsNullOrWhiteSpace(opts.BaseUrl))
+        client.BaseAddress = new Uri(opts.BaseUrl);
 });
 builder.Services.Configure<PayOsOptions>(
     builder.Configuration.GetSection(PayOsOptions.SectionName));
