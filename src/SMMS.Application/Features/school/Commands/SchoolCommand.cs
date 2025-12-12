@@ -13,4 +13,5 @@ namespace SMMS.Application.Features.school.Commands
     public record CreateSchoolCommand(CreateSchoolDto SchoolDto, Guid CreatedBy) : IRequest<Guid>;
     public record UpdateSchoolCommand(Guid SchoolId, UpdateSchoolDto SchoolDto, Guid UpdatedBy) : IRequest<Unit>;
     public record DeleteSchoolCommand(Guid SchoolId) : IRequest<Unit>;
+    public record UpdateManagerStatusCommand(Guid SchoolId, bool IsActive) : IRequest<bool>;
 }
