@@ -7,6 +7,7 @@ using MediatR;
 using SMMS.Application.Features.Manager.DTOs;
 
 namespace SMMS.Application.Features.Manager.Commands;
+
 public record CreateManagerNotificationCommand(
     CreateManagerNotificationRequest Request,
     Guid SenderId,
@@ -24,3 +25,5 @@ public record DeleteManagerNotificationCommand(
     long NotificationId,
     Guid SenderId
 ) : IRequest<bool>;
+
+public record MarkNotificationReadCommand(long NotificationId, Guid UserId) : IRequest<bool>;

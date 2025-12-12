@@ -223,4 +223,14 @@ public class ManagerNotificationHandler :
 
         return new PagedResult<ManagerNotificationDto>(resultList, totalCount);
     }
+
+    public async Task<bool> Handle(MarkAllNotificationsAsReadCommand request, CancellationToken cancellationToken)
+    {
+        await _repo.MarkAllNotificationsAsReadAsync(request.UserId);
+        return true;
+    }
+    public async Task<bool> Handle(MarkNotificationReadCommand request, CancellationToken cancellationToken)
+    {
+        return await _repo.MarkAsReadAsync(request.NotificationId, request.UserId);
+    }
 }
