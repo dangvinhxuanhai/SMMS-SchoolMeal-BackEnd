@@ -11,4 +11,5 @@ namespace SMMS.Application.Features.school.Queries
 {
     public record GetSchoolByIdQuery(Guid SchoolId) : IRequest<SchoolDTO?>;
     public record GetAllSchoolsQuery() : IRequest<IEnumerable<SchoolDTO>>;
+    public record GetManagerStatusQuery(Guid SchoolId) : IRequest<bool?>;
 }

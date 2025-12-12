@@ -49,6 +49,8 @@ public partial class School
 
     public Guid? UpdatedBy { get; set; }
 
+    public bool NeedRebuildAiIndex { get; set; }
+
     [InverseProperty("School")]
     public virtual ICollection<AcademicYear> AcademicYears { get; set; } = new List<AcademicYear>();
 

@@ -53,6 +53,16 @@ namespace SMMS.Persistence.Repositories.schools
 
         public async Task AddAsync(School school)
         {
+            // ❌ Không cho phép trùng Email trường
+            var emailExists = await _context.Schools
+                .AnyAsync(s => s.ContactEmail == school.ContactEmail);
+            if (emailExists)
+                throw new Exception("Email trường đã tồn tại. Vui lòng chọn email khác.");
+            // ❌ Không cho phép trùng Hotline
+            var phoneExists = await _context.Schools
+                .AnyAsync(s => s.Hotline == school.Hotline);
+            if (phoneExists)
+                throw new Exception("Số điện thoại trường đã tồn tại. Vui lòng chọn số khác.");
             // 1. Thêm trường
             _context.Schools.Add(school);
             await _context.SaveChangesAsync();
@@ -81,6 +91,16 @@ namespace SMMS.Persistence.Repositories.schools
 
         public async Task UpdateAsync(School school)
         {
+            // ❌ Kiểm tra trùng Email (ngoài trường hiện tại)
+            var emailExists = await _context.Schools
+                .AnyAsync(s => s.ContactEmail == school.ContactEmail && s.SchoolId != school.SchoolId);
+            if (emailExists)
+                throw new Exception("Email trường đã tồn tại. Vui lòng chọn email khác.");
+            // ❌ Kiểm tra trùng Hotline (ngoài trường hiện tại)
+            var phoneExists = await _context.Schools
+                .AnyAsync(s => s.Hotline == school.Hotline && s.SchoolId != school.SchoolId);
+            if (phoneExists)
+                throw new Exception("Số điện thoại trường đã tồn tại. Vui lòng chọn số khác.");
             _context.Schools.Update(school);
             await _context.SaveChangesAsync();
         }
@@ -93,6 +113,32 @@ namespace SMMS.Persistence.Repositories.schools
                 _context.Schools.Remove(entity);
                 await _context.SaveChangesAsync();
             }
+        }
+        public async Task<bool> UpdateManagerStatusAsync(Guid schoolId, bool isActive)
+        {
+            // Tìm Manager của trường (RoleId = 2)
+            var manager = await _context.Users
+                .FirstOrDefaultAsync(u => u.SchoolId == schoolId && u.RoleId == 2);
+
+            if (manager == null)
+                throw new Exception("Trường này chưa có Manager.");
+
+            manager.IsActive = isActive;
+            manager.UpdatedAt = DateTime.Now;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool?> GetManagerStatusAsync(Guid schoolId)
+        {
+            var manager = await _context.Users
+                .FirstOrDefaultAsync(u => u.SchoolId == schoolId && u.RoleId == 2);
+
+            if (manager == null)
+                return null; // Không có manager
+
+            return manager.IsActive;
         }
     }
 }

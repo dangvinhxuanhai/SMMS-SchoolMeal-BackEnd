@@ -1,6 +1,7 @@
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SMMS.Application.Features.billing.Commands;
 using SMMS.Application.Features.school.Commands;
 using SMMS.Application.Features.school.DTOs;
 using SMMS.Application.Features.school.Queries;
@@ -88,6 +89,14 @@ namespace SMMS.WebAPI.Controllers.Modules.Parent
             {
                 return BadRequest(new { message = ex.Message });
             }
+        }
+        [HttpPut("{id}/read")]
+        public async Task<IActionResult> MarkRead(long id)
+        {
+            var userId = GetCurrentUserId(); // bạn đã có method này
+            await _mediator.Send(new MarkNotificationReadCommand(id, userId));
+
+            return Ok(new { message = "Đã đánh dấu là đã đọc" });
         }
     }
 }

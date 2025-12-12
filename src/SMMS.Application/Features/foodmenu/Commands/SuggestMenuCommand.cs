@@ -12,7 +12,7 @@ public record SuggestMenuCommand(
     Guid UserId,
     List<int> MainIngredientIds,
     List<int> SideIngredientIds,
-    List<int> AvoidAllergenIds,
+    List<int>? AvoidAllergenIds,
     double? MaxMainKcal,
     double? MaxSideKcal,
     int TopKMain,

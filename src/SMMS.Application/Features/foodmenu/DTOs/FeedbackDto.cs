@@ -12,7 +12,7 @@ namespace SMMS.Application.Features.foodmenu.DTOs
      string TargetType,
      string TargetRef,
      string Content,
-     int? DailyMealId
+     int DailyMealId
  );
     public record FeedbackDto(
     int FeedbackId,
@@ -22,11 +22,11 @@ namespace SMMS.Application.Features.foodmenu.DTOs
     string TargetRef,
     string Content,
     DateTime CreatedAt,
-    int? DailyMealId
+    int ?DailyMealId
 );
     public record CreateFeedbackRequestDto(
        string Content,
        byte? Rating,
-       int? DailyMealId
+       int DailyMealId
    );
 }

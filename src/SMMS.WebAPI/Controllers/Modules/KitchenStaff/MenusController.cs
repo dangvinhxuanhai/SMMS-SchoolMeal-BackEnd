@@ -13,7 +13,7 @@ using SMMS.Application.Features.Plan.Commands;
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
+[Authorize(Roles = "KitchenStaff")]
 public class MenusController : ControllerBase
 {
     private readonly IMediator _mediator;

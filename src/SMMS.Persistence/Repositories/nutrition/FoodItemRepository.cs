@@ -19,6 +19,17 @@ public class FoodItemRepository : IFoodItemRepository
         _context = context;
     }
 
+    private async Task MarkSchoolNeedRebuildAiIndexAsync(Guid schoolId, CancellationToken ct)
+    {
+        var school = await _context.Schools
+            .FirstOrDefaultAsync(s => s.SchoolId == schoolId, ct);
+
+        if (school != null)
+        {
+            school.NeedRebuildAiIndex = false;
+        }
+    }
+
     public Task<FoodItem?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
     {
         return _context.FoodItems
@@ -53,19 +64,20 @@ public class FoodItemRepository : IFoodItemRepository
     public async Task AddAsync(FoodItem entity, CancellationToken cancellationToken = default)
     {
         await _context.FoodItems.AddAsync(entity, cancellationToken);
+        await MarkSchoolNeedRebuildAiIndexAsync(entity.SchoolId, cancellationToken);
     }
 
-    public Task UpdateAsync(FoodItem entity, CancellationToken cancellationToken = default)
+    public async Task UpdateAsync(FoodItem entity, CancellationToken cancellationToken = default)
     {
         _context.FoodItems.Update(entity);
-        return Task.CompletedTask;
+        await MarkSchoolNeedRebuildAiIndexAsync(entity.SchoolId, cancellationToken);
     }
 
-    public Task SoftDeleteAsync(FoodItem entity, CancellationToken cancellationToken = default)
+    public async Task SoftDeleteAsync(FoodItem entity, CancellationToken cancellationToken = default)
     {
         entity.IsActive = false;
         _context.FoodItems.Update(entity);
-        return Task.CompletedTask;
+        await MarkSchoolNeedRebuildAiIndexAsync(entity.SchoolId, cancellationToken);
     }
 
     public async Task<bool> HasRelationsAsync(int foodId, CancellationToken cancellationToken = default)
@@ -93,9 +105,30 @@ public class FoodItemRepository : IFoodItemRepository
                || hasRecommendResults;
     }
 
-    public Task HardDeleteAsync(FoodItem entity, CancellationToken cancellationToken = default)
+    public async Task HardDeleteAsync(FoodItem entity, CancellationToken cancellationToken = default)
     {
+        var foodId = entity.FoodId;
+
+        // 1. Xóa các quan hệ N-N
+        var itemIngredients = _context.FoodItemIngredients.Where(x => x.FoodId == foodId);
+        _context.FoodItemIngredients.RemoveRange(itemIngredients);
+
+        var menuDayItems = _context.MenuDayFoodItems.Where(x => x.FoodId == foodId);
+        _context.MenuDayFoodItems.RemoveRange(menuDayItems);
+
+        var menuFoodItems = _context.MenuFoodItems.Where(x => x.FoodId == foodId);
+        _context.MenuFoodItems.RemoveRange(menuFoodItems);
+
+        // 2. Xử lý các bảng “transactional” (FoodInFridge, MenuRecommendResults)
+        var foodInFridge = _context.FoodInFridges.Where(x => x.FoodId == foodId);
+        // thường chỗ này nên SoftDelete hoặc cấm hard-delete món nếu còn mẫu đông lạnh
+        _context.FoodInFridges.RemoveRange(foodInFridge);
+
+        var recommendResults = _context.MenuRecommendResults.Where(x => x.FoodId == foodId);
+        _context.MenuRecommendResults.RemoveRange(recommendResults);
+
+        // 3. Cuối cùng mới xóa chính FoodItem
         _context.FoodItems.Remove(entity);
-        return Task.CompletedTask;
+        await MarkSchoolNeedRebuildAiIndexAsync(entity.SchoolId, cancellationToken);
     }
 }

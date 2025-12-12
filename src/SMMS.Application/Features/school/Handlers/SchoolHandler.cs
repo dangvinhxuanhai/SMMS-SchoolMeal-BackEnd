@@ -15,7 +15,8 @@ namespace SMMS.Application.Features.school.Handlers
     public class SchoolCommandHandler :
        IRequestHandler<CreateSchoolCommand, Guid>,
        IRequestHandler<UpdateSchoolCommand, Unit>,
-       IRequestHandler<DeleteSchoolCommand, Unit>
+       IRequestHandler<DeleteSchoolCommand, Unit>,
+       IRequestHandler<UpdateManagerStatusCommand, bool>
     {
         private readonly ISchoolRepository _repo;
 
@@ -72,10 +73,15 @@ namespace SMMS.Application.Features.school.Handlers
             await _repo.UpdateAsync(school);
             return Unit.Value;
         }
+        public async Task<bool> Handle(UpdateManagerStatusCommand request, CancellationToken cancellationToken)
+        {
+            return await _repo.UpdateManagerStatusAsync(request.SchoolId, request.IsActive);
+        }
     }
     public class SchoolQueryHandler :
         IRequestHandler<GetAllSchoolsQuery, IEnumerable<SchoolDTO>>,
-        IRequestHandler<GetSchoolByIdQuery, SchoolDTO?>
+        IRequestHandler<GetSchoolByIdQuery, SchoolDTO?>,
+        IRequestHandler<GetManagerStatusQuery, bool?>
     {
         private readonly ISchoolRepository _repo;
 
@@ -118,6 +124,10 @@ namespace SMMS.Application.Features.school.Handlers
                 CreatedAt = s.CreatedAt,
                 StudentCount = s.Students.Count()
             };
+        }
+        public async Task<bool?> Handle(GetManagerStatusQuery request, CancellationToken cancellationToken)
+        {
+            return await _repo.GetManagerStatusAsync(request.SchoolId);
         }
     }
 }
