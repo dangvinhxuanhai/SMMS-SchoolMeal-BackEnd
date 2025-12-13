@@ -28,7 +28,7 @@ public sealed class GetKitchenDashboardHandler
 
         // Gọi song song 4 block
         var summary = await _repository.GetTodaySummaryAsync(schoolId, date, cancellationToken);
-        var absences = await _repository.GetAbsenceRequestsAsync(schoolId, date, take: 5, cancellationToken);
+        var absences = await _repository.GetAbsenceRequestsAsync(schoolId, take: 5, cancellationToken);
         var feedbacks = await _repository.GetRecentFeedbacksAsync(schoolId, take: 5, cancellationToken);
         var alerts = await _repository.GetInventoryAlertsAsync(schoolId, date, take: 5, cancellationToken);
 

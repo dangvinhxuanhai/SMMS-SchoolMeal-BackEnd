@@ -15,7 +15,6 @@ public interface IKitchenDashboardRepository
 
     Task<List<AbsenceRequestShortDto>> GetAbsenceRequestsAsync(
         Guid schoolId,
-        DateOnly date,
         int take,
         CancellationToken cancellationToken);
 
