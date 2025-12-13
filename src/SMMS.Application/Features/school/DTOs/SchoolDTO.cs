@@ -17,6 +17,7 @@ namespace SMMS.Application.Features.school.DTOs
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public int StudentCount { get; set; }
+        public bool ManagerIsActive { get; set; }
     }
     public class CreateSchoolDto
     {
@@ -34,5 +35,6 @@ namespace SMMS.Application.Features.school.DTOs
         public string? Hotline { get; set; }
         public string? SchoolAddress { get; set; }
         public bool IsActive { get; set; }
+        public bool ManagerIsActive { get; set; }
     }
 }

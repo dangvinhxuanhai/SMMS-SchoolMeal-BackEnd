@@ -11,4 +11,6 @@ public class AiMenuOptions
 
     public string BaseUrl { get; set; } = "http://localhost:8000";       // vd: http://localhost:8000
     public string RecommendEndpoint { get; set; } = "/menu/recommend";
+    // new: admin rebuild endpoint
+    public string AdminRebuildEndpoint { get; set; } = "/api/v1/admin/rebuild";
 }

@@ -75,5 +75,25 @@ namespace SMMS.WebAPI.Controllers.Modules.Admin
                 return BadRequest(new { message = ex.Message });
             }
         }
+        [HttpGet("manager-status")]
+        public async Task<IActionResult> GetManagerStatus(Guid schoolId)
+        {
+            var status = await _mediator.Send(new GetManagerStatusQuery(schoolId));
+
+            if (status == null)
+                return NotFound(new { message = "Không tìm thấy manager của trường này." });
+
+            return Ok(new { schoolId = schoolId, isActive = status });
+        }
+        [HttpPut("manager-status")]
+        public async Task<IActionResult> UpdateManagerStatus(Guid schoolId, [FromBody] bool isActive)
+        {
+            var result = await _mediator.Send(new UpdateManagerStatusCommand(schoolId, isActive));
+
+            if (!result)
+                return BadRequest(new { message = "Không thể cập nhật trạng thái manager." });
+
+            return Ok(new { schoolId = schoolId, isActive });
+        }
     }
 }

@@ -9,6 +9,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using SMMS.Persistence.Service;
 
 namespace SMMS.Persistence.Repositories.billing;
 
@@ -16,12 +17,13 @@ public class SchoolRevenueRepository : ISchoolRevenueRepository
 {
     private readonly EduMealContext _context;
     private readonly IFileStorageService _fileStorageService; // Sửa: Dùng Interface
-
+    private readonly CloudinaryService _cloudinary;
     // Sửa: Inject IFileStorageService thay vì CloudinaryService
-    public SchoolRevenueRepository(EduMealContext ctx, IFileStorageService fileStorageService)
+    public SchoolRevenueRepository(EduMealContext ctx, IFileStorageService fileStorageService, CloudinaryService cloudinaryService)
     {
         _context = ctx;
         _fileStorageService = fileStorageService;
+        _cloudinary = cloudinaryService;
     }
 
     public async Task<long> CreateAsync(SchoolRevenue revenue, IFormFile? file)
@@ -38,12 +40,8 @@ public class SchoolRevenueRepository : ISchoolRevenueRepository
             var newFileName = $"contract_{revenue.SchoolId}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
 
             // 3. Gọi hàm SaveFileAsync (đã khớp với Interface)
-            revenue.ContractFileUrl = await _fileStorageService.SaveFileAsync(
-                file.FileName,
-                fileData,
-                "edu-meal/school-contracts", // Đặt tên folder riêng cho hợp đồng
-                newFileName
-            );
+            revenue.ContractFileUrl =await _cloudinary.UploadImageAsync(file);
+
         }
 
         revenue.CreatedAt = DateTime.UtcNow;
@@ -66,12 +64,7 @@ public class SchoolRevenueRepository : ISchoolRevenueRepository
             var fileExtension = Path.GetExtension(file.FileName);
             var newFileName = $"contract_{revenue.SchoolId}_{DateTime.UtcNow:yyyyMMddHHmmss}{fileExtension}";
 
-            revenue.ContractFileUrl = await _fileStorageService.SaveFileAsync(
-                file.FileName,
-                fileData,
-                "edu-meal/school-contracts",
-                newFileName
-            );
+            revenue.ContractFileUrl = await _cloudinary.UploadImageAsync(file);
         }
 
         revenue.UpdatedAt = DateTime.UtcNow;
