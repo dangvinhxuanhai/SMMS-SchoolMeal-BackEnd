@@ -104,10 +104,12 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
 
     // ------------------- 2. AbsenceRequests (top 5) -------------------
     public async Task<List<AbsenceRequestShortDto>> GetAbsenceRequestsAsync(
-    Guid schoolId,
-    int take,
-    CancellationToken cancellationToken)
+        Guid schoolId,
+        DateOnly date,
+        int take,
+        CancellationToken cancellationToken)
     {
+        date.AddDays(-30); // lấy 30 ngày trước
         var query =
             from a in _context.Attendances
             join s in _context.Students
@@ -120,9 +122,8 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
                 on a.NotifiedBy equals u.UserId into notifyJoin
             from notified in notifyJoin.DefaultIfEmpty()
             where s.SchoolId == schoolId
-                  // ❌ bỏ điều kiện theo AbsentDate
+                  && a.AbsentDate >= date             // từ hôm nay trở đi
                   && (sc.LeftDate == null || sc.LeftDate >= a.AbsentDate)
-                  && sc.RegistStatus == true
             orderby a.AbsentDate descending, a.CreatedAt descending
             select new AbsenceRequestShortDto
             {
