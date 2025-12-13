@@ -121,7 +121,8 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
             join u in _context.Users on a.NotifiedBy equals u.UserId into notifyJoin
             from notified in notifyJoin.DefaultIfEmpty()
             where s.SchoolId == schoolId
-                  && a.AbsentDate >= date
+                  // && a.AbsentDate >= date
+                  && a.AbsentDate >= date.AddDays(-30)
                   && (sc == null || (sc.RegistStatus == true && (sc.LeftDate == null || sc.LeftDate >= a.AbsentDate)))
             orderby a.AbsentDate descending, a.CreatedAt descending
             select new AbsenceRequestShortDto
