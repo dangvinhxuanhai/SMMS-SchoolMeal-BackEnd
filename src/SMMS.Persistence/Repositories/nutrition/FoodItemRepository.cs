@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using SMMS.Application.Features.nutrition.DTOs;
 using SMMS.Application.Features.nutrition.Interfaces;
 using SMMS.Domain.Entities.nutrition;
 using SMMS.Persistence.Data;
@@ -130,5 +131,36 @@ public class FoodItemRepository : IFoodItemRepository
         // 3. Cuối cùng mới xóa chính FoodItem
         _context.FoodItems.Remove(entity);
         await MarkSchoolNeedRebuildAiIndexAsync(entity.SchoolId, cancellationToken);
+    }
+
+    public Task<int> CountStudentsBySchoolAsync(Guid schoolId, CancellationToken ct)
+    {
+        return _context.Students
+            .Where(s => s.SchoolId == schoolId && s.IsActive)
+            .CountAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<IngredientAllergyStat>> GetIngredientAllergyStatsAsync(
+        IEnumerable<int> ingredientIds,
+        Guid schoolId,
+        CancellationToken ct)
+    {
+        var ids = ingredientIds.Distinct().ToList();
+        if (ids.Count == 0)
+            return Array.Empty<IngredientAllergyStat>();
+
+        return await (
+            from sa in _context.StudentAllergens
+            join st in _context.Students on sa.StudentId equals st.StudentId
+            join ai in _context.AllergeticIngredients on sa.AllergenId equals ai.AllergenId
+            where st.SchoolId == schoolId
+                  && ids.Contains(ai.IngredientId)
+            group st by ai.IngredientId into g
+            select new IngredientAllergyStat
+            {
+                IngredientId = g.Key,
+                AllergicStudentCount = g.Select(x => x.StudentId).Distinct().Count()
+            }
+        ).ToListAsync(ct);
     }
 }

@@ -16,4 +16,16 @@ public class FoodItemDto
     public bool IsMainDish { get; set; }
     public bool IsActive { get; set; }
     public List<FoodItemIngredientDto> Ingredients { get; set; } = new();
+
+    // ✨ NEW
+    public AllergyRiskStatus AllergyStatus { get; set; }
+
+    // 👀 TẠM THỜI: tổng % dị ứng của các nguyên liệu
+    public double TotalAllergyPercent { get; set; }
+}
+public enum AllergyRiskStatus
+{
+    Green = 0,
+    Orange = 1,
+    Red = 2
 }

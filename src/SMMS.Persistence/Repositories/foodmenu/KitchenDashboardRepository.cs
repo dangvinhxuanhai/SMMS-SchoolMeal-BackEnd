@@ -9,7 +9,6 @@ using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.foodmenu;
-
 public class KitchenDashboardRepository : IKitchenDashboardRepository
 {
     private readonly EduMealContext _context;
@@ -110,27 +109,28 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
         int take,
         CancellationToken cancellationToken)
     {
+        date.AddDays(-30); // lấy 30 ngày trước
         var query =
             from a in _context.Attendances
             join s in _context.Students
                 on a.StudentId equals s.StudentId
-            join sc in _context.StudentClasses on s.StudentId equals sc.StudentId into scJoin
-            from sc in scJoin.DefaultIfEmpty()
-            join c in _context.Classes on sc.ClassId equals c.ClassId into cJoin
-            from c in cJoin.DefaultIfEmpty()
-            join u in _context.Users on a.NotifiedBy equals u.UserId into notifyJoin
+            join sc in _context.StudentClasses
+                on s.StudentId equals sc.StudentId
+            join c in _context.Classes
+                on sc.ClassId equals c.ClassId
+            join u in _context.Users
+                on a.NotifiedBy equals u.UserId into notifyJoin
             from notified in notifyJoin.DefaultIfEmpty()
             where s.SchoolId == schoolId
-                  // && a.AbsentDate >= date
-                  && a.AbsentDate >= date.AddDays(-30)
-                  && (sc == null || (sc.RegistStatus == true && (sc.LeftDate == null || sc.LeftDate >= a.AbsentDate)))
+                  && a.AbsentDate >= date             // từ hôm nay trở đi
+                  && (sc.LeftDate == null || sc.LeftDate >= a.AbsentDate)
             orderby a.AbsentDate descending, a.CreatedAt descending
             select new AbsenceRequestShortDto
             {
                 AttendanceId = a.AttendanceId,
                 AbsentDate = a.AbsentDate,
                 StudentName = s.FullName,
-                ClassName = c != null ? c.ClassName : "Chưa xếp lớp",
+                ClassName = c.ClassName,
                 ReasonShort = a.Reason != null && a.Reason.Length > 80
                     ? a.Reason.Substring(0, 80) + "..."
                     : a.Reason,
@@ -139,7 +139,6 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
             };
 
         return await query
-            .Take(take)
             .ToListAsync(cancellationToken);
     }
 
@@ -172,7 +171,6 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
             };
 
         return await query
-            .Take(take)
             .ToListAsync(cancellationToken);
     }
 
@@ -192,8 +190,7 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
                 on ii.IngredientId equals ing.IngredientId
             where ii.SchoolId == schoolId
             let isExpired = ii.ExpirationDate != null && ii.ExpirationDate < today
-            let isNearExpiry = ii.ExpirationDate != null && ii.ExpirationDate >= today &&
-                               ii.ExpirationDate <= nearExpiryDate
+            let isNearExpiry = ii.ExpirationDate != null && ii.ExpirationDate >= today && ii.ExpirationDate <= nearExpiryDate
             let isLowStock = ii.QuantityGram <= LowStockThresholdGram
             where isExpired || isNearExpiry || isLowStock
             let priority = isExpired ? 1 : (isNearExpiry ? 2 : 3)
@@ -205,13 +202,11 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
                 ItemName = ii.ItemName ?? ing.IngredientName,
                 QuantityGram = ii.QuantityGram,
                 ExpirationDate = ii.ExpirationDate,
-                AlertType = isExpired
-                    ? "Expired"
-                    : (isNearExpiry ? "NearExpiry" : "LowStock")
+                AlertType = isExpired ? "Expired"
+                               : (isNearExpiry ? "NearExpiry" : "LowStock")
             };
 
         return await query
-            .Take(take)
             .ToListAsync(cancellationToken);
     }
 }
