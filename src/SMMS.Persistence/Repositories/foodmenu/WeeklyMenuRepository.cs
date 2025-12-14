@@ -147,6 +147,7 @@ public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
                         .ToList();
 
                     return new DayMenuDto(
+                        d.DailyMealId,
                         d.MealDate.ToDateTime(TimeOnly.MinValue),
                         d.MealType,
                         d.Notes,

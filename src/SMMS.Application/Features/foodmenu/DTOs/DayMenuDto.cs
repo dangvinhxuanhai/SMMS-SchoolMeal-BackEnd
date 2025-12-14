@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace SMMS.Application.Features.foodmenu.DTOs;
 public record DayMenuDto(
+    int DailyMealId,
     DateTime MealDate,
     string MealType,                    // Breakfast/Lunch/Snack...
     string? Notes,
