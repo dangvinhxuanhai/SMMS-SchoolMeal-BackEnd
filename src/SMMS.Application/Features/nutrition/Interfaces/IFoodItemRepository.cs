@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SMMS.Application.Features.nutrition.DTOs;
 using SMMS.Application.Features.Skeleton.Interfaces;
 using SMMS.Domain.Entities.nutrition;
 
@@ -32,4 +33,10 @@ public interface IFoodItemRepository
     Task<bool> HasRelationsAsync(int foodId, CancellationToken cancellationToken = default);
 
     Task HardDeleteAsync(FoodItem entity, CancellationToken cancellationToken = default);
+
+    Task<int> CountStudentsBySchoolAsync(Guid schoolId, CancellationToken ct);
+    Task<IReadOnlyList<IngredientAllergyStat>> GetIngredientAllergyStatsAsync(
+        IEnumerable<int> ingredientIds,
+        Guid schoolId,
+        CancellationToken ct);
 }
