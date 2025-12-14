@@ -94,28 +94,57 @@ namespace SMMS.Persistence.Repositories.schools
 
         public async Task UpdateAsync(School school, bool? managerIsActive = null)
         {
+            var emailEntry = _context.Entry(school).Property(s => s.ContactEmail);
+            if (emailEntry.IsModified && !string.IsNullOrEmpty(school.ContactEmail))
+            {
+                bool isDuplicateEmail = await _context.Schools
+                    .AnyAsync(s => s.ContactEmail == school.ContactEmail && s.SchoolId != school.SchoolId);
+
+                if (isDuplicateEmail)
+                {
+                    throw new Exception($"Email '{school.ContactEmail}' đang được sử dụng bởi một trường học khác!");
+                }
+            }
+
+            var hotlineEntry = _context.Entry(school).Property(s => s.Hotline);
+            if (hotlineEntry.IsModified && !string.IsNullOrEmpty(school.Hotline))
+            {
+                bool isDuplicatePhone = await _context.Schools
+                    .AnyAsync(s => s.Hotline == school.Hotline && s.SchoolId != school.SchoolId);
+
+                if (isDuplicatePhone)
+                {
+                    throw new Exception($"Số Hotline '{school.Hotline}' đang thuộc về trường học khác!");
+                }
+            }
+
             var manager = await _context.Users
-             .FirstOrDefaultAsync(u => u.SchoolId == school.SchoolId && u.RoleId == 2);
+                .FirstOrDefaultAsync(u => u.SchoolId == school.SchoolId && u.RoleId == 2);
+
+            if (manager == null && managerIsActive.HasValue)
+            {
+                 throw new Exception($"Trường '{school.SchoolName}' chưa có tài khoản Manager. Không thể cập nhật trạng thái.");
+            }
+
             if (manager != null)
             {
-                // Nếu Hotline của school thay đổi, update luôn phone của manager
-                if (!string.IsNullOrEmpty(school.Hotline) && school.Hotline != manager.Phone)
+                if (hotlineEntry.IsModified && !string.IsNullOrEmpty(school.Hotline))
                 {
                     manager.Phone = school.Hotline;
                     manager.UpdatedAt = DateTime.Now;
                 }
-                if (!string.IsNullOrEmpty(school.ContactEmail) && school.ContactEmail != manager.Email)
+
+                if (emailEntry.IsModified && !string.IsNullOrEmpty(school.ContactEmail))
                 {
                     manager.Email = school.ContactEmail;
                     manager.UpdatedAt = DateTime.Now;
                 }
-                // Nếu cần update trạng thái manager
-                if (managerIsActive.HasValue)
+
+                if (managerIsActive.HasValue && manager.IsActive != managerIsActive.Value)
                 {
                     manager.IsActive = managerIsActive.Value;
                     manager.UpdatedAt = DateTime.Now;
                 }
-
                 _context.Users.Update(manager);
             }
 
@@ -131,15 +160,20 @@ namespace SMMS.Persistence.Repositories.schools
                 _context.Schools.Remove(entity);
                 await _context.SaveChangesAsync();
             }
+            else
+            {
+                throw new Exception("Trường học này không tồn tại hoặc đã bị xóa trước đó.");
+            }
         }
         public async Task<bool> UpdateManagerStatusAsync(Guid schoolId, bool isActive)
         {
-            // Tìm Manager của trường (RoleId = 2)
             var manager = await _context.Users
                 .FirstOrDefaultAsync(u => u.SchoolId == schoolId && u.RoleId == 2);
 
             if (manager == null)
-                throw new Exception("Trường này chưa có Manager.");
+            {
+                throw new Exception($"Không tìm thấy tài khoản Manager cho trường ID {schoolId}. Hệ thống không thể cập nhật trạng thái.");
+            }
 
             manager.IsActive = isActive;
             manager.UpdatedAt = DateTime.Now;
@@ -152,17 +186,12 @@ namespace SMMS.Persistence.Repositories.schools
         {
             var manager = await _context.Users
                 .FirstOrDefaultAsync(u => u.SchoolId == schoolId && u.RoleId == 2);
-
-            if (manager == null)
-                return null; // Không có manager
-
-            return manager.IsActive;
+            return manager?.IsActive;
         }
 
         public async Task<bool> AnyNeedRebuildAsync(CancellationToken cancellationToken = default)
         {
             return await _context.Schools.AnyAsync(s => s.NeedRebuildAiIndex == false, cancellationToken);
-            // schools có NeedRebuildAiIndex = false nghia la truong do can dc build lai AI index
         }
     }
 }
