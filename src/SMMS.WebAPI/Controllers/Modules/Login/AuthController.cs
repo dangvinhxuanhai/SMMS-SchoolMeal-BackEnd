@@ -20,8 +20,8 @@
             return new CookieOptions
             {
                 HttpOnly = true,
-                Secure = false,
-                SameSite = SameSiteMode.Lax,
+                Secure = true,
+                SameSite = SameSiteMode.None,
                 Path = "/",
                 Expires = expiredTime ?? DateTime.UtcNow.AddDays(-1)
             };
