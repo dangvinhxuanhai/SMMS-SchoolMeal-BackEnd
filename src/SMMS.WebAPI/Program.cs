@@ -14,6 +14,7 @@ using SMMS.Persistence.Data;
 using SMMS.Infrastructure.ExternalService.AiMenu;
 using SMMS.WebAPI.Hubs;
 using SMMS.Application.Common.Options;
+using SMMS.Infrastructure.Security;
 
 var builder = WebApplication.CreateBuilder(args);
 

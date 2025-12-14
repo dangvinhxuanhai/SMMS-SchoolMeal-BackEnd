@@ -34,9 +34,20 @@
             {
                 var result = await _authService.LoginAsync(request);
 
-                Response.Cookies.Append("accessToken", result.Token, GetCookieOptions(DateTime.UtcNow.AddMinutes(30)));
+                if (result.RequirePasswordReset)
+                {
+                    return Ok(new { requirePasswordReset = true, message = result.Message });
+                }
 
-                Response.Cookies.Append("refreshToken", result.RefreshToken, GetCookieOptions(DateTime.UtcNow.AddDays(7)));
+                if (!string.IsNullOrEmpty(result.Token))
+                {
+                    Response.Cookies.Append("accessToken", result.Token, GetCookieOptions(DateTime.UtcNow.AddMinutes(30)));
+                }
+
+                if (!string.IsNullOrEmpty(result.RefreshToken))
+                {
+                    Response.Cookies.Append("refreshToken", result.RefreshToken, GetCookieOptions(DateTime.UtcNow.AddDays(7)));
+                }
 
                 return Ok(new { user = result.User });
             }
