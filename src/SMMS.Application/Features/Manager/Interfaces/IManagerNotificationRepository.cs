@@ -22,4 +22,6 @@ public interface IManagerNotificationRepository
     Task<List<NotificationRecipient>> GetRecipientsAsync(long notificationId);
     Task<long> CountBySenderAsync(Guid senderId);
     Task SaveChangesAsync();
+    Task<bool> MarkAsReadAsync(long notificationId, Guid userId);
+    Task MarkAllNotificationsAsReadAsync(Guid userId);
 }

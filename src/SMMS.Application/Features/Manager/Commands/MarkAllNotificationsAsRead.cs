@@ -19,4 +19,5 @@ public class MarkAllNotificationsAsReadHandler : IRequestHandler<MarkAllNotifica
         await _repo.MarkAllNotificationsAsReadAsync(request.UserId);
         return true;
     }
+
 }

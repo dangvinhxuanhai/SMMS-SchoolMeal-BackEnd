@@ -191,7 +191,7 @@ public class ManagerFinanceController : ControllerBase
     public async Task<IActionResult> ExportPurchase(
         [FromQuery] int month,
         [FromQuery] int year,
-        [FromQuery] bool isYearly = false)
+        [FromQuery] bool isYearly = true)
     {
         try
         {
