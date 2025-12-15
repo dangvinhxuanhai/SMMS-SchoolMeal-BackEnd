@@ -174,7 +174,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy
+            .WithOrigins(
+                "https://edumeal.id.vn",
+                "https://admin.edumeal.id.vn",
+                "http://localhost:3000" // dev
+            )
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
