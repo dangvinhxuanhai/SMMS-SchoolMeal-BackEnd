@@ -17,7 +17,7 @@
 
         private CookieOptions GetCookieOptions(DateTime? expiredTime)
         {
-            return new CookieOptions
+            var options =  new CookieOptions
             {
                 HttpOnly = true,
                 Secure = true,
@@ -25,6 +25,12 @@
                 Path = "/",
                 Expires = expiredTime ?? DateTime.UtcNow.AddDays(-1)
             };
+            string host = Request.Host.Host;
+            if (host.Contains("edumeal.id.vn"))
+            {
+                options.Domain = ".edumeal.id.vn";
+            }
+            return options;
         }
 
         [HttpPost("login")]
