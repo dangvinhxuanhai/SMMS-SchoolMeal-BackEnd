@@ -77,7 +77,7 @@ public class ManagerParentHandler :
                     )
                 ));
 
-        return await query
+        var result = await query
             .OrderByDescending(u => u.CreatedAt)
             .Select(u => new ParentAccountDto
             {
@@ -96,6 +96,7 @@ public class ManagerParentHandler :
                 // ✅ Cập nhật: Map danh sách con chi tiết giống GetAll
                 Children = u.Students.Select(s => new ParentAccountDto.ParentStudentDetailDto
                 {
+                    StudentId = s.StudentId,
                     FullName = s.FullName,
                     Gender = s.Gender,
                     DateOfBirth = s.DateOfBirth.HasValue
@@ -108,6 +109,39 @@ public class ManagerParentHandler :
                 }).ToList()
             })
             .ToListAsync(cancellationToken);
+
+        // ✅ 2) GOM StudentId để build map
+        var allStudentIds = result
+             .SelectMany(p => p.Children.Select(c => c.StudentId))
+             .Where(id => id.HasValue)          // ✅ lọc null
+             .Select(id => id!.Value)           // ✅ lấy Guid
+             .Distinct()
+             .ToList();
+        var studentUnpaidMap = await BuildStudentUnpaidMapAsync(allStudentIds, cancellationToken);
+
+        // ✅ 3) TÍNH PaymentStatus SAU (in-memory)
+        foreach (var p in result)
+        {
+            var childIds = p.Children
+             .Select(c => c.StudentId)
+             .Where(id => id.HasValue)     // lọc null
+             .Select(id => id.Value)       // lấy Guid
+             .ToList();
+            var hasUnpaid = childIds.Any(id =>
+                studentUnpaidMap.TryGetValue(id, out var flag) && flag);
+
+            if (!childIds.Any())
+                p.PaymentStatus = "Chưa tạo hóa đơn";
+            else if (hasUnpaid)
+                p.PaymentStatus = "Chưa thanh toán";
+            else if (childIds.Any(id => studentUnpaidMap.ContainsKey(id)))
+                p.PaymentStatus = "Đã thanh toán";
+            else
+                p.PaymentStatus = "Chưa tạo hóa đơn";
+        }
+
+        return result;
+
     }
 
     #endregion
@@ -477,6 +511,38 @@ public class ManagerParentHandler :
 
                     // (option) nếu muốn update luôn lớp: xoá class cũ / thêm class mới ở đây
                     // ⬇⬇⬇ THÊM ĐOẠN NÀY Ở SAU VÒNG foreach ⬇⬇⬇
+                    if (childDto.ClassId.HasValue)
+                    {
+                        var newClassId = childDto.ClassId.Value;
+
+                        // nếu mỗi student chỉ có 1 lớp active:
+                        var current = existingChild.StudentClasses
+                            .FirstOrDefault(sc => sc.RegistStatus == true);
+
+                        // chưa có lớp -> add
+                        if (current == null)
+                        {
+                            await _repo.AddStudentClassAsync(new StudentClass
+                            {
+                                StudentId = existingChild.StudentId,
+                                ClassId = newClassId,
+                                JoinedDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                                RegistStatus = true
+                            });
+                        }
+                        // có lớp nhưng khác -> chuyển lớp (delete + insert)
+                        else if (current.ClassId != newClassId)
+                        {
+                            await _repo.DeleteStudentClassAsync(current);   // ✅ delete record cũ trước
+                            await _repo.AddStudentClassAsync(new StudentClass
+                            {
+                                StudentId = existingChild.StudentId,
+                                ClassId = newClassId,
+                                JoinedDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                                RegistStatus = true
+                            });
+                        }
+                    }
 
                     // Các StudentId còn muốn giữ lại (chỉ lấy những thằng có StudentId)
                     var keepIds = request.Children
