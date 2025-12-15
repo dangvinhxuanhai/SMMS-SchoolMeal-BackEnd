@@ -5,7 +5,7 @@ using SMMS.Domain.Entities.billing;
 using SMMS.Domain.Entities.school;
 using SMMS.Persistence.Data;
 
-namespace SMMS.Infrastructure.Repositories
+namespace SMMS.Persistence.Repositories.billing
 {
     public class InvoiceRepository : IInvoiceRepository
     {
@@ -87,6 +87,18 @@ namespace SMMS.Infrastructure.Repositories
             var setting = await _context.SchoolPaymentSettings
               .Where(s => s.SchoolId == schoolId && s.IsActive)
               .FirstOrDefaultAsync();
+            decimal totalAmount = 0;
+            decimal mealPrice = 0;
+            if (setting != null)
+            {
+                totalAmount = setting.TotalAmount;
+                mealPrice = setting.MealPricePerDay;
+            }
+            else
+            {
+                // Tùy nghiệp vụ: Có thể throw lỗi để báo admin cấu hình
+                throw new InvalidOperationException("Trường chưa cấu hình thanh toán (SchoolPaymentSettings).");
+            }
             return await (
                 from inv in _context.Invoices
 
@@ -129,8 +141,7 @@ namespace SMMS.Infrastructure.Repositories
                     Status = inv.Status,
 
                     // Số tiền phải đóng
-                    AmountToPay = Math.Max(0, setting.TotalAmount - (inv.AbsentDay) * setting.MealPricePerDay),
-
+                    AmountToPay = Math.Max(0, totalAmount - (inv.AbsentDay) * mealPrice),
                     // 🏦 Thông tin ngân hàng của trường
                     SettlementBankCode = sch.SettlementBankCode ?? string.Empty,
                     SettlementAccountNo = sch.SettlementAccountNo ?? string.Empty,

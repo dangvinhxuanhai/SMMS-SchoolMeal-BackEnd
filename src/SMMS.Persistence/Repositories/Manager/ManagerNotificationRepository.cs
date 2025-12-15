@@ -8,6 +8,7 @@ using SMMS.Domain.Entities.billing;
 using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.Manager;
+
 public class ManagerNotificationRepository : IManagerNotificationRepository
 {
     private readonly EduMealContext _context;
@@ -60,14 +61,45 @@ public class ManagerNotificationRepository : IManagerNotificationRepository
             .Select(u => u.UserId)
             .ToListAsync();
     }
+
     public Task DeleteRecipientsAsync(IEnumerable<NotificationRecipient> recipients)
     {
         _context.NotificationRecipients.RemoveRange(recipients);
         return Task.CompletedTask;
     }
+
     public async Task AddNotificationAsync(Notification entity)
     {
         await _context.Notifications.AddAsync(entity);
+    }
+
+    // Đánh dấu 1 cái
+    public async Task<bool> MarkAsReadAsync(long notificationId, Guid userId)
+    {
+        var recipient = await _context.NotificationRecipients
+            .FirstOrDefaultAsync(nr => nr.NotificationId == notificationId
+                                       && nr.UserId == userId);
+
+        if (recipient == null) return false; // Không tìm thấy
+
+        if (!recipient.IsRead)
+        {
+            recipient.IsRead = true;
+            // recipient.ReadAt = DateTime.UtcNow; // Nếu có cột này
+            await _context.SaveChangesAsync();
+        }
+
+        return true;
+    }
+
+    public async Task MarkAllNotificationsAsReadAsync(Guid userId)
+    {
+        await _context.NotificationRecipients
+            .Where(nr => nr.UserId == userId && !nr.IsRead) // Chỉ chọn cái chưa đọc
+            .ExecuteUpdateAsync(s => s
+                    .SetProperty(nr => nr.IsRead, true)
+                // .SetProperty(nr => nr.ReadAt, DateTime.UtcNow) // Nếu có
+            );
     }
 
     public async Task AddRecipientsAsync(List<NotificationRecipient> entities)

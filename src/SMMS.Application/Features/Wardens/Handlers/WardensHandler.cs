@@ -398,32 +398,32 @@ public class WardensHandler :
 
     #region 8️⃣ GetNotificationsAsync
 
-    public async Task<IEnumerable<NotificationDto>> Handle(
-         GetWardenNotificationsQuery request,
-         CancellationToken cancellationToken)
-    {
-        var query =
-            from nr in _repo.NotificationRecipients      // phải là IQueryable<NotificationRecipient>
-            join n in _repo.Notifications                // IQueryable<Notification>
-                on nr.NotificationId equals n.NotificationId
-            where nr.UserId == request.WardenId
-            orderby n.CreatedAt descending
-            select new NotificationDto
-            {
-                NotificationId = n.NotificationId,
-                Title = n.Title,
-                Content = n.Content,
-                CreatedAt = n.CreatedAt,
-                IsRead = nr.IsRead,
-                SendType = n.SendType
-            };
+        public async Task<IEnumerable<NotificationDto>> Handle(
+             GetWardenNotificationsQuery request,
+             CancellationToken cancellationToken)
+        {
+            var query =
+                from nr in _repo.NotificationRecipients      // phải là IQueryable<NotificationRecipient>
+                join n in _repo.Notifications                // IQueryable<Notification>
+                    on nr.NotificationId equals n.NotificationId
+                where nr.UserId == request.WardenId
+                orderby n.CreatedAt descending
+                select new NotificationDto
+                {
+                    NotificationId = n.NotificationId,
+                    Title = n.Title,
+                    Content = n.Content,
+                    CreatedAt = n.CreatedAt,
+                    IsRead = nr.IsRead,
+                    SendType = n.SendType
+                };
 
-        return await query
-            .Take(10)
-            .ToListAsync(cancellationToken);
-    }
+            return await query
+                .Take(10)
+                .ToListAsync(cancellationToken);
+        }
 
-    #endregion
+        #endregion
 
     #region 9️⃣ ExportClassStudentsAsync
 
