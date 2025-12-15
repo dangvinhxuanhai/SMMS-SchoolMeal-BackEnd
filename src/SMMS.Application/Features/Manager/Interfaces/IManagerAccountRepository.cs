@@ -12,7 +12,7 @@ public interface IManagerAccountRepository
     IQueryable<User> Users { get; }
     IQueryable<Role> Roles { get; }
     IQueryable<Student> Students { get; }
-
+    Task UpdateStudentClassAsync(StudentClass studentClass);
     Task<User?> GetByIdAsync(Guid userId);
     Task AddAsync(User user);
     Task UpdateAsync(User user);
