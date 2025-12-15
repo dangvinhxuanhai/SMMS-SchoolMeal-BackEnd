@@ -172,8 +172,13 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "https://edumeal.id.vn",
-                "https://smms-school-meal-admin.vercel.app")
+        policy
+            .WithOrigins(
+                "https://edumeal.id.vn",
+                "https://admin.edumeal.id.vn",
+                "http://localhost:3000",
+                "https://smms-school-meal-admin.vercel.app"
+            )
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
