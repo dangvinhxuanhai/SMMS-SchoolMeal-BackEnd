@@ -142,11 +142,12 @@ builder.Services.AddCors(options =>
                 "https://edumeal.id.vn",
                 "https://admin.edumeal.id.vn",
                 "http://localhost:3000",
-                "https://smms-school-meal-admin.vercel.app"
+                "https://smms-school-meal-admin.vercel.app",
+                "https://outragedly-guidebookish-mitzie.ngrok-free.dev"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials(); // Bắt buộc cho SignalR
+            .AllowCredentials();
     });
 });
 
