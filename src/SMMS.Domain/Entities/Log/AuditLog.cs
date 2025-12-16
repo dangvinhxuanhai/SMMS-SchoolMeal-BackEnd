@@ -13,7 +13,7 @@ public partial class AuditLog
     [Key]
     public Guid LogId { get; set; }
 
-    public Guid UserId { get; set; }
+    public Guid? UserId { get; set; }
 
     [StringLength(100)]
     public string ActionDesc { get; set; } = null!;
@@ -35,9 +35,4 @@ public partial class AuditLog
     public string? ActionType { get; set; }
 
     public DateTime CreatedAt { get; set; }
-
-    [ForeignKey("UserId")]
-    [InverseProperty("AuditLogs")]
-    public virtual User User { get; set; } = null!;
 }
-

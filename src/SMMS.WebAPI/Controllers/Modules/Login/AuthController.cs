@@ -15,6 +15,20 @@
             _authService = authService;
         }
 
+        [HttpGet("connection-token")]
+        [Authorize]
+        public IActionResult GetConnectionToken()
+        {
+            var token = Request.Cookies["accessToken"];
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return Unauthorized(new { message = "Không tìm thấy token kết nối." });
+            }
+
+            return Ok(new { token });
+        }
+
         private CookieOptions GetCookieOptions(DateTime? expiredTime)
         {
             var options =  new CookieOptions

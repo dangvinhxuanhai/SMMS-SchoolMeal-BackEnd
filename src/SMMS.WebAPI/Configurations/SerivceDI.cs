@@ -2,6 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.SignalR;
+using SMMS.Application.Abstractions;
 using SMMS.Application.Common.Interfaces;
 using SMMS.Application.Common.Validators;
 using SMMS.Application.Features.auth.Handlers;
@@ -19,6 +20,7 @@ using SMMS.Infrastructure.Security;
 using SMMS.Infrastructure.Service;
 using SMMS.Infrastructure.Services;
 using SMMS.Persistence;
+using SMMS.Persistence.Interceptors;
 using SMMS.Persistence.Service;
 using SMMS.WebAPI.Hubs;
 
@@ -46,7 +48,9 @@ public static class SerivceDI
         {
             cfg.RegisterServicesFromAssemblyContaining<ParentProfileHandler>();
         });
-
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<AuditSaveChangesInterceptor>();
         //  mediatr
         services.AddMediatR(cfg =>
         {
