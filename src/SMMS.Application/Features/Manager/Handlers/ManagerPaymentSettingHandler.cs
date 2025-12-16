@@ -20,7 +20,7 @@ internal static class SchoolPaymentSettingMapping
             SettingId = e.SettingId,
             SchoolId = e.SchoolId,
             FromMonth = e.FromMonth,
-            ToMonth = e.ToMonth,
+            ToMonth = (byte)e.ToMonth,
             TotalAmount = e.TotalAmount,
             MealPricePerDay = e.MealPricePerDay,
             Note = e.Note,

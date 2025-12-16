@@ -29,6 +29,10 @@ public partial class Invoice
 
     public Guid InvoiceCode { get; set; }
 
+
+    [Column(TypeName = "decimal(18, 2)")]
+    public decimal? TotalPrice { get; set; }
+
     [InverseProperty("Invoice")]
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
