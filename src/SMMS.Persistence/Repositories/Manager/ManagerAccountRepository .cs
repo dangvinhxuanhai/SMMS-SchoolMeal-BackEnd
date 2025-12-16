@@ -126,7 +126,11 @@ public class ManagerAccountRepository : IManagerAccountRepository
         _context.Students.Update(student);
         await _context.SaveChangesAsync();
     }
-
+    public async Task UpdateStudentClassAsync(StudentClass studentClass)
+    {
+        _context.StudentClasses.Update(studentClass);
+        await _context.SaveChangesAsync();
+    }
     public async Task MarkAllNotificationsAsReadAsync(Guid userId)
     {
         await _context.NotificationRecipients
