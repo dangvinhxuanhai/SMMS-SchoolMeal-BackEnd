@@ -142,8 +142,7 @@ builder.Services.AddCors(options =>
                 "https://edumeal.id.vn",
                 "https://admin.edumeal.id.vn",
                 "http://localhost:3000",
-                "https://smms-school-meal-admin.vercel.app",
-                "https://outragedly-guidebookish-mitzie.ngrok-free.dev"
+                "https://smms-school-meal-admin.vercel.app"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -163,6 +162,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// var hasher = new PasswordHasher();
+// var password = "@1";
+// var hashed = hasher.HashPassword(password);
+//
+// Console.ForegroundColor = ConsoleColor.Green;
+// Console.WriteLine("=====================================");
+// Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
+// Console.WriteLine(hashed);
+// Console.WriteLine("=====================================");
+// Console.ResetColor();
 
 app.UseCors("AllowFrontend");
 
