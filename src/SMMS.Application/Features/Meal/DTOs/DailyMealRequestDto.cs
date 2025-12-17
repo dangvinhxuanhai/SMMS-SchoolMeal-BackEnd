@@ -8,7 +8,7 @@ namespace SMMS.Application.Features.Meal.DTOs;
 public class DailyMealRequestDto
 {
     public DateTime MealDate { get; set; }         // ngày thực tế
-    public string MealType { get; set; } = null!;  // "Breakfast", "Lunch", "Snack"...
+    public string MealType { get; set; } = null!; 
     public string? Notes { get; set; }
 
     public List<int> FoodIds { get; set; } = new(); // các FoodId sẽ dùng trong bữa
