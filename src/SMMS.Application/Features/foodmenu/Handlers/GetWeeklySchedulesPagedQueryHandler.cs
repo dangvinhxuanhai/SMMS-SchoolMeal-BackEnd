@@ -102,48 +102,59 @@ public class GetWeeklySchedulesPagedQueryHandler : IRequestHandler<GetWeeklySche
             {
                 dailyBySchedule.TryGetValue(s.ScheduleMealId, out var daysForSchedule);
                 var dayDtos = (daysForSchedule ?? new List<DailyMeal>())
-                    .Select(dm =>
+                    .GroupBy(dm => dm.MealDate) // ✅ mỗi ngày 1 thực đơn
+                    .OrderBy(g => g.Key)
+                    .Select(g =>
                     {
-                        menuFoodsByDaily.TryGetValue(dm.DailyMealId, out var foodsForDay);
-                        var foodDtos = (foodsForDay ?? new List<MenuFoodItemInfo>())
-                            .Select(f =>
+                        var foodDtos = g
+                            .SelectMany(dm =>
                             {
-                                ingredientsByFood.TryGetValue(f.FoodId, out var ingForFood);
+                                menuFoodsByDaily.TryGetValue(dm.DailyMealId, out var foodsForDay);
 
-                                var ingredientDtos = (ingForFood ?? new List<FoodIngredientInfo>())
-                                    .Select(i => new ScheduledFoodIngredientDto
+                                return (foodsForDay ?? new List<MenuFoodItemInfo>())
+                                    .Select(f =>
                                     {
-                                        IngredientId = i.IngredientId,
-                                        IngredientName = i.IngredientName,
-                                        QuantityGram = i.QuantityGram
-                                    })
-                                    .ToList()
-                                    .AsReadOnly();
+                                        ingredientsByFood.TryGetValue(f.FoodId, out var ingForFood);
 
-                                return new ScheduledFoodItemDto
-                                {
-                                    FoodId = f.FoodId,
-                                    FoodName = f.FoodName,
-                                    FoodType = f.FoodType,
-                                    IsMainDish = f.IsMainDish,
-                                    ImageUrl = f.ImageUrl,
-                                    FoodDesc = f.FoodDesc,
-                                    SortOrder = f.SortOrder,
-                                    Ingredients = ingredientDtos
-                                };
+                                        var ingredientDtos = (ingForFood ?? new List<FoodIngredientInfo>())
+                                            .Select(i => new ScheduledFoodIngredientDto
+                                            {
+                                                IngredientId = i.IngredientId,
+                                                IngredientName = i.IngredientName,
+                                                QuantityGram = i.QuantityGram
+                                            })
+                                            .ToList()
+                                            .AsReadOnly();
+
+                                        return new ScheduledFoodItemDto
+                                        {
+                                            FoodId = f.FoodId,
+                                            FoodName = f.FoodName,
+                                            FoodType = f.FoodType,
+                                            IsMainDish = f.IsMainDish, // ⭐ QUAN TRỌNG
+                                            ImageUrl = f.ImageUrl,
+                                            FoodDesc = f.FoodDesc,
+                                            SortOrder = f.SortOrder,
+                                            Ingredients = ingredientDtos
+                                        };
+                                    });
                             })
+                            .OrderByDescending(f => f.IsMainDish) // 🔥 món chính lên trước
+                            .ThenBy(f => f.SortOrder ?? int.MaxValue)
                             .ToList();
 
                         return new DailyMealDto
                         {
-                            DailyMealId = dm.DailyMealId,
-                            MealDate = dm.MealDate.ToDateTime(TimeOnly.MinValue),
-                            MealType = dm.MealType,
-                            Notes = dm.Notes,
+                            DailyMealId = g.First().DailyMealId, // đại diện
+                            MealDate = g.Key.ToDateTime(TimeOnly.MinValue),
+                            Notes = null,
+
+                            // ✅ chỉ còn 1 list FoodItems
                             FoodItems = foodDtos
                         };
                     })
                     .ToList();
+
 
                 return new WeeklyScheduleDto
                 {
