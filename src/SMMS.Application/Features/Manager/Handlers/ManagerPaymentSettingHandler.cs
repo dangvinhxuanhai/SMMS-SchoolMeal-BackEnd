@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MediatR;
+using SMMS.Application.Common.Helpers;
 using SMMS.Application.Features.Manager.Commands;
 using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Manager.Interfaces;
@@ -20,7 +21,7 @@ internal static class SchoolPaymentSettingMapping
             SettingId = e.SettingId,
             SchoolId = e.SchoolId,
             FromMonth = e.FromMonth,
-            ToMonth = (byte)e.ToMonth,
+            ToMonth = e.ToMonth, // ✅ nullable
             TotalAmount = e.TotalAmount,
             MealPricePerDay = e.MealPricePerDay,
             Note = e.Note,
@@ -79,123 +80,76 @@ public class ManagerPaymentSettingHandler
         : IRequestHandler<CreateSchoolPaymentSettingCommand, SchoolPaymentSettingDto>
     {
         private readonly IManagerPaymentSettingRepository _repo;
+        public CreateSchoolPaymentSettingHandler(IManagerPaymentSettingRepository repo) => _repo = repo;
 
-        public CreateSchoolPaymentSettingHandler(IManagerPaymentSettingRepository repo)
-        {
-            _repo = repo;
-        }
-
-        public async Task<SchoolPaymentSettingDto> Handle(
-            CreateSchoolPaymentSettingCommand command,
-            CancellationToken cancellationToken)
+        public async Task<SchoolPaymentSettingDto> Handle(CreateSchoolPaymentSettingCommand command, CancellationToken ct)
         {
             var r = command.Request;
 
-            // Validate tháng
-            if (r.FromMonth < 1 || r.FromMonth > 12 ||
-                r.ToMonth < 1 || r.ToMonth > 12)
-            {
-                throw new ArgumentException("Tháng phải nằm trong khoảng từ 1 đến 12.");
-            }
-
-            if (r.FromMonth > r.ToMonth)
-            {
-                throw new ArgumentException("Tháng bắt đầu không được lớn hơn tháng kết thúc.");
-            }
-
-            // Validate MealPricePerDay
+            if (r.FromMonth < 1 || r.FromMonth > 12)
+                throw new ArgumentException("Tháng phải nằm trong khoảng 1..12.");
             if (r.MealPricePerDay < 0)
                 throw new ArgumentException("MealPricePerDay không được âm.");
 
-            // Check trùng, Create => excludeSettingId = null
-            var isOverlapped = await _repo.HasOverlappedRangeAsync(
-                r.SchoolId,
-                r.FromMonth,
-                r.ToMonth,
-                null,
-                cancellationToken);
+            var existed = await _repo.ExistsMonthAsync(r.SchoolId, r.FromMonth, null, ct);
+            if (existed) throw new InvalidOperationException("Tháng này đã có cấu hình payment setting.");
 
-            if (isOverlapped)
-            {
-                throw new InvalidOperationException(
-                    "Khoảng tháng này đã trùng với một cấu hình tiền ăn khác của trường.");
-            }
+            var year = DateTime.UtcNow.Year;
+            var (fromD, toD) = DateOnlyUtils.GetMonthRange(year, r.FromMonth);
+
+            var total = r.MealPricePerDay * DateOnlyUtils.CountWeekdays(fromD, toD);
 
             var entity = new SchoolPaymentSetting
             {
                 SchoolId = r.SchoolId,
                 FromMonth = r.FromMonth,
-                ToMonth = r.ToMonth,
-                TotalAmount = r.TotalAmount,
+                ToMonth = null,
+                TotalAmount = total,
                 MealPricePerDay = r.MealPricePerDay,
                 Note = r.Note,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
 
-            entity = await _repo.AddAsync(entity, cancellationToken);
+            entity = await _repo.AddAsync(entity, ct);
             return entity.ToDto();
         }
     }
-
 
     public class UpdateSchoolPaymentSettingHandler
         : IRequestHandler<UpdateSchoolPaymentSettingCommand, SchoolPaymentSettingDto?>
     {
         private readonly IManagerPaymentSettingRepository _repo;
+        public UpdateSchoolPaymentSettingHandler(IManagerPaymentSettingRepository repo) => _repo = repo;
 
-        public UpdateSchoolPaymentSettingHandler(IManagerPaymentSettingRepository repo)
+        public async Task<SchoolPaymentSettingDto?> Handle(UpdateSchoolPaymentSettingCommand command, CancellationToken ct)
         {
-            _repo = repo;
-        }
-
-        public async Task<SchoolPaymentSettingDto?> Handle(
-            UpdateSchoolPaymentSettingCommand command,
-            CancellationToken cancellationToken)
-        {
-            var entity = await _repo.GetByIdAsync(command.SettingId, cancellationToken);
+            var entity = await _repo.GetByIdAsync(command.SettingId, ct);
             if (entity == null) return null;
 
             var r = command.Request;
 
-            // 1. Validate tháng
-            if (r.FromMonth < 1 || r.FromMonth > 12 ||
-                r.ToMonth < 1 || r.ToMonth > 12)
-            {
-                throw new ArgumentException("Tháng phải nằm trong khoảng từ 1 đến 12.");
-            }
-
-            if (r.FromMonth > r.ToMonth)
-            {
-                throw new ArgumentException("Tháng bắt đầu không được lớn hơn tháng kết thúc.");
-            }
-            // Validate MealPricePerDay
+            if (r.FromMonth < 1 || r.FromMonth > 12)
+                throw new ArgumentException("Tháng phải nằm trong khoảng 1..12.");
             if (r.MealPricePerDay < 0)
                 throw new ArgumentException("MealPricePerDay không được âm.");
 
-            // 2. Check trùng (bỏ qua chính nó)
-            var isOverlapped = await _repo.HasOverlappedRangeAsync(
-                entity.SchoolId,
-                r.FromMonth,
-                r.ToMonth,
-                entity.SettingId, // excludeSettingId
-                cancellationToken);
+            var existed = await _repo.ExistsMonthAsync(entity.SchoolId, r.FromMonth, entity.SettingId, ct);
+            if (existed) throw new InvalidOperationException("Tháng này đã có cấu hình payment setting.");
 
-            if (isOverlapped)
-            {
-                throw new InvalidOperationException(
-                    "Khoảng tháng này đã trùng với một cấu hình tiền ăn khác của trường.");
-            }
+            var year = DateTime.UtcNow.Year;
+            var (fromD, toD) = DateOnlyUtils.GetMonthRange(year, r.FromMonth);
 
-            // 3. Map dữ liệu
+            var total = r.MealPricePerDay * DateOnlyUtils.CountWeekdays(fromD, toD);
+
             entity.FromMonth = r.FromMonth;
-            entity.ToMonth = r.ToMonth;
-            entity.TotalAmount = r.TotalAmount;
+            entity.ToMonth = null;
+            entity.TotalAmount = total;
             entity.MealPricePerDay = r.MealPricePerDay;
             entity.Note = r.Note;
             entity.IsActive = r.IsActive;
 
-            await _repo.UpdateAsync(entity, cancellationToken);
+            await _repo.UpdateAsync(entity, ct);
             return entity.ToDto();
         }
     }
@@ -204,20 +158,14 @@ public class ManagerPaymentSettingHandler
         : IRequestHandler<DeleteSchoolPaymentSettingCommand, bool>
     {
         private readonly IManagerPaymentSettingRepository _repo;
+        public DeleteSchoolPaymentSettingHandler(IManagerPaymentSettingRepository repo) => _repo = repo;
 
-        public DeleteSchoolPaymentSettingHandler(IManagerPaymentSettingRepository repo)
+        public async Task<bool> Handle(DeleteSchoolPaymentSettingCommand command, CancellationToken ct)
         {
-            _repo = repo;
-        }
-
-        public async Task<bool> Handle(
-            DeleteSchoolPaymentSettingCommand command,
-            CancellationToken cancellationToken)
-        {
-            var entity = await _repo.GetByIdAsync(command.SettingId, cancellationToken);
+            var entity = await _repo.GetByIdAsync(command.SettingId, ct);
             if (entity == null) return false;
 
-            await _repo.DeleteAsync(entity, cancellationToken);
+            await _repo.DeleteAsync(entity, ct);
             return true;
         }
     }

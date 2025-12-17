@@ -97,4 +97,26 @@ public class ManagerPaymentSettingRepository : IManagerPaymentSettingRepository
                      && x.ToMonth == toMonth,
                 ct);
     }
+    public async Task<bool> ExistsMonthAsync(Guid schoolId, byte month, int? excludeSettingId = null, CancellationToken ct = default)
+    {
+        return await _context.SchoolPaymentSettings.AnyAsync(x =>
+            x.SchoolId == schoolId
+            && x.IsActive
+            && x.FromMonth == month
+            && x.ToMonth == null
+            && (excludeSettingId == null || x.SettingId != excludeSettingId.Value),
+            ct);
+    }
+
+    public async Task<SchoolPaymentSetting?> GetByMonthAsync(Guid schoolId, short month, CancellationToken ct)
+    {
+        return await _context.SchoolPaymentSettings
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x =>
+                x.SchoolId == schoolId
+                && x.IsActive
+                && x.FromMonth == month
+                && x.ToMonth == null,
+                ct);
+    }
 }

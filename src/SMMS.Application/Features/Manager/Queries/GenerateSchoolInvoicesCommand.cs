@@ -22,3 +22,9 @@ public record DeleteInvoiceCommand(
     Guid SchoolId,
     long InvoiceId
 ) : IRequest<bool>;
+public record ExportSchoolFeeBoardCommand(
+    Guid SchoolId,
+    short MonthNo,
+    int Year,
+    Guid? ClassId = null // nếu có lọc theo lớp (optional)
+) : IRequest<ExportFeeBoardResult>;
