@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using PayOS.Models.V2.PaymentRequests.Invoices;
 using SMMS.Application.Features.billing.DTOs;
 using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Domain.Entities.billing;
 using SMMS.Domain.Entities.school;
 using SMMS.Persistence.Data;
-
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using BillingInvoice = SMMS.Domain.Entities.billing.Invoice;
 namespace SMMS.Persistence.Repositories.billing
 {
     public class InvoiceRepository : IInvoiceRepository
@@ -28,13 +30,6 @@ namespace SMMS.Persistence.Repositories.billing
                 return Enumerable.Empty<InvoiceDto>();
 
             // 2️⃣ Lấy cấu hình thanh toán
-            var setting = await _context.SchoolPaymentSettings
-                .Where(s => s.SchoolId == schoolId && s.IsActive)
-                .FirstOrDefaultAsync();
-
-            if (setting == null)
-                return Enumerable.Empty<InvoiceDto>();
-
             var query =
                 from inv in _context.Invoices
                 join stu in _context.Students
@@ -51,7 +46,7 @@ namespace SMMS.Persistence.Repositories.billing
                     DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
                     AbsentDay = inv.AbsentDay,
                     Status = inv.Status,
-                    AmountToPay = Math.Max(0, setting.TotalAmount - (inv.AbsentDay) * setting.MealPricePerDay)
+                    AmountToPay = inv.TotalPrice
                 };
 
             return await query.ToListAsync();
@@ -84,21 +79,23 @@ namespace SMMS.Persistence.Repositories.billing
                 .Where(s => s.StudentId == studentId)
                 .Select(s => s.SchoolId)
                 .FirstOrDefaultAsync();
-            var setting = await _context.SchoolPaymentSettings
-              .Where(s => s.SchoolId == schoolId && s.IsActive)
-              .FirstOrDefaultAsync();
-            decimal totalAmount = 0;
-            decimal mealPrice = 0;
-            if (setting != null)
-            {
-                totalAmount = setting.TotalAmount;
-                mealPrice = setting.MealPricePerDay;
-            }
-            else
-            {
-                // Tùy nghiệp vụ: Có thể throw lỗi để báo admin cấu hình
-                throw new InvalidOperationException("Trường chưa cấu hình thanh toán (SchoolPaymentSettings).");
-            }
+            var invoiceInfo = await _context.Invoices
+                .Where(i => i.InvoiceId == invoiceId && i.StudentId == studentId)
+                .Select(i => new { i.DateFrom, i.DateTo })
+                .FirstOrDefaultAsync();
+            var prevMonthFrom = invoiceInfo.DateFrom.AddMonths(-1);
+            var prevMonthTo = invoiceInfo.DateTo.AddMonths(-1);
+            var holidayCount = await (
+                from dm in _context.DailyMeals
+                join sm in _context.ScheduleMeals
+                on dm.ScheduleMealId equals sm.ScheduleMealId
+                where
+                    sm.SchoolId == schoolId &&
+                    dm.MealDate >= prevMonthFrom &&
+                    dm.MealDate <= prevMonthTo &&
+                    dm.Notes != null
+                select dm.DailyMealId
+                ).CountAsync();
             return await (
                 from inv in _context.Invoices
 
@@ -138,10 +135,11 @@ namespace SMMS.Persistence.Repositories.billing
                     DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
                     DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
                     AbsentDay = inv.AbsentDay,
+                    Holiday = holidayCount,
                     Status = inv.Status,
 
                     // Số tiền phải đóng
-                    AmountToPay = Math.Max(0, totalAmount - (inv.AbsentDay) * mealPrice),
+                    AmountToPay = inv.TotalPrice,
                     // 🏦 Thông tin ngân hàng của trường
                     SettlementBankCode = sch.SettlementBankCode ?? string.Empty,
                     SettlementAccountNo = sch.SettlementAccountNo ?? string.Empty,
@@ -150,7 +148,7 @@ namespace SMMS.Persistence.Repositories.billing
             ).FirstOrDefaultAsync();
         }
 
-        public Task<Invoice?> GetByIdAsync(long invoiceId, CancellationToken ct)
+        public Task<BillingInvoice?> GetByIdAsync(long invoiceId, CancellationToken ct)
         {
             return _context.Invoices
                 .FirstOrDefaultAsync(i => i.InvoiceId == invoiceId, ct);
