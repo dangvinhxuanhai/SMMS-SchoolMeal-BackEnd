@@ -181,4 +181,26 @@
 
             return Ok(new { message = "Xóa hóa đơn thành công!" });
         }
+    // 📤 Export bảng thu bán trú (Excel)
+    // GET api/ManagerInvoice/export-fee-board?monthNo=11&year=2025&classId=...
+    [HttpGet("export-fee-board")]
+    public async Task<IActionResult> ExportFeeBoard(
+        [FromQuery] short monthNo,
+        [FromQuery] int year,
+        [FromQuery] Guid? classId,
+        CancellationToken ct)
+    {
+        var schoolId = GetSchoolIdFromToken();
+
+        var result = await _mediator.Send(
+            new ExportSchoolFeeBoardCommand(schoolId, monthNo, year, classId),
+            ct);
+
+        // Trả file excel về cho client download
+        return File(
+            fileContents: result.Content,
+            contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileDownloadName: result.FileName
+        );
     }
+}
