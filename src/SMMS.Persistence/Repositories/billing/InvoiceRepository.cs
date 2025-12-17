@@ -28,7 +28,40 @@ namespace SMMS.Persistence.Repositories.billing
 
             if (schoolId == Guid.Empty)
                 return Enumerable.Empty<InvoiceDto>();
+            var setting = await _context.SchoolPaymentSettings
+               .Where(s => s.SchoolId == schoolId && s.IsActive)
+               .FirstOrDefaultAsync();
+            // Đếm số ngày nghỉ của tháng trước 
+            int holidayCount = 0; // Khởi tạo kết quả
+            if (setting != null)
+            {
+                // Tính tháng trước
+                int prevMonth = setting.FromMonth - 1;
+                int year = DateTime.Now.Year;
 
+                if (prevMonth <= 0)
+                {
+                    prevMonth = 12; // lùi về tháng 12 của năm trước
+                    year -= 1;
+                }
+
+                // Ngày đầu và cuối của tháng trước
+                var prevMonthFrom = DateOnly.FromDateTime(new DateTime(year, prevMonth, 1));
+                var prevMonthTo = DateOnly.FromDateTime(prevMonthFrom.ToDateTime(TimeOnly.MinValue).AddMonths(1).AddDays(-1));
+
+                // Đếm số ngày nghỉ trong tháng trước
+                holidayCount = await (
+                    from dm in _context.DailyMeals
+                    join sm in _context.ScheduleMeals
+                    on dm.ScheduleMealId equals sm.ScheduleMealId
+                    where
+                        sm.SchoolId == schoolId &&
+                        dm.MealDate >= prevMonthFrom &&
+                        dm.MealDate <= prevMonthTo &&
+                        dm.Notes != null
+                    select dm.DailyMealId
+                ).CountAsync();
+            }
             // 2️⃣ Lấy cấu hình thanh toán
             var query =
                 from inv in _context.Invoices
@@ -45,6 +78,7 @@ namespace SMMS.Persistence.Repositories.billing
                     DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
                     DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
                     AbsentDay = inv.AbsentDay,
+                    Holiday = holidayCount,
                     Status = inv.Status,
                     AmountToPay = inv.TotalPrice
                 };
@@ -79,23 +113,46 @@ namespace SMMS.Persistence.Repositories.billing
                 .Where(s => s.StudentId == studentId)
                 .Select(s => s.SchoolId)
                 .FirstOrDefaultAsync();
+
             var invoiceInfo = await _context.Invoices
                 .Where(i => i.InvoiceId == invoiceId && i.StudentId == studentId)
                 .Select(i => new { i.DateFrom, i.DateTo })
                 .FirstOrDefaultAsync();
-            var prevMonthFrom = invoiceInfo.DateFrom.AddMonths(-1);
-            var prevMonthTo = invoiceInfo.DateTo.AddMonths(-1);
-            var holidayCount = await (
-                from dm in _context.DailyMeals
-                join sm in _context.ScheduleMeals
-                on dm.ScheduleMealId equals sm.ScheduleMealId
-                where
-                    sm.SchoolId == schoolId &&
-                    dm.MealDate >= prevMonthFrom &&
-                    dm.MealDate <= prevMonthTo &&
-                    dm.Notes != null
-                select dm.DailyMealId
+        //
+            var setting = await _context.SchoolPaymentSettings
+            .Where(s => s.SchoolId == schoolId && s.IsActive)
+             .FirstOrDefaultAsync();
+            // Đếm số ngày nghỉ của tháng trước 
+            int holidayCount = 0; // Khởi tạo kết quả
+            if (setting != null)
+            {
+                // Tính tháng trước
+                int prevMonth = setting.FromMonth - 1;
+                int year = DateTime.Now.Year;
+
+                if (prevMonth <= 0)
+                {
+                    prevMonth = 12; // lùi về tháng 12 của năm trước
+                    year -= 1;
+                }
+
+                // Ngày đầu và cuối của tháng trước
+                var prevMonthFrom = DateOnly.FromDateTime(new DateTime(year, prevMonth, 1));
+                var prevMonthTo = DateOnly.FromDateTime(prevMonthFrom.ToDateTime(TimeOnly.MinValue).AddMonths(1).AddDays(-1));
+
+                // Đếm số ngày nghỉ trong tháng trước
+                holidayCount = await (
+                    from dm in _context.DailyMeals
+                    join sm in _context.ScheduleMeals
+                    on dm.ScheduleMealId equals sm.ScheduleMealId
+                    where
+                        sm.SchoolId == schoolId &&
+                        dm.MealDate >= prevMonthFrom &&
+                        dm.MealDate <= prevMonthTo &&
+                        dm.Notes != null
+                    select dm.DailyMealId
                 ).CountAsync();
+            }
             return await (
                 from inv in _context.Invoices
 
@@ -137,7 +194,7 @@ namespace SMMS.Persistence.Repositories.billing
                     AbsentDay = inv.AbsentDay,
                     Holiday = holidayCount,
                     Status = inv.Status,
-
+                    MealPricePerDay= setting.MealPricePerDay,
                     // Số tiền phải đóng
                     AmountToPay = inv.TotalPrice,
                     // 🏦 Thông tin ngân hàng của trường

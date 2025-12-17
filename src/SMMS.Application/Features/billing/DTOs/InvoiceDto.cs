@@ -33,6 +33,7 @@ namespace SMMS.Application.Features.billing.DTOs
         public int AbsentDay { get; set; }
         public int Holiday { get; set; }
         public string Status { get; set; } = string.Empty;
+        public decimal MealPricePerDay {  get; set; }
         public decimal? AmountToPay { get; set; }
         public string SettlementBankCode { get; set; } = string.Empty;     // Mã ngân hàng
         public string SettlementAccountNo { get; set; } = string.Empty;     // Số tài khoản
