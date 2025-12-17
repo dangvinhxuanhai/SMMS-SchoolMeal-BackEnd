@@ -163,16 +163,16 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// var hasher = new PasswordHasher();
-// var password = "@1";
-// var hashed = hasher.HashPassword(password);
-//
-// Console.ForegroundColor = ConsoleColor.Green;
-// Console.WriteLine("=====================================");
-// Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
-// Console.WriteLine(hashed);
-// Console.WriteLine("=====================================");
-// Console.ResetColor();
+var hasher = new PasswordHasher();
+var password = "@1";
+var hashed = hasher.HashPassword(password);
+
+Console.ForegroundColor = ConsoleColor.Green;
+Console.WriteLine("=====================================");
+Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
+Console.WriteLine(hashed);
+Console.WriteLine("=====================================");
+Console.ResetColor();
 
 app.UseCors("AllowFrontend");
 

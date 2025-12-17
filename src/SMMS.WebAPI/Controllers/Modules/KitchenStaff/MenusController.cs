@@ -90,8 +90,6 @@ public class MenusController : ControllerBase
         }
     }
 
-    // ================= helper lấy claim =================
-
     private Guid GetSchoolIdFromToken()
     {
         var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
@@ -99,17 +97,5 @@ public class MenusController : ControllerBase
             throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
 
         return Guid.Parse(schoolIdClaim);
-    }
-
-    // Nếu sau này cần UserId thì dùng hàm này
-    private Guid GetCurrentUserId()
-    {
-        var userIdString = User.FindFirst("UserId")?.Value
-                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                           ?? User.FindFirst("sub")?.Value
-                           ?? User.FindFirst("id")?.Value
-                           ?? throw new Exception("Token does not contain UserId.");
-
-        return Guid.Parse(userIdString);
     }
 }
