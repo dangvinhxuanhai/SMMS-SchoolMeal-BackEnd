@@ -11,18 +11,25 @@ using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.purchasing;
 using SMMS.Domain.Entities.rag;
 using SMMS.Domain.Entities.school;
+using SMMS.Persistence.Interceptors;
 
 namespace SMMS.Persistence.Data;
 
 public partial class EduMealContext : DbContext
 {
-    public EduMealContext()
-    {
-    }
+    private readonly AuditSaveChangesInterceptor _auditInterceptor;
 
-    public EduMealContext(DbContextOptions<EduMealContext> options)
+    public EduMealContext(
+        DbContextOptions<EduMealContext> options,
+        AuditSaveChangesInterceptor auditInterceptor)
         : base(options)
     {
+        _auditInterceptor = auditInterceptor;
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.AddInterceptors(_auditInterceptor);
     }
 
     public virtual DbSet<AcademicYear> AcademicYears { get; set; }
@@ -177,10 +184,6 @@ public partial class EduMealContext : DbContext
 
             entity.Property(e => e.LogId).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
-
-            entity.HasOne(d => d.User).WithMany(p => p.AuditLogs)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_AuditLogs_User");
         });
 
         modelBuilder.Entity<Class>(entity =>

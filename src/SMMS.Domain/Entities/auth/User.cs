@@ -75,9 +75,6 @@ public partial class User
     [InverseProperty("NotifiedByNavigation")]
     public virtual ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
 
-    [InverseProperty("User")]
-    public virtual ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
-
     [InverseProperty("Sender")]
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
 
