@@ -57,14 +57,5 @@ namespace SMMS.WebAPI.Controllers.Modules.Parent
 
             return Ok(invoices);
         }
-
-        // ✅ Helper: Lấy ParentId từ JWT token
-        private Guid GetCurrentUserId()
-        {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(idClaim, out var parentId))
-                throw new UnauthorizedAccessException("Token không hợp lệ.");
-            return parentId;
-        }
     }
 }
