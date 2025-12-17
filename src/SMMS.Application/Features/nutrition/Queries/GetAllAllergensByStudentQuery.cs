@@ -17,4 +17,15 @@ namespace SMMS.Application.Features.nutrition.Queries
             StudentId = studentId;
         }
     }
+    public class GetTopAllergensQuery : IRequest<List<AllergenDTO>>
+    {
+        public Guid StudentId { get; set; }
+        public int Top { get; set; } = 5;
+
+        public GetTopAllergensQuery(Guid studentId, int top = 5)
+        {
+            StudentId = studentId;
+            Top = top;
+        }
+    }
 }
