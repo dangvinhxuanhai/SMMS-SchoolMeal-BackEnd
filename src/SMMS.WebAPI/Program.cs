@@ -107,7 +107,7 @@ builder.Services.AddAuthentication(options =>
         {
             OnMessageReceived = context =>
             {
-                var accessToken = context.Request.Query["access_token"];
+                var accessToken = context.Request.Query["accessToken"];
 
                 if (string.IsNullOrEmpty(accessToken) && context.Request.Cookies.ContainsKey("accessToken"))
                 {
@@ -116,7 +116,7 @@ builder.Services.AddAuthentication(options =>
 
                 var path = context.HttpContext.Request.Path;
                 if (!string.IsNullOrEmpty(accessToken) &&
-                   (path.StartsWithSegments("/hubs") || !string.IsNullOrEmpty(accessToken)))
+                   (path.StartsWithSegments("/hubs/notifications") || !string.IsNullOrEmpty(accessToken)))
                 {
                     context.Token = accessToken;
                 }
