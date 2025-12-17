@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using MediatR;
+using SMMS.Application.Features.nutrition.Commands;
 using SMMS.Application.Features.nutrition.DTOs;
 using SMMS.Application.Features.nutrition.Interfaces;
 using SMMS.Application.Features.nutrition.Queries;
@@ -11,7 +12,8 @@ using SMMS.Application.Features.nutrition.Queries;
 namespace SMMS.Application.Features.nutrition.Handlers
 {
     public class GetAllAllergensByStudentQueryHandler
-        : IRequestHandler<GetAllAllergensByStudentQuery, List<AllergenDTO>>
+        : IRequestHandler<GetAllAllergensByStudentQuery, List<AllergenDTO>>,
+        IRequestHandler<GetTopAllergensQuery, List<AllergenDTO>>
     {
         private readonly IAllergenRepository _allergenRepository;
 
@@ -29,5 +31,35 @@ namespace SMMS.Application.Features.nutrition.Handlers
 
             return await _allergenRepository.GetAllAsync(request.StudentId);
         }
+        public async Task<List<AllergenDTO>> Handle(GetTopAllergensQuery request, CancellationToken cancellationToken)
+        {
+            return await _allergenRepository.GetTopAsync(request.StudentId, request.Top);
+        }
+    }
+    public class AddStudentAllergyHandler
+       : IRequestHandler<AddStudentAllergyCommand>
+    {
+        private readonly IAllergenRepository _allergenRepository;
+
+        public AddStudentAllergyHandler(IAllergenRepository allergenRepository)
+        {
+            _allergenRepository = allergenRepository;
+        }
+
+        public async Task Handle(
+            AddStudentAllergyCommand request,
+            CancellationToken cancellationToken)
+        {
+            await _allergenRepository.AddStudentAllergyAsync(
+                request.UserId,
+                request.StudentId,
+                new AddStudentAllergyDTO
+                {
+                    AllergenId = request.AllergenId,
+                    AllergenName = request.AllergenName,
+                    AllergenInfo = request.AllergenInfo
+                });
+        }
     }
 }
+
