@@ -23,4 +23,15 @@ public interface ISchoolInvoiceRepository
     Task<bool> SaveChangesAsync(CancellationToken ct);
 
     Task<bool> DeleteInvoiceAsync(Invoice invoice, CancellationToken ct);
+    // ✅ COUNT DISTINCT MealDate của DailyMeals Notes != null theo School
+    Task<int> CountHolidayMealDaysAsync(Guid schoolId, DateOnly from, DateOnly to, CancellationToken ct);
+    Task<IReadOnlyList<ExportStudentFeeRowDto>> GetExportFeeBoardRowsAsync(
+      Guid schoolId,
+      short monthNo,
+      int year,
+      Guid? classId,
+      CancellationToken ct);
+    // Optional nếu muốn lấy tên trường/tên lớp cho đúng:
+    Task<string?> GetSchoolNameAsync(Guid schoolId, CancellationToken ct);
+    Task<string?> GetClassNameAsync(Guid classId, CancellationToken ct);
 }

@@ -14,4 +14,11 @@ namespace SMMS.Application.Features.nutrition.DTOs
         public string? AllergenInfo { get; set; }
         public DateTime CreatedAt { get; set; }
     }
+    public class AddStudentAllergyDTO
+    {
+        public int? AllergenId { get; set; }      // chọn sẵn
+        public string? AllergenName { get; set; } // nếu chọn "khác"   // search chọn
+  
+        public string? AllergenInfo { get; set; }
+    }
 }

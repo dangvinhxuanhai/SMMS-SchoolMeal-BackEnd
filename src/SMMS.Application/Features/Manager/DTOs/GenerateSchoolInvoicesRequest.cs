@@ -36,4 +36,6 @@ public class InvoiceDto1
     public DateTime DateTo { get; set; }
     public int AbsentDay { get; set; }
     public string Status { get; set; } = string.Empty;
+
+    public decimal? TotalPrice { get; set; } // ✅
 }

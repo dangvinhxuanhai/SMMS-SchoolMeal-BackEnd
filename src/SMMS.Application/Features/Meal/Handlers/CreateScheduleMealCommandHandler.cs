@@ -8,6 +8,7 @@ using SMMS.Application.Abstractions;
 using SMMS.Application.Features.foodmenu.Interfaces;
 using SMMS.Application.Features.Identity.Interfaces;
 using SMMS.Application.Features.Meal.Command;
+using SMMS.Application.Features.Meal.DTOs;
 using SMMS.Application.Features.Meal.Interfaces;
 using SMMS.Domain.Entities.foodmenu;
 
@@ -29,8 +30,22 @@ public class CreateScheduleMealCommandHandler
         _unitOfWork = unitOfWork;
     }
 
+    private static void ValidateWeek(DateTime weekStart, DateTime weekEnd)
+    {
+        if (weekStart.DayOfWeek != DayOfWeek.Monday)
+            throw new InvalidOperationException("WeekStart must be Monday");
+
+        if (weekEnd.DayOfWeek != DayOfWeek.Sunday)
+            throw new InvalidOperationException("WeekEnd must be Sunday");
+
+        if ((weekEnd.Date - weekStart.Date).TotalDays != 6)
+            throw new InvalidOperationException("Week must be exactly Monday to Sunday (7 days)");
+    }
+
     public async Task<long> Handle(CreateScheduleMealCommand request, CancellationToken cancellationToken)
     {
+        ValidateWeek(request.WeekStart, request.WeekEnd);
+
         // 1. Chống trùng / overlap tuần
         var conflict = await _scheduleMealRepository.GetForDateAsync(
             request.SchoolId,
@@ -76,13 +91,13 @@ public class CreateScheduleMealCommandHandler
         scheduleMeal.DailyMeals = new List<DailyMeal>();
 
         // 4. Build DailyMeals + MenuFoodItems
-        if (request.BaseMenuId.HasValue && (request.DailyMeals == null || request.DailyMeals.Count == 0))
+        if (request.BaseMenuId.HasValue && request.DailyMeals.Count == 0)
         {
             CopyFromTemplateToSchedule(menu, scheduleMeal, request.WeekStart.Date);
         }
         else
         {
-            BuildScheduleFromRequest(request, scheduleMeal);
+            BuildWeekdayDailyMeals(request, scheduleMeal);
         }
 
         await _scheduleMealRepository.AddAsync(scheduleMeal, cancellationToken);
@@ -179,18 +194,69 @@ public class CreateScheduleMealCommandHandler
     /// <summary>
     /// Build DailyMeals + MenuFoodItems trực tiếp từ request (không dùng template).
     /// </summary>
-    private static void BuildScheduleFromRequest(CreateScheduleMealCommand request, ScheduleMeal schedule)
+    private static void BuildWeekdayDailyMeals(
+    CreateScheduleMealCommand request,
+    ScheduleMeal schedule)
     {
-        foreach (var dto in request.DailyMeals)
-        {
-            var dailyMeal = new DailyMeal
-            {
-                MealDate = DateOnly.FromDateTime(dto.MealDate.Date),
-                MealType = dto.MealType,
-                Notes = dto.Notes,
-                MenuFoodItems = new List<MenuFoodItem>()
-            };
+        var requestMap = request.DailyMeals
+            .Where(d => d.MealDate.DayOfWeek >= DayOfWeek.Monday
+                     && d.MealDate.DayOfWeek <= DayOfWeek.Friday)
+            .GroupBy(d => d.MealDate.Date)
+            .ToDictionary(g => g.Key, g => g.ToList());
 
+        var weekStart = request.WeekStart.Date;
+
+        // Thứ 2 → Thứ 6
+        for (int i = 0; i < 5; i++)
+        {
+            var date = weekStart.AddDays(i);
+
+            if (requestMap.TryGetValue(date, out var meals))
+            {
+                foreach (var dto in meals)
+                {
+                    ValidateDailyMeal(dto);
+
+                    schedule.DailyMeals.Add(CreateDailyMeal(dto));
+                }
+            }
+            else
+            {
+                // DailyMeal trống
+                schedule.DailyMeals.Add(new DailyMeal
+                {
+                    MealDate = DateOnly.FromDateTime(date),
+                    MealType = "Lunch",
+                    Notes = "TBD",
+                    MenuFoodItems = new List<MenuFoodItem>()
+                });
+            }
+        }
+    }
+
+    private static void ValidateDailyMeal(DailyMealRequestDto dto)
+    {
+        var hasFood = dto.FoodIds != null && dto.FoodIds.Count > 0;
+
+        if (!hasFood && string.IsNullOrWhiteSpace(dto.Notes))
+        {
+            throw new InvalidOperationException(
+                $"DailyMeal {dto.MealDate:yyyy-MM-dd} requires Notes when FoodIds is empty");
+        }
+    }
+
+    private static DailyMeal CreateDailyMeal(DailyMealRequestDto dto)
+    {
+        var dailyMeal = new DailyMeal
+        {
+            MealDate = DateOnly.FromDateTime(dto.MealDate),
+            MealType = string.IsNullOrWhiteSpace(dto.MealType) ? "Lunch" : dto.MealType,
+            Notes = dto.Notes,
+            MenuFoodItems = new List<MenuFoodItem>()
+        };
+
+        if (dto.FoodIds != null)
+        {
             for (int i = 0; i < dto.FoodIds.Count; i++)
             {
                 dailyMeal.MenuFoodItems.Add(new MenuFoodItem
@@ -199,10 +265,12 @@ public class CreateScheduleMealCommandHandler
                     SortOrder = i + 1
                 });
             }
-
-            schedule.DailyMeals.Add(dailyMeal);
         }
+
+        return dailyMeal;
     }
+
+
 
     /// <summary>
     /// Convert DateTime.DayOfWeek -> 1..7 (1=Mon ... 7=Sun) đúng theo cột DayOfWeek của MenuDays.

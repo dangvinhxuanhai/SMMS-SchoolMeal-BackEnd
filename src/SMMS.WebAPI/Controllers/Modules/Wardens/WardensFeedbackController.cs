@@ -9,6 +9,7 @@ using SMMS.Application.Features.Wardens.Interfaces;
 using SMMS.Application.Features.Wardens.Queries;
 
 namespace SMMS.WebAPI.Controllers.Modules.Wardens;
+
 [Route("api/[controller]")]
 [ApiController]
 [Authorize(Roles = "Teacher")]
@@ -20,6 +21,7 @@ public class WardensFeedbackController : ControllerBase
     {
         _mediator = mediator;
     }
+
     private Guid GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
@@ -28,6 +30,7 @@ public class WardensFeedbackController : ControllerBase
 
         return Guid.Parse(userIdClaim.Value);
     }
+
     // 🟢 Lấy danh sách feedback của giám thị
     // GET: /api/WardensFeedback/{wardenId}/list
     [HttpGet("list")]
@@ -41,11 +44,7 @@ public class WardensFeedbackController : ControllerBase
             if (!feedbacks.Any())
                 return NotFound(new { message = "Chưa có phản hồi nào." });
 
-            return Ok(new
-            {
-                message = $"Tìm thấy {feedbacks.Count()} phản hồi.",
-                data = feedbacks
-            });
+            return Ok(new { message = $"Tìm thấy {feedbacks.Count()} phản hồi.", data = feedbacks });
         }
         catch (Exception ex)
         {
@@ -63,11 +62,7 @@ public class WardensFeedbackController : ControllerBase
             request.SenderId = GetCurrentUserId();
             var feedback = await _mediator.Send(new CreateWardenFeedbackCommand(request));
 
-            return Ok(new
-            {
-                message = "Gửi phản hồi thành công!",
-                data = feedback
-            });
+            return Ok(new { message = "Gửi phản hồi thành công!", data = feedback });
         }
         catch (ArgumentException ex)
         {
@@ -81,11 +76,12 @@ public class WardensFeedbackController : ControllerBase
 
     [HttpPut("{feedbackId:int}")]
     public async Task<IActionResult> UpdateFeedback(
-            int feedbackId,
-            [FromBody] CreateFeedbackRequest request)
+        int feedbackId,
+        [FromBody] CreateFeedbackRequest request)
     {
         try
         {
+            request.SenderId = GetCurrentUserId();
             var result = await _mediator.Send(
                 new UpdateWardenFeedbackCommand(feedbackId, request));
 
@@ -107,7 +103,7 @@ public class WardensFeedbackController : ControllerBase
 
     [HttpDelete("{feedbackId:int}")]
     public async Task<IActionResult> DeleteFeedback(
-           int feedbackId)
+        int feedbackId)
     {
         try
         {
@@ -130,5 +126,3 @@ public class WardensFeedbackController : ControllerBase
         }
     }
 }
-
-

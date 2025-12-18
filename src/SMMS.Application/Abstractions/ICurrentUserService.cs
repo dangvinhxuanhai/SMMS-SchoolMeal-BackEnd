@@ -1,4 +1,4 @@
-namespace SMMS.Application.Features.Identity.Interfaces
+namespace SMMS.Application.Abstractions
 {
     public interface ICurrentUserService
     {

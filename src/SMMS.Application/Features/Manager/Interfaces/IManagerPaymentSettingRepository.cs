@@ -41,4 +41,9 @@ public interface IManagerPaymentSettingRepository
         short fromMonth,
         short toMonth,
         CancellationToken ct);
+    // ✅ 1 tháng
+    Task<bool> ExistsMonthAsync(Guid schoolId, byte month, int? excludeSettingId = null, CancellationToken ct = default);
+
+    // ✅ lấy setting theo tháng (ToMonth = null)
+    Task<SchoolPaymentSetting?> GetByMonthAsync(Guid schoolId, short month, CancellationToken ct);
 }

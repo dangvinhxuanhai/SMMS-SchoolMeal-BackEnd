@@ -11,4 +11,9 @@ namespace SMMS.Application.Features.nutrition.Interfaces;
 public interface IAllergenRepository
 {
     Task<List<AllergenDTO>> GetAllAsync(Guid studentId);
+    Task AddStudentAllergyAsync(
+        Guid userId,
+        Guid studentId,
+        AddStudentAllergyDTO dto);
+    Task<List<AllergenDTO>> GetTopAsync(Guid studentId, int top = 5);
 }
