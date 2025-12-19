@@ -28,13 +28,6 @@ namespace SMMS.Persistence.Repositories.billing
 
             if (schoolId == Guid.Empty)
                 return Enumerable.Empty<InvoiceDto>();
-            var setting = await _context.SchoolPaymentSettings
-               .Where(s => s.SchoolId == schoolId && s.IsActive)
-               .FirstOrDefaultAsync();
-            if (setting == null)
-            {
-                throw new Exception("Không tìm thấy payment setting");
-            }
 
             // 2️⃣ Lấy cấu hình thanh toán
             var query =
@@ -54,10 +47,21 @@ namespace SMMS.Persistence.Repositories.billing
                     AbsentDay = inv.AbsentDay,
                     Holiday = 0,
                     Status = inv.Status,
+                    MealPricePerDay = 0,
                     AmountToPay = inv.TotalPrice
                 };
             var invList = await query.ToListAsync() ?? new List<InvoiceDto>();
             foreach (InvoiceDto invoice in invList){
+                var setting = await _context.SchoolPaymentSettings
+               .Where(s => s.SchoolId == schoolId && s.FromMonth == invoice.DateFrom.Month && s.IsActive)
+               .FirstOrDefaultAsync();
+                if (setting == null)
+                {
+                    throw new Exception("Không tìm thấy payment setting");
+                }
+                decimal MealPrice = setting.MealPricePerDay;
+                invoice.MealPricePerDay = MealPrice;
+
                 var prevMonthFrom = DateOnly.FromDateTime(invoice.DateFrom.AddMonths(-1));
                 var prevMonthTo = DateOnly.FromDateTime(invoice.DateFrom.AddDays(-1));
 
@@ -75,7 +79,7 @@ namespace SMMS.Persistence.Repositories.billing
                     ).CountAsync();
                 invoice.Holiday = holidayCount;
             }
-            ;
+;
             return invList;
         }
         // ✅ Danh sách hóa đơn của các con thuộc phụ huynh
