@@ -52,18 +52,20 @@ builder.Services.AddSwaggerGen(options =>
             var genericArgs = string.Join("_", type.GetGenericArguments().Select(t => t.Name));
             return $"{ns}_{genericTypeName}_{genericArgs}";
         }
+
         return $"{ns}_{type.Name}";
     });
 
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-    {
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Nhập token JWT vào đây (ví dụ: Bearer abcdef12345)",
-        Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        BearerFormat = "JWT",
-        Scheme = "Bearer"
-    });
+    options.AddSecurityDefinition("Bearer",
+        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        {
+            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            Description = "Nhập token JWT vào đây (ví dụ: Bearer abcdef12345)",
+            Name = "Authorization",
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+            BearerFormat = "JWT",
+            Scheme = "Bearer"
+        });
 
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
@@ -116,7 +118,7 @@ builder.Services.AddAuthentication(options =>
 
                 var path = context.HttpContext.Request.Path;
                 if (!string.IsNullOrEmpty(accessToken) &&
-                   (path.StartsWithSegments("/hubs/notifications") || !string.IsNullOrEmpty(accessToken)))
+                    (path.StartsWithSegments("/hubs/notifications") || !string.IsNullOrEmpty(accessToken)))
                 {
                     context.Token = accessToken;
                 }
@@ -142,7 +144,8 @@ builder.Services.AddCors(options =>
                 "https://edumeal.id.vn",
                 "https://admin.edumeal.id.vn",
                 "http://localhost:3000",
-                "https://smms-school-meal-admin.vercel.app"
+                "https://smms-school-meal-admin.vercel.app",
+                "https://outragedly-guidebookish-mitzie.ngrok-free.dev"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
