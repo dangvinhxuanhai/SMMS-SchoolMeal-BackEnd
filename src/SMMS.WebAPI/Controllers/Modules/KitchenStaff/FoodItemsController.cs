@@ -113,7 +113,7 @@ public class FoodItemsController : ControllerBase
 
             if (request.ImageFile != null)
             {
-                var uploadedUrl = await _cloudinary.UploadImageAsync(request.ImageFile);
+                var uploadedUrl = await _cloudinary.UploadDishImageAsync(request.ImageFile);
                 if (!string.IsNullOrWhiteSpace(uploadedUrl))
                 {
                     imageUrl = uploadedUrl;
