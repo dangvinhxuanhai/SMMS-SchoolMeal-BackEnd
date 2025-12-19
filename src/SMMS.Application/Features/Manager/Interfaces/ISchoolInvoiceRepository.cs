@@ -23,6 +23,13 @@ public interface ISchoolInvoiceRepository
     Task<bool> SaveChangesAsync(CancellationToken ct);
 
     Task<bool> DeleteInvoiceAsync(Invoice invoice, CancellationToken ct);
+    // ✅ NEW: absent theo từng học sinh trong khoảng ngày
+    Task<Dictionary<Guid, int>> CountAbsentDaysByStudentAsync(
+        Guid schoolId,
+        DateOnly dateFrom,
+        DateOnly dateTo,
+        CancellationToken ct
+    );
     // ✅ COUNT DISTINCT MealDate của DailyMeals Notes != null theo School
     Task<int> CountHolidayMealDaysAsync(Guid schoolId, DateOnly from, DateOnly to, CancellationToken ct);
     Task<IReadOnlyList<ExportStudentFeeRowDto>> GetExportFeeBoardRowsAsync(
