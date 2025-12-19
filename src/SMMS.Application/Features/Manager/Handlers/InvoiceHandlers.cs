@@ -144,27 +144,28 @@ public class GenerateSchoolInvoicesHandler
             short prevMonth = (short)(monthNo - 1);
 
             var settingPrev = await _paymentRepo.GetByMonthAsync(request.SchoolId, prevMonth, ct);
-            if (settingPrev == null)
-                throw new InvalidOperationException("Thiếu payment setting tháng trước (cần để tính trừ).");
 
-            prevPerDay = settingPrev.MealPricePerDay;
+            if (settingPrev != null)
+            {
+                prevPerDay = settingPrev.MealPricePerDay;
 
-            var (prevFrom, prevTo) = DateOnlyUtils.GetMonthRange(dtFrom.Year, prevMonth);
+                var (prevFrom, prevTo) = DateOnlyUtils.GetMonthRange(dtFrom.Year, prevMonth);
 
-            holidayPrev = await _repo.CountHolidayMealDaysAsync(request.SchoolId, prevFrom, prevTo, ct);
+                holidayPrev = await _repo.CountHolidayMealDaysAsync(request.SchoolId, prevFrom, prevTo, ct);
 
-            absentPrevMap = await _repo.Attendance
-                .Where(a => a.AbsentDate >= prevFrom && a.AbsentDate <= prevTo)
-                .Join(_repo.Students,
-                    a => a.StudentId,
-                    s => s.StudentId,
-                    (a, s) => new { a.StudentId, s.SchoolId, a.AbsentDate })
-                .Where(x => x.SchoolId == request.SchoolId)
-                .GroupBy(x => x.StudentId)
-                .ToDictionaryAsync(
-                    g => g.Key,
-                    g => g.Select(x => x.AbsentDate).Distinct().Count(),
-                    ct);
+                absentPrevMap = await _repo.Attendance
+                    .Where(a => a.AbsentDate >= prevFrom && a.AbsentDate <= prevTo)
+                    .Join(_repo.Students,
+                        a => a.StudentId,
+                        s => s.StudentId,
+                        (a, s) => new { a.StudentId, s.SchoolId, a.AbsentDate })
+                    .Where(x => x.SchoolId == request.SchoolId)
+                    .GroupBy(x => x.StudentId)
+                    .ToDictionaryAsync(
+                        g => g.Key,
+                        g => g.Select(x => x.AbsentDate).Distinct().Count(),
+                        ct);
+            }
         }
 
         // 3) học sinh active
