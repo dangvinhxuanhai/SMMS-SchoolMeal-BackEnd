@@ -142,7 +142,26 @@ public class SchoolInvoiceRepository : ISchoolInvoiceRepository
         return rows;
     }
 
-
+    public async Task<Dictionary<Guid, int>> CountAbsentDaysByStudentAsync(
+    Guid schoolId,
+    DateOnly dateFrom,
+    DateOnly dateTo,
+    CancellationToken ct)
+    {
+        return await (
+            from a in _context.Attendances.AsNoTracking()
+            join s in _context.Students.AsNoTracking() on a.StudentId equals s.StudentId
+            where s.SchoolId == schoolId
+                  && a.AbsentDate >= dateFrom
+                  && a.AbsentDate <= dateTo
+            select new { a.StudentId, a.AbsentDate }
+        )
+        .GroupBy(x => x.StudentId)
+        .ToDictionaryAsync(
+            g => g.Key,
+            g => g.Select(x => x.AbsentDate).Distinct().Count(),
+            ct);
+    }
 
     // optional
     public Task<string?> GetSchoolNameAsync(Guid schoolId, CancellationToken ct)

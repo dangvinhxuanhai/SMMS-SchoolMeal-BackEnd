@@ -191,7 +191,7 @@ namespace SMMS.Persistence.Repositories.schools
 
         public async Task<bool> AnyNeedRebuildAsync(CancellationToken cancellationToken = default)
         {
-            return await _context.Schools.AnyAsync(s => s.NeedRebuildAiIndex == false, cancellationToken);
+            return await _context.Schools.AnyAsync(s => s.IsActive==true && s.NeedRebuildAiIndex == false, cancellationToken);
         }
     }
 }
