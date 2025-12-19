@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 namespace SMMS.Application.Features.foodmenu.DTOs;
 public class DailyMealDto
 {
-    public int DailyMealId { get; set; }
     public DateTime MealDate { get; set; }
     public string MealType { get; set; } = default!;
     public long ScheduleMealId { get; set; }

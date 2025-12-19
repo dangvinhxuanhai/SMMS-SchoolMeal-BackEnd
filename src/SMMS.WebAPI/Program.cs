@@ -177,4 +177,7 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 
+app.MapGet("/index", () => "Hello from .NET 8 Minimal API!");
+
 app.Run();
+

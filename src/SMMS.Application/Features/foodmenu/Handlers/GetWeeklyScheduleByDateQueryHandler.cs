@@ -60,70 +60,67 @@ public sealed class GetWeeklyScheduleByDateQueryHandler
             .GroupBy(dm => dm.MealDate)               // group theo DATE
             .OrderBy(g => g.Key);                     // sort theo ngày
 
-        var dayDtos = groupedByDate
-            .Select(g =>
-            {
-                var first = g.First(); // lấy 1 DailyMeal đại diện (để lấy id/ghi chú nếu cần)
-
-                // Gộp toàn bộ món ăn của tất cả DailyMeal trong cùng ngày
-                var allFoodsForDay = g
-                    .SelectMany(dm =>
-                    {
-                        menuFoodsByDaily.TryGetValue(dm.DailyMealId, out var foodsForDaily);
-                        return foodsForDaily ?? Enumerable.Empty<MenuFoodItemInfo>();
-                    })
-                    .OrderBy(f => f.SortOrder ?? int.MaxValue)
-                    .ToList();
-
-                var foodDtos = allFoodsForDay
-                    .Select(f =>
-                    {
-                        ingredientsByFood.TryGetValue(f.FoodId, out var ingForFood);
-
-                        var ingredientDtos = (ingForFood ?? new List<FoodIngredientInfo>())
-                            .Select(i => new ScheduledFoodIngredientDto
-                            {
-                                IngredientId = i.IngredientId,
-                                IngredientName = i.IngredientName,
-                                QuantityGram = i.QuantityGram
-                            })
-                            .ToList()
-                            .AsReadOnly();
-
-                        return new ScheduledFoodItemDto
-                        {
-                            FoodId = f.FoodId,
-                            FoodName = f.FoodName,
-                            FoodType = f.FoodType,
-                            IsMainDish = f.IsMainDish,
-                            ImageUrl = f.ImageUrl,
-                            FoodDesc = f.FoodDesc,
-                            SortOrder = f.SortOrder,
-                            Ingredients = ingredientDtos
-                        };
-                    })
-                    .ToList();
-
-                return new DailyMealDto
+        var dayDtos = dailyMeals
+                .GroupBy(dm => dm.MealDate)
+                .OrderBy(g => g.Key)
+                .Select(g =>
                 {
-                    // Nếu bạn muốn mỗi ngày 1 id "đại diện", có thể lấy id nhỏ nhất hoặc lớn nhất
-                    DailyMealId = first.DailyMealId,
-                    MealDate = first.MealDate.ToDateTime(TimeOnly.MinValue),
+                    // 🔹 Gộp toàn bộ FoodItems của mọi MealType trong ngày
+                    var foodDtos = g
+                        .SelectMany(dm =>
+                        {
+                            menuFoodsByDaily.TryGetValue(dm.DailyMealId, out var foods);
+                            return foods ?? Enumerable.Empty<MenuFoodItemInfo>();
+                        })
+                        // 🔥 tránh trùng FoodId
+                        .GroupBy(f => f.FoodId)
+                        .Select(gf =>
+                        {
+                            var f = gf.First();
 
-                    // ⚠️ MealType: giờ bị mix nhiều loại.
-                    // 1) Nếu FE không cần, có thể để null/"" hoặc bỏ property khỏi DTO.
-                    // 2) Hoặc combine cho vui:
-                    MealType = string.Join(
-                        ",",
-                        g.Select(x => x.MealType).Distinct()),
+                            ingredientsByFood.TryGetValue(f.FoodId, out var ingForFood);
 
-                    // Notes: nếu nhiều Notes khác nhau, bạn cũng có thể join tương tự.
-                    Notes = first.Notes,
+                            var ingredientDtos = (ingForFood ?? new List<FoodIngredientInfo>())
+                                .Select(i => new ScheduledFoodIngredientDto
+                                {
+                                    IngredientId = i.IngredientId,
+                                    IngredientName = i.IngredientName,
+                                    QuantityGram = i.QuantityGram
+                                })
+                                .ToList()
+                                .AsReadOnly();
 
-                    FoodItems = foodDtos
-                };
-            })
-            .ToList();
+                            return new ScheduledFoodItemDto
+                            {
+                                FoodId = f.FoodId,
+                                FoodName = f.FoodName,
+                                FoodType = f.FoodType,
+                                IsMainDish = f.IsMainDish,
+                                ImageUrl = f.ImageUrl,
+                                FoodDesc = f.FoodDesc,
+                                SortOrder = f.SortOrder,
+                                Ingredients = ingredientDtos
+                            };
+                        })
+                        .OrderByDescending(f => f.IsMainDish)
+                        .ThenBy(f => f.SortOrder ?? int.MaxValue)
+                        .ToList();
+
+                    return new DailyMealDto
+                    {
+                        MealDate = g.Key.ToDateTime(TimeOnly.MinValue),
+
+                        // ✅ MealType không còn dùng → null
+                        MealType = null,
+
+                        // Lấy note đầu tiên không rỗng (nếu có)
+                        Notes = g.Select(x => x.Notes)
+                                 .FirstOrDefault(n => !string.IsNullOrWhiteSpace(n)),
+
+                        FoodItems = foodDtos
+                    };
+                })
+                .ToList();
 
         return new WeeklyScheduleDto
         {
