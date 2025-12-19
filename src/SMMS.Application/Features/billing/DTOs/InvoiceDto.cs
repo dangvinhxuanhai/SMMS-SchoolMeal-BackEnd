@@ -19,7 +19,7 @@ namespace SMMS.Application.Features.billing.DTOs
         public int Holiday { get; set; }
         public string Status { get; set; } = string.Empty;
         public decimal MealPricePerDay { get; set; }
-        public int? TotalMeal { get; set; }
+        public int? TotalMealLastMonth { get; set; }
         public decimal? AmountToPay { get; set; }
         public decimal? AmountTotal { get; set; }
     }
@@ -37,7 +37,7 @@ namespace SMMS.Application.Features.billing.DTOs
         public int Holiday { get; set; }
         public string Status { get; set; } = string.Empty;
         public decimal MealPricePerDay {  get; set; }
-        public int? TotalMeal { get; set; }
+        public int? TotalMealLastMonth { get; set; }
         public decimal? AmountToPay { get; set; }
         public decimal? AmountTotal { get; set; }
         public string SettlementBankCode { get; set; } = string.Empty;     // Mã ngân hàng

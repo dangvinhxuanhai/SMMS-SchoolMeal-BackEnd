@@ -48,7 +48,7 @@ namespace SMMS.Persistence.Repositories.billing
                     Holiday = 0,
                     Status = inv.Status,
                     MealPricePerDay = 0,
-                    TotalMeal = 0,
+                    TotalMealLastMonth = 0,
                     AmountToPay = inv.TotalPrice,
                     AmountTotal = 0
                 };
@@ -81,7 +81,7 @@ namespace SMMS.Persistence.Repositories.billing
                 .Distinct()
                 .CountAsync();
                 int finalTotalMeals = totalMealDays - invoice.AbsentDay;
-                invoice.TotalMeal = finalTotalMeals;
+                invoice.TotalMealLastMonth = Math.Max(0,finalTotalMeals);
                 // Đếm số ngày nghỉ trong tháng trước
                 int holidayCount = await (
                         from dm in _context.DailyMeals
@@ -222,7 +222,7 @@ namespace SMMS.Persistence.Repositories.billing
                     Holiday = holidayCount,
                     Status = inv.Status,
                     MealPricePerDay= setting.MealPricePerDay,
-                    TotalMeal = finalTotalMeal,
+                    TotalMealLastMonth = Math.Max(0,finalTotalMeal),
                     // Số tiền phải đóng
                     AmountToPay = inv.TotalPrice,
                     //Tổng số tiền 
