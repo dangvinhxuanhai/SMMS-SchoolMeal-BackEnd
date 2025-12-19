@@ -48,7 +48,9 @@ namespace SMMS.Persistence.Repositories.billing
                     Holiday = 0,
                     Status = inv.Status,
                     MealPricePerDay = 0,
-                    AmountToPay = inv.TotalPrice
+                    TotalMeal = 0,
+                    AmountToPay = inv.TotalPrice,
+                    AmountTotal = 0
                 };
             var invList = await query.ToListAsync() ?? new List<InvoiceDto>();
             foreach (InvoiceDto invoice in invList){
@@ -61,10 +63,25 @@ namespace SMMS.Persistence.Repositories.billing
                 }
                 decimal MealPrice = setting.MealPricePerDay;
                 invoice.MealPricePerDay = MealPrice;
-
+                decimal TotalAmount =  setting.TotalAmount;
+                invoice.AmountTotal = TotalAmount;
                 var prevMonthFrom = DateOnly.FromDateTime(invoice.DateFrom.AddMonths(-1));
                 var prevMonthTo = DateOnly.FromDateTime(invoice.DateFrom.AddDays(-1));
-
+                // 2. Đếm số ngày ăn hợp lệ (không trùng ngày, không notes)
+                int totalMealDays = await (
+                    from dm in _context.DailyMeals
+                    join sm in _context.ScheduleMeals
+                        on dm.ScheduleMealId equals sm.ScheduleMealId
+                    where sm.SchoolId == schoolId&&
+                          dm.MealDate >= prevMonthFrom &&
+                          dm.MealDate <= prevMonthTo
+                          && dm.Notes == null
+                    select dm.MealDate
+                )
+                .Distinct()
+                .CountAsync();
+                int finalTotalMeals = totalMealDays - invoice.AbsentDay;
+                invoice.TotalMeal = finalTotalMeals;
                 // Đếm số ngày nghỉ trong tháng trước
                 int holidayCount = await (
                         from dm in _context.DailyMeals
@@ -110,7 +127,10 @@ namespace SMMS.Persistence.Repositories.billing
                 .Where(s => s.StudentId == studentId)
                 .Select(s => s.SchoolId)
                 .FirstOrDefaultAsync();
-
+            var invoicenew = await _context.Invoices
+                .FirstOrDefaultAsync(i =>
+                i.InvoiceId == invoiceId &&
+                i.StudentId == studentId);
             var invoiceInfo = await _context.Invoices
                 .Where(i => i.InvoiceId == invoiceId && i.StudentId == studentId)
                 .Select(i => new { i.DateFrom, i.DateTo })
@@ -134,9 +154,21 @@ namespace SMMS.Persistence.Repositories.billing
                 // Ngày đầu và cuối của tháng trước
                 var prevMonthFrom = DateOnly.FromDateTime(new DateTime(year, prevMonth, 1));
                 var prevMonthTo = DateOnly.FromDateTime(prevMonthFrom.ToDateTime(TimeOnly.MinValue).AddMonths(1).AddDays(-1));
-
-                // Đếm số ngày nghỉ trong tháng trước
-               int holidayCount = await (
+                // Đếm số ngày ăn
+                int totalMealDays = await (
+                from dm in _context.DailyMeals
+                join sm in _context.ScheduleMeals
+                    on dm.ScheduleMealId equals sm.ScheduleMealId
+                where sm.SchoolId == schoolId &&
+                      dm.MealDate >= prevMonthFrom &&
+                      dm.MealDate <= prevMonthTo
+                      && dm.Notes == null
+                select dm.MealDate)
+                .Distinct()
+                .CountAsync();
+            int finalTotalMeal = totalMealDays - invoicenew.AbsentDay;
+            // Đếm số ngày nghỉ trong tháng trước
+            int holidayCount = await (
                     from dm in _context.DailyMeals
                     join sm in _context.ScheduleMeals
                     on dm.ScheduleMealId equals sm.ScheduleMealId
@@ -190,8 +222,11 @@ namespace SMMS.Persistence.Repositories.billing
                     Holiday = holidayCount,
                     Status = inv.Status,
                     MealPricePerDay= setting.MealPricePerDay,
+                    TotalMeal = finalTotalMeal,
                     // Số tiền phải đóng
                     AmountToPay = inv.TotalPrice,
+                    //Tổng số tiền 
+                    AmountTotal = setting.TotalAmount,
                     // 🏦 Thông tin ngân hàng của trường
                     SettlementBankCode = sch.SettlementBankCode ?? string.Empty,
                     SettlementAccountNo = sch.SettlementAccountNo ?? string.Empty,
