@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ClosedXML.Excel;
+using DocumentFormat.OpenXml.InkML;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Common.Helpers;
@@ -26,40 +27,63 @@ public class GetSchoolInvoicesHandler :
 
     public async Task<IReadOnlyList<InvoiceDto1>> Handle(
         GetSchoolInvoicesQuery request,
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
+        // Bắt buộc để tính "tháng trước"
+        if (!request.MonthNo.HasValue || !request.Year.HasValue)
+            throw new ArgumentException("Cần truyền MonthNo và Year để tính AbsentDay = holidayPrev + absentPrevStudent (tháng trước).");
+
+        var monthNo = request.MonthNo.Value;
+        var year = request.Year.Value;
+
+        // tháng trước
+        short prevMonth = (short)(monthNo == 1 ? 12 : monthNo - 1);
+        int prevYear = (monthNo == 1 ? year - 1 : year);
+
+        var prevFrom = new DateOnly(prevYear, prevMonth, 1);
+        var prevTo = new DateOnly(prevYear, prevMonth, DateTime.DaysInMonth(prevYear, prevMonth));
+
+        // ✅ holidayPrev theo school (tháng trước)
+        var holidayPrev = await _repo.CountHolidayMealDaysAsync(request.SchoolId, prevFrom, prevTo, ct);
+
+        // ✅ absentPrevStudent map theo student (tháng trước)
+        var absentPrevMap = await _repo.CountAbsentDaysByStudentAsync(request.SchoolId, prevFrom, prevTo, ct);
+
+        // Query invoice tháng hiện tại
         var query =
             from i in _repo.Invoices
             join s in _repo.Students on i.StudentId equals s.StudentId
             where s.SchoolId == request.SchoolId
+                  && i.MonthNo == monthNo
+                  && i.DateFrom.Year == year
             select new { i, s };
-
-        if (request.MonthNo.HasValue)
-            query = query.Where(x => x.i.MonthNo == request.MonthNo);
-
-        if (request.Year.HasValue)
-            query = query.Where(x => x.i.DateFrom.Year == request.Year.Value);
 
         if (!string.IsNullOrWhiteSpace(request.Status))
             query = query.Where(x => x.i.Status == request.Status);
 
         return await query
-         .Select(x => new InvoiceDto1
-         {
-             InvoiceId = x.i.InvoiceId,
-             InvoiceCode = x.i.InvoiceCode,
-             StudentId = x.i.StudentId,
-             StudentName = x.s.FullName,
-             MonthNo = x.i.MonthNo,
-             DateFrom = x.i.DateFrom.ToDateTime(TimeOnly.MinValue),
-             DateTo = x.i.DateTo.ToDateTime(TimeOnly.MinValue),
-             AbsentDay = x.i.AbsentDay,
-             Status = x.i.Status,
-             TotalPrice = x.i.TotalPrice   // ✅ thêm
-         })
-         .ToListAsync(cancellationToken);
+            .Select(x => new InvoiceDto1
+            {
+                InvoiceId = x.i.InvoiceId,
+                InvoiceCode = x.i.InvoiceCode,
+                StudentId = x.i.StudentId,
+                StudentName = x.s.FullName,
+                MonthNo = x.i.MonthNo,
+                DateFrom = x.i.DateFrom.ToDateTime(TimeOnly.MinValue),
+                DateTo = x.i.DateTo.ToDateTime(TimeOnly.MinValue),
+
+                // ✅ AbsentDay theo yêu cầu: holidayPrev + absentPrevStudent (tháng trước)
+                AbsentDay = holidayPrev + (absentPrevMap.ContainsKey(x.i.StudentId)
+                                ? absentPrevMap[x.i.StudentId]
+                                : 0),
+
+                Status = x.i.Status,
+                TotalPrice = x.i.TotalPrice
+            })
+            .ToListAsync(ct);
     }
 }
+
 
 public class GetSchoolInvoiceByIdHandler :
     IRequestHandler<GetSchoolInvoiceByIdQuery, InvoiceDto1?>
