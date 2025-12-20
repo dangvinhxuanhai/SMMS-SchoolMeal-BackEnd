@@ -73,9 +73,18 @@ namespace SMMS.Persistence.Repositories.billing
                         select new { dm.MealDate, IsHoliday = dm.Notes != null })
                     .Distinct()
                     .ToListAsync();
-
+                // So don xin nghi thang truoc
+                int absentRequestCount = await _context.Attendances
+                .Where(a =>
+                a.StudentId == studentId &&
+                a.AbsentDate >= prevMonthFrom &&
+                a.AbsentDate <= prevMonthTo
+                )
+                .Select(a => a.AbsentDate)
+                .Distinct()
+                .CountAsync();
                 int holidayCount = mealStats.Count(x => x.IsHoliday);
-                int validMealDays = mealStats.Count(x => !x.IsHoliday);
+                int validMealDays = mealStats.Count(x => !x.IsHoliday)- absentRequestCount;
 
                 result.Add(new InvoiceDto
                 {
@@ -85,12 +94,12 @@ namespace SMMS.Persistence.Repositories.billing
                     MonthNo = inv.MonthNo,
                     DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
                     DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
-                    AbsentDay = inv.AbsentDay,
+                    AbsentDay = absentRequestCount,
                     Holiday = holidayCount,
                     Status = inv.Status,
                     MealPricePerDay = setting?.MealPricePerDay ?? 0,
                     AmountTotal = setting?.TotalAmount ?? 0,
-                    TotalMealLastMonth = Math.Max(0, validMealDays - inv.AbsentDay),
+                    TotalMealLastMonth = Math.Max(0, validMealDays),
                     AmountToPay = inv.TotalPrice
                 });
             }
@@ -120,7 +129,16 @@ namespace SMMS.Persistence.Repositories.billing
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s =>
                     s.SchoolId == schoolId && s.FromMonth == invoiceData.inv.DateFrom.Month && s.IsActive);
-
+            // So don xin nghi thang truoc
+            int absentRequestCount = await _context.Attendances
+            .Where(a =>
+            a.StudentId == studentId &&
+            a.AbsentDate >= invoiceData.PrevMonthFrom &&
+            a.AbsentDate <= invoiceData.PrevMonthTo
+            )
+            .Select(a => a.AbsentDate)
+            .Distinct()
+            .CountAsync();
             var mealStats = await (from dm in _context.DailyMeals
                     join sm in _context.ScheduleMeals on dm.ScheduleMealId equals sm.ScheduleMealId
                     where sm.SchoolId == schoolId &&
@@ -131,7 +149,7 @@ namespace SMMS.Persistence.Repositories.billing
                 .ToListAsync();
 
             int holidayCount = mealStats.Count(x => x.IsHoliday);
-            int validMealDays = mealStats.Count(x => !x.IsHoliday);
+            int validMealDays = mealStats.Count(x => !x.IsHoliday)-absentRequestCount;
 
             return await (from inv in _context.Invoices
                 join stu in _context.Students on inv.StudentId equals stu.StudentId
@@ -149,11 +167,11 @@ namespace SMMS.Persistence.Repositories.billing
                     MonthNo = inv.MonthNo,
                     DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
                     DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
-                    AbsentDay = inv.AbsentDay,
+                    AbsentDay = absentRequestCount,
                     Holiday = holidayCount,
                     Status = inv.Status,
                     MealPricePerDay = setting != null ? setting.MealPricePerDay : 0,
-                    TotalMealLastMonth = Math.Max(0, validMealDays - inv.AbsentDay),
+                    TotalMealLastMonth = Math.Max(0, validMealDays),
                     AmountToPay = inv.TotalPrice,
                     AmountTotal = setting != null ? setting.TotalAmount : 0,
                     SettlementBankCode = sch.SettlementBankCode ?? string.Empty,
