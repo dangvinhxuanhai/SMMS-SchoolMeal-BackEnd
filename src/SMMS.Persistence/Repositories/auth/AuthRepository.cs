@@ -8,6 +8,7 @@ using SMMS.Persistence.Data;
 using System;
 using System.Threading.Tasks;
 using SMMS.Application.Common.Interfaces;
+using System.Text.RegularExpressions;
 
 namespace SMMS.Infrastructure.Service
 {
@@ -180,9 +181,33 @@ namespace SMMS.Infrastructure.Service
             bool isTemp = _passwordHasher.VerifyPassword("@1", user.PasswordHash);
             if (!isTemp)
                 throw new Exception("Tài khoản đã được đổi mật khẩu trước đó.");
+            // 👉 Validate mật khẩu mới
+            ValidatePassword(newPassword);
 
             user.PasswordHash = _passwordHasher.HashPassword(newPassword);
             await _dbContext.SaveChangesAsync();
+        }
+        //ValidatePassword
+        private void ValidatePassword(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password))
+                throw new Exception("Mật khẩu không được để trống.");
+
+            // >8 và <16 ký tự
+            if (password.Length < 8 || password.Length > 16)
+                throw new Exception("Mật khẩu phải từ 8 đến 16 ký tự.");
+
+            // Có ít nhất 1 chữ hoa
+            if (!Regex.IsMatch(password, "[A-Z]"))
+                throw new Exception("Mật khẩu phải chứa ít nhất 1 chữ hoa.");
+
+            // Có ít nhất 1 chữ thường
+            if (!Regex.IsMatch(password, "[a-z]"))
+                throw new Exception("Mật khẩu phải chứa ít nhất 1 chữ thường.");
+
+            // Có ít nhất 1 ký tự đặc biệt
+            if (!Regex.IsMatch(password, "[^a-zA-Z0-9]"))
+                throw new Exception("Mật khẩu phải chứa ít nhất 1 ký tự đặc biệt.");
         }
     }
 }

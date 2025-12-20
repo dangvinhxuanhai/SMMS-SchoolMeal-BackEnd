@@ -108,7 +108,7 @@ namespace SMMS.Persistence.Repositories.auth
             if (parent == null) throw new Exception("User not found");
 
             // Upload lên Cloudinary
-            var newUrl = await _cloudinary.UploadImageAsync(file);
+            var newUrl = await _cloudinary.UploadAvatar(file);
 
             if (newUrl == null)
                 throw new Exception("Upload failed");
@@ -130,7 +130,7 @@ namespace SMMS.Persistence.Repositories.auth
             var student = await _context.Students.FindAsync(studentId);
             if (student == null) throw new Exception("Student not found");
 
-            var newUrl = await _cloudinary.UploadImageAsync(file);
+            var newUrl = await _cloudinary.UploadAvatar(file);
 
             if (newUrl == null)
                 throw new Exception("Upload failed");
