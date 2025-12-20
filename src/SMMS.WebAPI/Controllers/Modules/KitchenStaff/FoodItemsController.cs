@@ -150,9 +150,6 @@ public class FoodItemsController : ControllerBase
     {
         try
         {
-            var schoolId = GetSchoolIdFromToken();
-            var userId = GetCurrentUserId();
-
             string? imageUrl = null;
 
             // 1️⃣ Nếu có upload ảnh mới → upload Cloudinary
