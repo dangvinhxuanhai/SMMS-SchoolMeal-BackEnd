@@ -6,9 +6,12 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Azure;
 using MediatR;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.foodmenu.Commands;
 using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.foodmenu.Interfaces;
+using SMMS.Application.Features.nutrition.Interfaces;
 using SMMS.Application.Features.school.Interfaces;
 using SMMS.Domain.Entities.rag;
 
@@ -22,6 +25,7 @@ public class SuggestMenuCommandHandler
     private readonly IMenuRecommendResultRepository _resultRepo;
     private readonly IStudentHealthRepository _studentHealthRepo;
     private readonly IStudentAllergenRepository _studentAllergenRepo;
+    private readonly IFoodItemRepository _foodItemRepo;
 
     private const double DefaultMainKcal = 650;
     private const double DefaultSideKcal = 350;
@@ -32,7 +36,8 @@ public class SuggestMenuCommandHandler
         IMenuRecommendSessionRepository sessionRepo,
         IMenuRecommendResultRepository resultRepo,
         IStudentHealthRepository studentHealthRepo,
-        IStudentAllergenRepository studentAllergenRepo)
+        IStudentAllergenRepository studentAllergenRepo,
+        IFoodItemRepository foodItemRepo)
     {
         _aiMenuClient = aiMenuClient;
         _classStudentRepo = classStudentRepo;
@@ -40,6 +45,7 @@ public class SuggestMenuCommandHandler
         _resultRepo = resultRepo;
         _studentHealthRepo = studentHealthRepo;
         _studentAllergenRepo = studentAllergenRepo;
+        _foodItemRepo = foodItemRepo;
     }
 
     public async Task<AiMenuRecommendResponse> Handle(
@@ -76,6 +82,24 @@ public class SuggestMenuCommandHandler
         var allDishes = (aiResponse.RecommendedMain?.Count ?? 0)
                           + (aiResponse.RecommendedSide?.Count ?? 0);
 
+        var validFoodIds = await _foodItemRepo
+            .GetActiveFoodIdsBySchoolAsync(request.SchoolId,cancellationToken);
+
+        // FILTER AI RESPONSE
+        var validMainDishes = (aiResponse.RecommendedMain ?? [])
+            .Where(d => validFoodIds.Contains(d.FoodId))
+            .ToList();
+
+        var validSideDishes = (aiResponse.RecommendedSide ?? [])
+            .Where(d => validFoodIds.Contains(d.FoodId))
+            .ToList();
+
+        if (!validMainDishes.Any() && !validSideDishes.Any())
+        {
+            throw new Exception(
+                "AI returned no valid dishes matching current food database.");
+        }
+
         // 3) LƯU MENU_RECOMMEND_SESSION
         var requestJson = JsonSerializer.Serialize(aiRequest);
 
@@ -95,7 +119,7 @@ public class SuggestMenuCommandHandler
         var results = new List<MenuRecommendResult>();
 
         int rank = 1;
-        foreach (var dish in aiResponse.RecommendedMain ?? Enumerable.Empty<AiDishDto>())
+        foreach (var dish in validMainDishes)
         {
             results.Add(new MenuRecommendResult
             {
@@ -109,21 +133,31 @@ public class SuggestMenuCommandHandler
         }
 
         rank = 1;
-        foreach (var dish in aiResponse.RecommendedSide ?? Enumerable.Empty<AiDishDto>())
+        foreach (var dish in validSideDishes)
         {
             results.Add(new MenuRecommendResult
             {
                 SessionId = session.SessionId,
                 FoodId = dish.FoodId,
-                IsMain = false,
+                IsMain = true,
                 RankShown = rank++,
                 Score = dish.Score,
                 IsChosen = false
             });
         }
 
-        if (results.Count > 0)
-            await _resultRepo.AddRangeAsync(results, cancellationToken);
+        try
+        {
+            if (results.Any())
+                await _resultRepo.AddRangeAsync(results, cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx
+                                          && sqlEx.Number == 547)
+        {
+            throw new Exception(
+                "AI suggested dishes that do not exist in the current food catalog. " +
+                "Please rebuild AI index or sync food data.");
+        }
 
 
         return new AiMenuRecommendResponse

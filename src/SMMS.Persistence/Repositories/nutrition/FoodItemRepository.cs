@@ -163,4 +163,13 @@ public class FoodItemRepository : IFoodItemRepository
             }
         ).ToListAsync(ct);
     }
+
+    public async Task<HashSet<int>> GetActiveFoodIdsBySchoolAsync(Guid schoolId, CancellationToken ct)
+    {
+        return (await _context.FoodItems
+            .Where(f => f.SchoolId == schoolId && f.IsActive)
+            .Select(f => f.FoodId)
+            .ToListAsync(ct))
+            .ToHashSet();
+    }
 }
