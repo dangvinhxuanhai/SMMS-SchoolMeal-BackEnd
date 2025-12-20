@@ -143,12 +143,50 @@ public class FoodItemsController : ControllerBase
 
     // PUT api/nutrition/fooditems/5
     [HttpPut("{id:int}")]
+    [Consumes("multipart/form-data")]
     public async Task<ActionResult<FoodItemDto>> Update(
-        int id,
-        [FromBody] UpdateFoodItemCommand command)
+    int id,
+    [FromForm] UpdateFoodItemRequest request)
     {
         try
         {
+            var schoolId = GetSchoolIdFromToken();
+            var userId = GetCurrentUserId();
+
+            string? imageUrl = null;
+
+            // 1️⃣ Nếu có upload ảnh mới → upload Cloudinary
+            if (request.ImageFile != null)
+            {
+                var uploadedUrl = await _cloudinary.UploadDishImageAsync(request.ImageFile);
+                if (!string.IsNullOrWhiteSpace(uploadedUrl))
+                {
+                    imageUrl = uploadedUrl;
+                }
+            }
+
+            if (request.Ingredients == null)
+                throw new Exception("Ingredients is NULL");
+
+            if (!request.Ingredients.Any())
+                throw new Exception("Ingredients EMPTY");
+
+            // 2️⃣ Tạo command update
+            var command = new UpdateFoodItemCommand
+            {
+                FoodId = id,
+
+                FoodName = request.FoodName,
+                FoodType = request.FoodType,
+                FoodDesc = request.FoodDesc,
+                IsMainDish = request.IsMainDish,
+
+                // ⭐ chỉ set ImageUrl khi có ảnh mới
+                ImageUrl = imageUrl,
+
+                Ingredients = request.Ingredients
+            };
+
             var updated = await _mediator.Send(command);
             return Ok(updated);
         }
