@@ -39,4 +39,6 @@ public interface IFoodItemRepository
         IEnumerable<int> ingredientIds,
         Guid schoolId,
         CancellationToken ct);
+
+    Task<HashSet<int>> GetActiveFoodIdsBySchoolAsync(Guid schoolId, CancellationToken ct);
 }
