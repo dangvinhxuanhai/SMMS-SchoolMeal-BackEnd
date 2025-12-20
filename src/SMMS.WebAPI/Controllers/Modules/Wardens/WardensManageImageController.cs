@@ -13,7 +13,7 @@ using SMMS.Persistence.Data;
 namespace SMMS.WebAPI.Controllers.Modules.Wardens;
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Warden")]
+[Authorize(Roles = "Teacher")]
 public class WardensManageImageController : ControllerBase
 {
     private readonly EduMealContext _context;
