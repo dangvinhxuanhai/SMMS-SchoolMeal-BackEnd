@@ -11,4 +11,5 @@ public sealed class FoodIngredientInfo
     public int IngredientId { get; set; }
     public string IngredientName { get; set; } = default!;
     public decimal QuantityGram { get; set; }
+    public string Unit { get; set; } = string.Empty;
 }

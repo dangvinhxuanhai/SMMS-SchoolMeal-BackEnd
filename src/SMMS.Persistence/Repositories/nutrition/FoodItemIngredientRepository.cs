@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.nutrition.Interfaces;
 using SMMS.Domain.Entities.nutrition;
 using SMMS.Persistence.Data;
@@ -62,5 +63,25 @@ public class FoodItemIngredientRepository : IFoodItemIngredientRepository
 
         // Đánh dấu school cần rebuild AI index (theo foodId)
         await MarkSchoolNeedRebuildAiIndexByFoodAsync(foodId, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<FoodIngredientInfo>> GetIngredientsForFoodsAsync(
+    IReadOnlyList<int> foodIds,
+    CancellationToken ct)
+    {
+        return await (
+            from fi in _context.FoodItemIngredients
+            join i in _context.Ingredients
+                on fi.IngredientId equals i.IngredientId
+            where foodIds.Contains(fi.FoodId)
+            select new FoodIngredientInfo
+            {
+                FoodId = fi.FoodId,
+                IngredientId = i.IngredientId,
+                IngredientName = i.IngredientName,
+                Unit = "gram",
+                QuantityGram = fi.QuantityGram
+            }
+        ).ToListAsync(ct);
     }
 }

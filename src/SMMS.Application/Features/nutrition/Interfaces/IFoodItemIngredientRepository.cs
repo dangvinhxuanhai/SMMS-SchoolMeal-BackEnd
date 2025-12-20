@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.Skeleton.Interfaces;
 using SMMS.Domain.Entities.nutrition;
 
@@ -21,4 +22,8 @@ public interface IFoodItemIngredientRepository
         int foodId,
         IEnumerable<FoodItemIngredient> newItems,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<FoodIngredientInfo>> GetIngredientsForFoodsAsync(
+    IReadOnlyList<int> foodIds,
+    CancellationToken ct);
 }

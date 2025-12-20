@@ -38,38 +38,67 @@ public class GetFoodItemsQueryHandler
         if (foods.Count == 0)
             return Array.Empty<FoodItemDto>();
 
-        // 2. Load FoodItemIngredients cho toàn bộ Food
         var foodIds = foods.Select(f => f.FoodId).ToList();
 
-        var foodIngredients = new List<FoodItemIngredient>();
-        foreach (var foodId in foodIds)
-        {
-            var ingredients = await _foodIngRepo.
-                GetByFoodIdAsync(foodId, ct); foodIngredients.AddRange(ingredients);
-        }
+        // 2. Load ALL ingredients (1 query – no N+1)
+        var ingredientInfos =
+            await _foodIngRepo.GetIngredientsForFoodsAsync(foodIds, ct);
 
-        // Map FoodId -> IngredientIds
-        var ingredientIdsByFood = foodIngredients
+        // Group IngredientInfo by FoodId
+        var ingredientsByFood = ingredientInfos
+            .GroupBy(x => x.FoodId)
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(x => new FoodItemIngredientDto
+                {
+                    IngredientId = x.IngredientId,
+                    IngredientName = x.IngredientName,
+                    Unit = x.Unit,
+                    QuantityGram = x.QuantityGram
+                }).ToList()
+            );
+
+        // Map FoodId -> IngredientIds (for allergy calculation)
+        var ingredientIdsByFood = ingredientInfos
             .GroupBy(x => x.FoodId)
             .ToDictionary(
                 g => g.Key,
                 g => g.Select(x => x.IngredientId).Distinct().ToList()
             );
 
-        // 3. Lấy tổng số học sinh của trường
+        // 3. Total students
         var totalStudents = await _foodRepo
             .CountStudentsBySchoolAsync(request.SchoolId, ct);
 
-        // Không có học sinh → tất cả GREEN
+        // No students → GREEN all
         if (totalStudents == 0)
         {
-            return foods.Select(f => MapDto(f, AllergyRiskStatus.Green))
-                        .ToList()
-                        .AsReadOnly();
+            return foods
+                .Select(f =>
+                {
+                    ingredientsByFood.TryGetValue(f.FoodId, out var ings);
+
+                    return new FoodItemDto
+                    {
+                        FoodId = f.FoodId,
+                        FoodName = f.FoodName,
+                        FoodType = f.FoodType,
+                        FoodDesc = f.FoodDesc,
+                        ImageUrl = f.ImageUrl,
+                        SchoolId = f.SchoolId,
+                        IsMainDish = f.IsMainDish,
+                        IsActive = f.IsActive,
+                        Ingredients = ings ?? new List<FoodItemIngredientDto>(),
+                        AllergyStatus = AllergyRiskStatus.Green,
+                        TotalAllergyPercent = 0
+                    };
+                })
+                .ToList()
+                .AsReadOnly();
         }
 
-        // 4. Lấy thống kê dị ứng theo Ingredient
-        var allIngredientIds = foodIngredients
+        // 4. Allergy statistics
+        var allIngredientIds = ingredientInfos
             .Select(x => x.IngredientId)
             .Distinct()
             .ToList();
@@ -79,14 +108,15 @@ public class GetFoodItemsQueryHandler
             request.SchoolId,
             ct);
 
-        var allergyCountByIngredient = allergyStats
-            .ToDictionary(x => x.IngredientId, x => x.AllergicStudentCount);
+        var allergyCountByIngredient =
+            allergyStats.ToDictionary(x => x.IngredientId, x => x.AllergicStudentCount);
 
-        // 5. Map FoodItem → DTO + AllergyStatus
+        // 5. Map final DTO
         var result = foods
             .Select(food =>
             {
                 ingredientIdsByFood.TryGetValue(food.FoodId, out var ingIds);
+                ingredientsByFood.TryGetValue(food.FoodId, out var ingredientDtos);
 
                 var (status, totalPercent) =
                     CalculateAllergyStatusWithTotalPercent(
@@ -105,8 +135,10 @@ public class GetFoodItemsQueryHandler
                     IsMainDish = food.IsMainDish,
                     IsActive = food.IsActive,
 
+                    Ingredients = ingredientDtos ?? new List<FoodItemIngredientDto>(),
+
                     AllergyStatus = status,
-                    TotalAllergyPercent = totalPercent // 👀 tổng %
+                    TotalAllergyPercent = totalPercent
                 };
             })
             .OrderBy(x => x.TotalAllergyPercent)
@@ -118,29 +150,11 @@ public class GetFoodItemsQueryHandler
 
     // ===================== PRIVATE =====================
 
-    private static FoodItemDto MapDto(
-        Domain.Entities.nutrition.FoodItem food,
-        AllergyRiskStatus status)
-    {
-        return new FoodItemDto
-        {
-            FoodId = food.FoodId,
-            FoodName = food.FoodName,
-            FoodType = food.FoodType,
-            FoodDesc = food.FoodDesc,
-            ImageUrl = food.ImageUrl,
-            SchoolId = food.SchoolId,
-            IsMainDish = food.IsMainDish,
-            IsActive = food.IsActive,
-            AllergyStatus = status
-        };
-    }
-
     private static (AllergyRiskStatus status, double totalPercent)
-    CalculateAllergyStatusWithTotalPercent(
-        IEnumerable<int> ingredientIds,
-        IDictionary<int, int> allergyByIngredient,
-        int totalStudents)
+        CalculateAllergyStatusWithTotalPercent(
+            IEnumerable<int> ingredientIds,
+            IDictionary<int, int> allergyByIngredient,
+            int totalStudents)
     {
         if (totalStudents <= 0)
             return (AllergyRiskStatus.Green, 0);
@@ -155,7 +169,6 @@ public class GetFoodItemsQueryHandler
 
         var percent = Math.Round(totalRate * 100, 2);
 
-        // ⚠️ Ngưỡng tạm – bạn sẽ chỉnh sau
         if (percent >= 15) return (AllergyRiskStatus.Red, percent);
         if (percent >= 5) return (AllergyRiskStatus.Orange, percent);
         return (AllergyRiskStatus.Green, percent);
@@ -181,7 +194,7 @@ public class GetFoodItemByIdQueryHandler
         var food = await _foodRepo.GetByIdAsync(request.FoodId, token);
         if (food == null) return null;
 
-        var links = await _foodIngRepo.GetByFoodIdAsync(food.FoodId, token);
+        var ingredientInfos = await _foodIngRepo.GetIngredientsForFoodsAsync(new[] { food.FoodId }, token);
 
         return new FoodItemDto
         {
@@ -193,11 +206,15 @@ public class GetFoodItemByIdQueryHandler
             SchoolId = food.SchoolId,
             IsMainDish = food.IsMainDish,
             IsActive = food.IsActive,
-            Ingredients = links.Select(l => new FoodItemIngredientDto
-            {
-                IngredientId = l.IngredientId,
-                QuantityGram = l.QuantityGram
-            }).ToList()
+            Ingredients = ingredientInfos
+                .Select(x => new FoodItemIngredientDto
+                {
+                    IngredientId = x.IngredientId,
+                    IngredientName = x.IngredientName,
+                    Unit = x.Unit,
+                    QuantityGram = x.QuantityGram
+                })
+                .ToList()
         };
     }
 }
