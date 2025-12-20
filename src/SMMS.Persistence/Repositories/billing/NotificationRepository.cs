@@ -36,14 +36,14 @@ namespace SMMS.Infrastructure.Repositories
             {
                 notification.NotificationRecipients.Add(new NotificationRecipient
                 {
-                    UserId = user.UserId,
-                    IsRead = false
+                    UserId = user.UserId, IsRead = false
                 });
             }
 
             await _context.Notifications.AddAsync(notification);
             await _context.SaveChangesAsync();
         }
+
         public async Task DeleteNotificationAsync(Notification notification)
         {
             // Load recipients
@@ -59,6 +59,7 @@ namespace SMMS.Infrastructure.Repositories
 
             await _context.SaveChangesAsync();
         }
+
         public async Task MarkAsReadAsync(long notificationId, Guid userId)
         {
             var recipient = await _context.NotificationRecipients
@@ -67,9 +68,10 @@ namespace SMMS.Infrastructure.Repositories
                     r.UserId == userId);
 
             if (recipient == null)
-                return;
+                throw new KeyNotFoundException($"Không tìm thấy thông báo (ID: {notificationId}) cho người dùng này.");
 
             recipient.IsRead = true;
+            recipient.ReadAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }
     }
