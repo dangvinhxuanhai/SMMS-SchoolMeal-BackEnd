@@ -12,7 +12,7 @@ namespace SMMS.WebAPI.Controllers.Modules.Wardens;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Teacher")]
+[Authorize(Roles = "Warden")]
 public class WardensFeedbackController : ControllerBase
 {
     private readonly IMediator _mediator;
