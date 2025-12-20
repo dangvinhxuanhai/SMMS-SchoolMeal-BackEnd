@@ -13,6 +13,7 @@ using SMMS.Application.Features.Meal.Interfaces;
 using SMMS.Domain.Entities.foodmenu;
 
 namespace SMMS.Application.Features.Meal.Handlers;
+
 public class CreateScheduleMealCommandHandler
     : IRequestHandler<CreateScheduleMealCommand, long>
 {
@@ -127,11 +128,7 @@ public class CreateScheduleMealCommandHandler
 
         // group theo (DayOfWeek, MealType)
         var groups = request.DailyMeals
-            .GroupBy(d => new
-            {
-                DayOfWeek = ToDbDayOfWeek(d.MealDate),
-                d.MealType
-            });
+            .GroupBy(d => new { DayOfWeek = ToDbDayOfWeek(d.MealDate), d.MealType });
 
         foreach (var g in groups)
         {
@@ -148,11 +145,7 @@ public class CreateScheduleMealCommandHandler
 
             for (int i = 0; i < foodIds.Count; i++)
             {
-                menuDay.MenuDayFoodItems.Add(new MenuDayFoodItem
-                {
-                    FoodId = foodIds[i],
-                    SortOrder = i + 1
-                });
+                menuDay.MenuDayFoodItems.Add(new MenuDayFoodItem { FoodId = foodIds[i], SortOrder = i + 1 });
             }
 
             menu.MenuDays.Add(menuDay);
@@ -180,11 +173,7 @@ public class CreateScheduleMealCommandHandler
 
             foreach (var mdFood in menuDay.MenuDayFoodItems)
             {
-                dailyMeal.MenuFoodItems.Add(new MenuFoodItem
-                {
-                    FoodId = mdFood.FoodId,
-                    SortOrder = mdFood.SortOrder
-                });
+                dailyMeal.MenuFoodItems.Add(new MenuFoodItem { FoodId = mdFood.FoodId, SortOrder = mdFood.SortOrder });
             }
 
             schedule.DailyMeals.Add(dailyMeal);
@@ -195,12 +184,12 @@ public class CreateScheduleMealCommandHandler
     /// Build DailyMeals + MenuFoodItems trực tiếp từ request (không dùng template).
     /// </summary>
     private static void BuildWeekdayDailyMeals(
-    CreateScheduleMealCommand request,
-    ScheduleMeal schedule)
+        CreateScheduleMealCommand request,
+        ScheduleMeal schedule)
     {
         var requestMap = request.DailyMeals
             .Where(d => d.MealDate.DayOfWeek >= DayOfWeek.Monday
-                     && d.MealDate.DayOfWeek <= DayOfWeek.Friday)
+                        && d.MealDate.DayOfWeek <= DayOfWeek.Friday)
             .GroupBy(d => d.MealDate.Date)
             .ToDictionary(g => g.Key, g => g.ToList());
 
@@ -240,8 +229,10 @@ public class CreateScheduleMealCommandHandler
 
         if (!hasFood && string.IsNullOrWhiteSpace(dto.Notes))
         {
+            var dateStr = dto.MealDate.ToString("yyyy-MM-dd");
             throw new InvalidOperationException(
-                $"DailyMeal {dto.MealDate:yyyy-MM-dd} requires Notes when FoodIds is empty");
+                $"Lỗi ngày {dateStr} ({dto.MealType}): Nếu không chọn món ăn, bạn bắt buộc phải nhập ghi chú (ví dụ: 'Nghỉ lễ', 'Tự túc')."
+            );
         }
     }
 
@@ -259,17 +250,12 @@ public class CreateScheduleMealCommandHandler
         {
             for (int i = 0; i < dto.FoodIds.Count; i++)
             {
-                dailyMeal.MenuFoodItems.Add(new MenuFoodItem
-                {
-                    FoodId = dto.FoodIds[i],
-                    SortOrder = i + 1
-                });
+                dailyMeal.MenuFoodItems.Add(new MenuFoodItem { FoodId = dto.FoodIds[i], SortOrder = i + 1 });
             }
         }
 
         return dailyMeal;
     }
-
 
 
     /// <summary>

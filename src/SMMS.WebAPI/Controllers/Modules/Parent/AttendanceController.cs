@@ -93,10 +93,20 @@ namespace SMMS.WebAPI.Controllers.Modules.Parent
         [HttpPut("{id}/read")]
         public async Task<IActionResult> MarkRead(long id)
         {
-            var userId = GetCurrentUserId(); // bạn đã có method này
-            await _mediator.Send(new MarkNotificationReadCommand(id, userId));
-
-            return Ok(new { message = "Đã đánh dấu là đã đọc" });
+            try
+            {
+                var userId = GetCurrentUserId();
+                await _mediator.Send(new MarkNotificationReadCommand(id, userId));
+                return Ok(new { message = "Đã đánh dấu là đã đọc" });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi server: " + ex.Message });
+            }
         }
     }
 }

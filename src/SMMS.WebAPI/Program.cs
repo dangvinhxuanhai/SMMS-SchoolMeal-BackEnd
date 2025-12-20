@@ -52,18 +52,20 @@ builder.Services.AddSwaggerGen(options =>
             var genericArgs = string.Join("_", type.GetGenericArguments().Select(t => t.Name));
             return $"{ns}_{genericTypeName}_{genericArgs}";
         }
+
         return $"{ns}_{type.Name}";
     });
 
-    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-    {
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Nhập token JWT vào đây (ví dụ: Bearer abcdef12345)",
-        Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        BearerFormat = "JWT",
-        Scheme = "Bearer"
-    });
+    options.AddSecurityDefinition("Bearer",
+        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+        {
+            In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+            Description = "Nhập token JWT vào đây (ví dụ: Bearer abcdef12345)",
+            Name = "Authorization",
+            Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+            BearerFormat = "JWT",
+            Scheme = "Bearer"
+        });
 
     options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
     {
@@ -107,7 +109,7 @@ builder.Services.AddAuthentication(options =>
         {
             OnMessageReceived = context =>
             {
-                var accessToken = context.Request.Query["access_token"];
+                var accessToken = context.Request.Query["accessToken"];
 
                 if (string.IsNullOrEmpty(accessToken) && context.Request.Cookies.ContainsKey("accessToken"))
                 {
@@ -116,7 +118,7 @@ builder.Services.AddAuthentication(options =>
 
                 var path = context.HttpContext.Request.Path;
                 if (!string.IsNullOrEmpty(accessToken) &&
-                   (path.StartsWithSegments("/hubs") || !string.IsNullOrEmpty(accessToken)))
+                    (path.StartsWithSegments("/hubs/notifications") || !string.IsNullOrEmpty(accessToken)))
                 {
                     context.Token = accessToken;
                 }
@@ -142,8 +144,7 @@ builder.Services.AddCors(options =>
                 "https://edumeal.id.vn",
                 "https://admin.edumeal.id.vn",
                 "http://localhost:3000",
-                "https://smms-school-meal-admin.vercel.app",
-                "https://outragedly-guidebookish-mitzie.ngrok-free.dev"
+                "http://127.0.0.1:3000"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
@@ -163,6 +164,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// var hasher = new PasswordHasher();
+// var password = "@1";
+// var hashed = hasher.HashPassword(password);
+//
+// Console.ForegroundColor = ConsoleColor.Green;
+// Console.WriteLine("=====================================");
+// Console.WriteLine($"🔐 Hashed password for \"{password}\" is:");
+// Console.WriteLine(hashed);
+// Console.WriteLine("=====================================");
+// Console.ResetColor();
 
 app.UseCors("AllowFrontend");
 

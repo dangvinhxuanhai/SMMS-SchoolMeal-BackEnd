@@ -116,6 +116,14 @@ public class SchoolInvoiceRepository : ISchoolInvoiceRepository
 
         // nếu có classId thì filter ở đây (tùy schema)
         // if (classId.HasValue) query = query.Where(x => x.s.ClassId == classId.Value);
+        if (classId.HasValue)
+        {
+            var studentIdsInClass = _context.StudentClasses.AsNoTracking()
+                .Where(sc => sc.ClassId == classId.Value)
+                .Select(sc => sc.StudentId);
+
+            query = query.Where(x => studentIdsInClass.Contains(x.s.StudentId));
+        }
 
         var rows = await query
             .OrderBy(x => x.s.FullName)

@@ -12,8 +12,8 @@ using SMMS.Persistence.Data;
 namespace SMMS.Persistence.Migrations
 {
     [DbContext(typeof(EduMealContext))]
-    [Migration("20251127173122_ChangeAuditColumnsToGuid")]
-    partial class ChangeAuditColumnsToGuid
+    [Migration("20251217040053_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -56,11 +56,10 @@ namespace SMMS.Persistence.Migrations
 
             modelBuilder.Entity("SMMS.Domain.Entities.Logs.AuditLog", b =>
                 {
-                    b.Property<long>("LogId")
+                    b.Property<Guid>("LogId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("LogId"));
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("(newid())");
 
                     b.Property<string>("ActionDesc")
                         .IsRequired()
@@ -94,13 +93,11 @@ namespace SMMS.Persistence.Migrations
                         .HasMaxLength(128)
                         .HasColumnType("nvarchar(128)");
 
-                    b.Property<Guid>("UserId")
+                    b.Property<Guid?>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("LogId")
-                        .HasName("PK__AuditLog__5E548648889DF138");
-
-                    b.HasIndex("UserId");
+                        .HasName("PK__AuditLog__5E5486484B0B98E3");
 
                     b.ToTable("AuditLogs", "logs");
                 });
@@ -400,6 +397,11 @@ namespace SMMS.Persistence.Migrations
                     b.Property<DateOnly>("DateTo")
                         .HasColumnType("date");
 
+                    b.Property<Guid>("InvoiceCode")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("(newid())");
+
                     b.Property<short>("MonthNo")
                         .HasColumnType("smallint");
 
@@ -411,10 +413,15 @@ namespace SMMS.Persistence.Migrations
                     b.Property<Guid>("StudentId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("InvoiceId")
-                        .HasName("PK__Invoices__D796AAB52E5E911D");
+                    b.Property<decimal?>("TotalPrice")
+                        .HasColumnType("decimal(18, 2)");
+
+                    b.HasKey("InvoiceId");
 
                     b.HasIndex("StudentId");
+
+                    b.HasIndex(new[] { "InvoiceCode" }, "IX_Invoices_InvoiceCode")
+                        .IsUnique();
 
                     b.ToTable("Invoices", "billing");
                 });
@@ -449,7 +456,7 @@ namespace SMMS.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<Guid?>("SenderId")
+                    b.Property<Guid>("SenderId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Title")
@@ -516,6 +523,11 @@ namespace SMMS.Persistence.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("(sysdatetime())");
 
+                    b.Property<Guid>("PaymentCode")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("(newid())");
+
                     b.Property<string>("PaymentContent")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -531,12 +543,81 @@ namespace SMMS.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.HasKey("PaymentId")
-                        .HasName("PK__Payments__9B556A38D0267A58");
+                    b.HasKey("PaymentId");
 
                     b.HasIndex("InvoiceId");
 
+                    b.HasIndex(new[] { "PaymentCode" }, "IX_Payments_PaymentCode")
+                        .IsUnique();
+
                     b.ToTable("Payments", "billing");
+                });
+
+            modelBuilder.Entity("SMMS.Domain.Entities.billing.SchoolPaymentGateway", b =>
+                {
+                    b.Property<long>("GatewayId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("GatewayId"));
+
+                    b.Property<string>("ApiKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("CancelUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("ChecksumKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("ClientId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("(sysdatetime())");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("ReturnUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<Guid>("SchoolId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TheProvider")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("GatewayId")
+                        .HasName("PK__SchoolPa__66BCD8A094CD1017");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("SchoolId");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.ToTable("SchoolPaymentGateways", "billing");
                 });
 
             modelBuilder.Entity("SMMS.Domain.Entities.billing.SchoolPaymentSetting", b =>
@@ -560,6 +641,9 @@ namespace SMMS.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
+                    b.Property<decimal>("MealPricePerDay")
+                        .HasColumnType("decimal(18, 2)");
+
                     b.Property<string>("Note")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -567,14 +651,14 @@ namespace SMMS.Persistence.Migrations
                     b.Property<Guid>("SchoolId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<byte>("ToMonth")
+                    b.Property<byte?>("ToMonth")
                         .HasColumnType("tinyint");
 
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18, 2)");
 
                     b.HasKey("SettingId")
-                        .HasName("PK__SchoolPa__54372B1D10C021B2");
+                        .HasName("PK__SchoolPa__54372B1D80E71C57");
 
                     b.HasIndex("SchoolId");
 
@@ -695,6 +779,9 @@ namespace SMMS.Persistence.Migrations
 
                     b.Property<int?>("DailyMealId")
                         .HasColumnType("int");
+
+                    b.Property<byte?>("Rating")
+                        .HasColumnType("tinyint");
 
                     b.Property<Guid>("SenderId")
                         .HasColumnType("uniqueidentifier");
@@ -855,9 +942,6 @@ namespace SMMS.Persistence.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("MenuId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Notes")
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
@@ -891,8 +975,6 @@ namespace SMMS.Persistence.Migrations
                         .HasName("PK__Schedule__7F2713EEE217869A");
 
                     b.HasIndex("CreatedBy");
-
-                    b.HasIndex(new[] { "MenuId" }, "IX_ScheduleMeal_Menu");
 
                     b.HasIndex(new[] { "SchoolId", "WeekStart", "WeekEnd" }, "IX_ScheduleMeal_SchoolWeek");
 
@@ -992,6 +1074,11 @@ namespace SMMS.Persistence.Migrations
 
                     b.Property<int>("IngredientId")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("ItemName")
                         .HasMaxLength(150)
@@ -1098,9 +1185,6 @@ namespace SMMS.Persistence.Migrations
                     b.HasIndex("CreatedBy");
 
                     b.HasIndex("SchoolId");
-
-                    b.HasIndex(new[] { "AllergenName" }, "UQ__Allergen__7D9886190081153F")
-                        .IsUnique();
 
                     b.ToTable("Allergens", "nutrition");
                 });
@@ -1455,13 +1539,13 @@ namespace SMMS.Persistence.Migrations
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("(sysdatetime())");
 
-                    b.Property<int>("MenuId")
-                        .HasColumnType("int");
-
                     b.Property<string>("PlanStatus")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
+
+                    b.Property<long?>("ScheduleMealId")
+                        .HasColumnType("bigint");
 
                     b.Property<Guid>("StaffId")
                         .HasColumnType("uniqueidentifier");
@@ -1471,7 +1555,7 @@ namespace SMMS.Persistence.Migrations
 
                     b.HasIndex("ConfirmedBy");
 
-                    b.HasIndex("MenuId");
+                    b.HasIndex("ScheduleMealId");
 
                     b.HasIndex("StaffId");
 
@@ -1587,9 +1671,6 @@ namespace SMMS.Persistence.Migrations
                         .HasName("PK__Academic__C33A18CDAE55CF4A");
 
                     b.HasIndex("SchoolId");
-
-                    b.HasIndex(new[] { "YearName" }, "UQ__Academic__294C4DA99759272B")
-                        .IsUnique();
 
                     b.ToTable("AcademicYears", "school");
                 });
@@ -1709,6 +1790,9 @@ namespace SMMS.Persistence.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("NeedRebuildAiIndex")
+                        .HasColumnType("bit");
+
                     b.Property<string>("SchoolAddress")
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
@@ -1717,6 +1801,18 @@ namespace SMMS.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("SettlementAccountName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SettlementAccountNo")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("SettlementBankCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -2057,17 +2153,6 @@ namespace SMMS.Persistence.Migrations
                         .HasConstraintName("FK_FIFI_Sample");
                 });
 
-            modelBuilder.Entity("SMMS.Domain.Entities.Logs.AuditLog", b =>
-                {
-                    b.HasOne("SMMS.Domain.Entities.auth.User", "User")
-                        .WithMany("AuditLogs")
-                        .HasForeignKey("UserId")
-                        .IsRequired()
-                        .HasConstraintName("FK_AuditLogs_User");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("SMMS.Domain.Entities.auth.RefreshToken", b =>
                 {
                     b.HasOne("SMMS.Domain.Entities.auth.RefreshToken", "ReplacedBy")
@@ -2146,6 +2231,8 @@ namespace SMMS.Persistence.Migrations
                     b.HasOne("SMMS.Domain.Entities.auth.User", "Sender")
                         .WithMany("Notifications")
                         .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
                         .HasConstraintName("FK__notificat__Sende__00DF2177");
 
                     b.Navigation("Sender");
@@ -2176,9 +2263,34 @@ namespace SMMS.Persistence.Migrations
                         .WithMany("Payments")
                         .HasForeignKey("InvoiceId")
                         .IsRequired()
-                        .HasConstraintName("FK__Payments__Invoic__7C1A6C5A");
+                        .HasConstraintName("FK_Payments_Invoices");
 
                     b.Navigation("Invoice");
+                });
+
+            modelBuilder.Entity("SMMS.Domain.Entities.billing.SchoolPaymentGateway", b =>
+                {
+                    b.HasOne("SMMS.Domain.Entities.auth.User", "CreatedByNavigation")
+                        .WithMany("SchoolPaymentGatewayCreatedByNavigations")
+                        .HasForeignKey("CreatedBy")
+                        .HasConstraintName("FK_SPG_CreatedBy");
+
+                    b.HasOne("SMMS.Domain.Entities.school.School", "School")
+                        .WithMany("SchoolPaymentGateways")
+                        .HasForeignKey("SchoolId")
+                        .IsRequired()
+                        .HasConstraintName("FK_SPG_School");
+
+                    b.HasOne("SMMS.Domain.Entities.auth.User", "UpdatedByNavigation")
+                        .WithMany("SchoolPaymentGatewayUpdatedByNavigations")
+                        .HasForeignKey("UpdatedBy")
+                        .HasConstraintName("FK_SPG_UpdatedBy");
+
+                    b.Navigation("CreatedByNavigation");
+
+                    b.Navigation("School");
+
+                    b.Navigation("UpdatedByNavigation");
                 });
 
             modelBuilder.Entity("SMMS.Domain.Entities.billing.SchoolPaymentSetting", b =>
@@ -2327,12 +2439,6 @@ namespace SMMS.Persistence.Migrations
                         .HasForeignKey("CreatedBy")
                         .HasConstraintName("FK_ScheduleMeal_User");
 
-                    b.HasOne("SMMS.Domain.Entities.foodmenu.Menu", "Menu")
-                        .WithMany("ScheduleMeals")
-                        .HasForeignKey("MenuId")
-                        .IsRequired()
-                        .HasConstraintName("FK_ScheduleMeal_Menu");
-
                     b.HasOne("SMMS.Domain.Entities.school.School", "School")
                         .WithMany("ScheduleMeals")
                         .HasForeignKey("SchoolId")
@@ -2340,8 +2446,6 @@ namespace SMMS.Persistence.Migrations
                         .HasConstraintName("FK_ScheduleMeal_School");
 
                     b.Navigation("CreatedByNavigation");
-
-                    b.Navigation("Menu");
 
                     b.Navigation("School");
                 });
@@ -2626,11 +2730,10 @@ namespace SMMS.Persistence.Migrations
                         .HasForeignKey("ConfirmedBy")
                         .HasConstraintName("FK_PurchasePlans_ConfirmedBy");
 
-                    b.HasOne("SMMS.Domain.Entities.foodmenu.Menu", "Menu")
+                    b.HasOne("SMMS.Domain.Entities.foodmenu.ScheduleMeal", "ScheduleMeal")
                         .WithMany("PurchasePlans")
-                        .HasForeignKey("MenuId")
-                        .IsRequired()
-                        .HasConstraintName("FK_PurchasePlans_Menus");
+                        .HasForeignKey("ScheduleMealId")
+                        .HasConstraintName("FK_PurchasePlans_ScheduleMeal");
 
                     b.HasOne("SMMS.Domain.Entities.auth.User", "Staff")
                         .WithMany("PurchasePlanStaffs")
@@ -2640,7 +2743,7 @@ namespace SMMS.Persistence.Migrations
 
                     b.Navigation("ConfirmedByNavigation");
 
-                    b.Navigation("Menu");
+                    b.Navigation("ScheduleMeal");
 
                     b.Navigation("Staff");
                 });
@@ -2886,8 +2989,6 @@ namespace SMMS.Persistence.Migrations
 
                     b.Navigation("Attendances");
 
-                    b.Navigation("AuditLogs");
-
                     b.Navigation("Feedbacks");
 
                     b.Navigation("FoodInFridgeDeletedByNavigations");
@@ -2921,6 +3022,10 @@ namespace SMMS.Persistence.Migrations
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("ScheduleMeals");
+
+                    b.Navigation("SchoolPaymentGatewayCreatedByNavigations");
+
+                    b.Navigation("SchoolPaymentGatewayUpdatedByNavigations");
 
                     b.Navigation("SchoolRevenueCreatedByNavigations");
 
@@ -2959,10 +3064,6 @@ namespace SMMS.Persistence.Migrations
                     b.Navigation("FoodInFridges");
 
                     b.Navigation("MenuDays");
-
-                    b.Navigation("PurchasePlans");
-
-                    b.Navigation("ScheduleMeals");
                 });
 
             modelBuilder.Entity("SMMS.Domain.Entities.foodmenu.MenuDay", b =>
@@ -2973,6 +3074,8 @@ namespace SMMS.Persistence.Migrations
             modelBuilder.Entity("SMMS.Domain.Entities.foodmenu.ScheduleMeal", b =>
                 {
                     b.Navigation("DailyMeals");
+
+                    b.Navigation("PurchasePlans");
                 });
 
             modelBuilder.Entity("SMMS.Domain.Entities.inventory.InventoryItem", b =>
@@ -3073,6 +3176,8 @@ namespace SMMS.Persistence.Migrations
                     b.Navigation("PurchaseOrders");
 
                     b.Navigation("ScheduleMeals");
+
+                    b.Navigation("SchoolPaymentGateways");
 
                     b.Navigation("SchoolPaymentSettings");
 
