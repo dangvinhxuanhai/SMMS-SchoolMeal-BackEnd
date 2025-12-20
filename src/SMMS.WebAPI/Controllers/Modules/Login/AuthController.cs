@@ -20,16 +20,16 @@
             var options =  new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
-                SameSite = SameSiteMode.None,
+                Secure = false,
+                SameSite = SameSiteMode.Lax,
                 Path = "/",
                 Expires = expiredTime ?? DateTime.UtcNow.AddDays(-1)
             };
-            string host = Request.Host.Host;
-            if (host.Contains("edumeal.id.vn"))
-            {
-                options.Domain = ".edumeal.id.vn";
-            }
+            // string host = Request.Host.Host;
+            // if (host.Contains("edumeal.id.vn"))
+            // {
+            //     options.Domain = ".edumeal.id.vn";
+            // }
             return options;
         }
 

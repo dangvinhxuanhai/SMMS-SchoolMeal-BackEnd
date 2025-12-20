@@ -144,8 +144,7 @@ builder.Services.AddCors(options =>
                 "https://edumeal.id.vn",
                 "https://admin.edumeal.id.vn",
                 "http://localhost:3000",
-                "https://smms-school-meal-admin.vercel.app",
-                "https://outragedly-guidebookish-mitzie.ngrok-free.dev"
+                "http://127.0.0.1:3000"
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
