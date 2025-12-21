@@ -40,8 +40,12 @@ public class AllergenRepository : IAllergenRepository
             .ToListAsync();
     }
 
-    public async Task AddStudentAllergyAsync(Guid userId, Guid studentId, AddStudentAllergyDTO dto)
+    public async Task AddStudentAllergyAsync(
+        Guid userId,
+        Guid studentId,
+        AddStudentAllergyDTO dto)
     {
+        // 1️⃣ Lấy SchoolId của học sinh
         var schoolId = await _context.Students
             .Where(s => s.StudentId == studentId)
             .Select(s => s.SchoolId)
@@ -50,74 +54,62 @@ public class AllergenRepository : IAllergenRepository
         if (schoolId == Guid.Empty)
             throw new Exception("Student not found");
 
-        int finalAllergenId;
+        // 2️⃣ Lấy Ingredient
+        var ingredient = await _context.Ingredients
+            .Where(i => i.IngredientId == dto.IngredientId && i.IsActive)
+            .FirstOrDefaultAsync();
 
-        if (dto.AllergenId.HasValue && dto.AllergenId.Value > 0)
+        if (ingredient == null)
+            throw new Exception("Ingredient không tồn tại");
+
+        // 3️⃣ Kiểm tra Allergen đã tồn tại chưa (theo IngredientName + School)
+        var allergen = await _context.Allergens
+            .FirstOrDefaultAsync(a =>
+                a.SchoolId == schoolId &&
+                a.AllergenName.ToLower() == ingredient.IngredientName.ToLower());
+
+        if (allergen == null)
         {
-            var exists = await _context.Allergens.AnyAsync(a => a.AllergenId == dto.AllergenId.Value);
-            if (!exists) throw new KeyNotFoundException("Allergen ID không tồn tại.");
-
-            finalAllergenId = dto.AllergenId.Value;
-        }
-        else
-        {
-            if (string.IsNullOrWhiteSpace(dto.AllergenName))
-                throw new ArgumentException("Tên dị ứng không được để trống khi chọn mục Khác.");
-
-            string cleanName = dto.AllergenName.Trim();
-            if (cleanName.StartsWith("Khác:", StringComparison.OrdinalIgnoreCase))
+            // 4️⃣ Tạo mới Allergen
+            allergen = new Allergen
             {
-                cleanName = cleanName.Substring(5).Trim();
-            }
-            else if (cleanName.StartsWith("Khác", StringComparison.OrdinalIgnoreCase))
-            {
-                cleanName = cleanName.Replace("Khác", "", StringComparison.OrdinalIgnoreCase).Trim();
-            }
-
-            if (string.IsNullOrWhiteSpace(cleanName))
-                throw new ArgumentException("Vui lòng nhập tên loại dị ứng cụ thể.");
-
-            var existingAllergen = await _context.Allergens
-                .Where(a => a.SchoolId == schoolId && a.AllergenName.ToLower() == cleanName.ToLower())
-                .FirstOrDefaultAsync();
-
-            if (existingAllergen != null)
-            {
-                finalAllergenId = existingAllergen.AllergenId;
-            }
-            else
-            {
-                var newAllergen = new Allergen
-                {
-                    AllergenName = cleanName,
-                    SchoolId = schoolId,
-                    CreatedBy = userId,
-                    CreatedAt = DateTime.UtcNow,
-                    AllergenInfo = dto.AllergenInfo ?? "Dị ứng khác",
-                    AllergenMatter = "Khác"
-                };
-
-                _context.Allergens.Add(newAllergen);
-                await _context.SaveChangesAsync();
-
-                finalAllergenId = newAllergen.AllergenId;
-            }
-        }
-
-        var existingLink = await _context.StudentAllergens
-            .FirstOrDefaultAsync(sa => sa.StudentId == studentId && sa.AllergenId == finalAllergenId);
-
-        if (existingLink == null)
-        {
-            var studentAllergen = new StudentAllergen
-            {
-                StudentId = studentId, AllergenId = finalAllergenId, DiagnosedAt = DateTime.UtcNow
+                AllergenName = ingredient.IngredientName,
+                AllergenMatter = ingredient.IngredientType ?? "Ingredient",
+                SchoolId = schoolId,
+                CreatedBy = userId,
+                CreatedAt = DateTime.UtcNow,
+                AllergenInfo = "Dị ứng từ nguyên liệu"
             };
 
-            _context.StudentAllergens.Add(studentAllergen);
-            await _context.SaveChangesAsync();
+            _context.Allergens.Add(allergen);
+            await _context.SaveChangesAsync(); // để có AllergenId
         }
+
+        // 5️⃣ Kiểm tra đã khai báo dị ứng nguyên liệu này chưa
+        var existing = await _context.AllergeticIngredients
+            .FirstOrDefaultAsync(ai =>
+                ai.IngredientId == ingredient.IngredientId &&
+                ai.AllergenId == allergen.AllergenId);
+
+        if (existing != null)
+            throw new Exception("Nguyên liệu này đã được khai báo dị ứng");
+
+        // 6️⃣ Lưu vào bảng AllergeticIngredients
+        var allergenicIngredient = new AllergeticIngredient
+        {
+            IngredientId = ingredient.IngredientId,
+            AllergenId = allergen.AllergenId,
+            ReportedAt = DateTime.UtcNow,
+            DiagnosedAt = DateTime.UtcNow,
+            Notes = dto.Notes,
+            ReactionNotes = dto.ReactionNotes,
+            HandlingNotes = dto.HandlingNotes
+        };
+
+        _context.AllergeticIngredients.Add(allergenicIngredient);
+        await _context.SaveChangesAsync();
     }
+
 
     public async Task<List<IngredientDto>> Search(string keyword)
     {
