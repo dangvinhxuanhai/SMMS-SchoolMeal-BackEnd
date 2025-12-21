@@ -44,5 +44,4 @@ namespace SMMS.Application.Features.billing.DTOs
         public string SettlementAccountNo { get; set; } = string.Empty;     // Số tài khoản
         public string SettlementAccountName { get; set; } = string.Empty;  // Chủ tài khoản
     }
-
 }
