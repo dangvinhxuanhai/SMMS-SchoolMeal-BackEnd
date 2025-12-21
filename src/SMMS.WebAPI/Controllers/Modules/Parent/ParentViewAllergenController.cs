@@ -65,9 +65,8 @@ namespace SMMS.WebAPI.Controllers.Modules.Parent
             {
                 StudentId = studentId,
                 UserId = userId,
-                AllergenId = request.AllergenId,
-                AllergenName = request.AllergenName,
-                AllergenInfo = request.AllergenInfo
+                IngredientId = request.IngredientId,
+                ReactionNotes = request.ReactionNotes
             };
 
             // 3️⃣ Send MediatR
