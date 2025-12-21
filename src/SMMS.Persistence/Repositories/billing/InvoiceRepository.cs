@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.billing.DTOs;
 using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Persistence.Data;
+using SMMS.Domain.Entities.billing;
 using BillingInvoice = SMMS.Domain.Entities.billing.Invoice;
+using SMMS.Domain.Entities.school;
 
 namespace SMMS.Persistence.Repositories.billing
 {
@@ -38,13 +40,13 @@ namespace SMMS.Persistence.Repositories.billing
 
         public async Task<IEnumerable<InvoiceDto>> GetUnpaidInvoicesAsync(Guid studentId)
         {
-            var studentInfo = await _context.Students
+            var student = await _context.Students
                 .AsNoTracking()
                 .Where(s => s.StudentId == studentId)
                 .Select(s => new { s.SchoolId, s.FullName })
                 .FirstOrDefaultAsync();
 
-            if (studentInfo == null) return Enumerable.Empty<InvoiceDto>();
+            if (student == null) return Enumerable.Empty<InvoiceDto>();
 
             var invoices = await _context.Invoices
                 .AsNoTracking()
@@ -53,44 +55,58 @@ namespace SMMS.Persistence.Repositories.billing
 
             if (!invoices.Any()) return Enumerable.Empty<InvoiceDto>();
 
-            var result = new List<InvoiceDto>();
+            var minDate = invoices.Min(i => new DateOnly(i.DateFrom.Year, i.DateFrom.Month, 1).AddMonths(-1));
+            var maxDate = invoices.Max(i => i.DateFrom);
 
+            var allSettings = await _context.SchoolPaymentSettings
+                .AsNoTracking()
+                .Where(s => s.SchoolId == student.SchoolId && s.IsActive)
+                .ToListAsync();
+         
+            var allMealStats = await (from dm in _context.DailyMeals
+                    join sm in _context.ScheduleMeals on dm.ScheduleMealId equals sm.ScheduleMealId
+                    where sm.SchoolId == student.SchoolId &&
+                          dm.MealDate >= minDate && dm.MealDate <= maxDate
+                    select new { dm.MealDate, IsHoliday = dm.Notes != null })
+                .Distinct()
+                .ToListAsync();
+
+            var allAttendances = await _context.Attendances
+                .AsNoTracking()
+                .Where(a => a.StudentId == studentId && a.AbsentDate >= minDate && a.AbsentDate <= maxDate)
+                .Select(a => a.AbsentDate)
+                .Distinct()
+                .ToListAsync();
+
+            var result = new List<InvoiceDto>();
             foreach (var inv in invoices)
             {
-                var prevMonthFrom = inv.DateFrom.AddMonths(-1);
-                var prevMonthTo = inv.DateFrom.AddDays(-1);
+                //// 👉 Setting tháng trước
+                var prevMonthDate = inv.DateFrom.AddMonths(-1);
 
-                var setting = await _context.SchoolPaymentSettings
+                var prevMonthSetting = await _context.SchoolPaymentSettings
                     .AsNoTracking()
                     .FirstOrDefaultAsync(s =>
-                        s.SchoolId == studentInfo.SchoolId && s.FromMonth == inv.DateFrom.Month && s.IsActive);
-
-                var mealStats = await (from dm in _context.DailyMeals
-                        join sm in _context.ScheduleMeals on dm.ScheduleMealId equals sm.ScheduleMealId
-                        where sm.SchoolId == studentInfo.SchoolId &&
-                              dm.MealDate >= prevMonthFrom &&
-                              dm.MealDate <= prevMonthTo
-                        select new { dm.MealDate, IsHoliday = dm.Notes != null })
-                    .Distinct()
-                    .ToListAsync();
-
-                int holidayCount = mealStats.Count(x => x.IsHoliday);
-                int validMealDays = mealStats.Count(x => !x.IsHoliday);
+                        s.SchoolId == student.SchoolId &&
+                        s.FromMonth == prevMonthDate.Month &&
+                        s.IsActive);
+                var stats = CalculateStats(inv.DateFrom, student.SchoolId, allSettings, allMealStats, allAttendances);
 
                 result.Add(new InvoiceDto
                 {
                     InvoiceId = inv.InvoiceId,
                     InvoiceCode = inv.InvoiceCode,
-                    StudentName = studentInfo.FullName,
+                    StudentName = student.FullName,
                     MonthNo = inv.MonthNo,
                     DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
                     DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
                     AbsentDay = inv.AbsentDay,
-                    Holiday = holidayCount,
+                    Holiday = stats.HolidayCount,
                     Status = inv.Status,
-                    MealPricePerDay = setting?.MealPricePerDay ?? 0,
-                    AmountTotal = setting?.TotalAmount ?? 0,
-                    TotalMealLastMonth = Math.Max(0, validMealDays - inv.AbsentDay),
+                    MealPricePerDayLastMonth = prevMonthSetting != null? prevMonthSetting.MealPricePerDay: 0,
+                    MealPricePerDay = stats.Setting?.MealPricePerDay ?? 0,
+                    AmountTotal = stats.Setting?.TotalAmount ?? 0,
+                    TotalMealLastMonth = stats.ValidMealDays,
                     AmountToPay = inv.TotalPrice
                 });
             }
@@ -100,72 +116,97 @@ namespace SMMS.Persistence.Repositories.billing
 
         public async Task<InvoiceDetailDto?> GetInvoiceDetailAsync(long invoiceId, Guid studentId)
         {
-            var invoiceData = await _context.Invoices
-                .AsNoTracking()
-                .Where(i => i.InvoiceId == invoiceId && i.StudentId == studentId)
-                .Select(inv => new
-                {
-                    inv,
-                    Student = _context.Students.FirstOrDefault(s => s.StudentId == inv.StudentId),
-                    PrevMonthFrom = inv.DateFrom.AddMonths(-1),
-                    PrevMonthTo = inv.DateFrom.AddDays(-1)
-                })
-                .FirstOrDefaultAsync();
+            var inv = await _context.Invoices.AsNoTracking()
+                .FirstOrDefaultAsync(i => i.InvoiceId == invoiceId && i.StudentId == studentId);
+            if (inv == null) return null;
 
-            if (invoiceData == null) return null;
-
-            var schoolId = invoiceData.Student.SchoolId;
-
-            var setting = await _context.SchoolPaymentSettings
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s =>
-                    s.SchoolId == schoolId && s.FromMonth == invoiceData.inv.DateFrom.Month && s.IsActive);
-
-            var mealStats = await (from dm in _context.DailyMeals
-                    join sm in _context.ScheduleMeals on dm.ScheduleMealId equals sm.ScheduleMealId
-                    where sm.SchoolId == schoolId &&
-                          dm.MealDate >= invoiceData.PrevMonthFrom &&
-                          dm.MealDate <= invoiceData.PrevMonthTo
-                    select new { dm.MealDate, IsHoliday = dm.Notes != null })
-                .Distinct()
-                .ToListAsync();
-
-            int holidayCount = mealStats.Count(x => x.IsHoliday);
-            int validMealDays = mealStats.Count(x => !x.IsHoliday);
-
-            return await (from inv in _context.Invoices
-                join stu in _context.Students on inv.StudentId equals stu.StudentId
+            var studentInfo = await (from stu in _context.Students
                 join scCls in _context.StudentClasses on stu.StudentId equals scCls.StudentId
                 join cls in _context.Classes on scCls.ClassId equals cls.ClassId
                 join sch in _context.Schools on stu.SchoolId equals sch.SchoolId
-                where inv.InvoiceId == invoiceId && scCls.LeftDate == null
-                select new InvoiceDetailDto
-                {
-                    InvoiceId = inv.InvoiceId,
-                    InvoiceCode = inv.InvoiceCode,
-                    StudentName = stu.FullName,
-                    ClassName = cls.ClassName,
-                    SchoolName = sch.SchoolName,
-                    MonthNo = inv.MonthNo,
-                    DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
-                    DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
-                    AbsentDay = inv.AbsentDay,
-                    Holiday = holidayCount,
-                    Status = inv.Status,
-                    MealPricePerDay = setting != null ? setting.MealPricePerDay : 0,
-                    TotalMealLastMonth = Math.Max(0, validMealDays - inv.AbsentDay),
-                    AmountToPay = inv.TotalPrice,
-                    AmountTotal = setting != null ? setting.TotalAmount : 0,
-                    SettlementBankCode = sch.SettlementBankCode ?? string.Empty,
-                    SettlementAccountNo = sch.SettlementAccountNo ?? string.Empty,
-                    SettlementAccountName = sch.SettlementAccountName ?? string.Empty,
-                }).FirstOrDefaultAsync();
+                where stu.StudentId == studentId && scCls.LeftDate == null
+                select new { stu, cls.ClassName, sch }).FirstOrDefaultAsync();
+
+            if (studentInfo == null) return null;
+
+            var firstDay = new DateOnly(inv.DateFrom.Year, inv.DateFrom.Month, 1);
+            var prevMonthFrom = firstDay.AddMonths(-1);
+            var prevMonthTo = firstDay.AddDays(-1);
+
+            var settings = await _context.SchoolPaymentSettings
+                .Where(s => s.SchoolId == studentInfo.stu.SchoolId && s.IsActive).ToListAsync();
+            // Lấy setting của tháng trước
+            var prevMonthDate = inv.DateFrom.AddMonths(-1);
+
+            var prevMonthSetting = await _context.SchoolPaymentSettings
+            .AsNoTracking()
+                .FirstOrDefaultAsync(s =>
+                    s.SchoolId == studentInfo.stu.SchoolId &&
+                    s.FromMonth == prevMonthDate.Month &&
+                    s.IsActive);
+            var mealStats = await (from dm in _context.DailyMeals
+                join sm in _context.ScheduleMeals on dm.ScheduleMealId equals sm.ScheduleMealId
+                where sm.SchoolId == studentInfo.stu.SchoolId && dm.MealDate >= prevMonthFrom &&
+                      dm.MealDate <= prevMonthTo
+                select new { dm.MealDate, IsHoliday = dm.Notes != null }).Distinct().ToListAsync();
+            var attendances = await _context.Attendances.Where(a =>
+                    a.StudentId == studentId && a.AbsentDate >= prevMonthFrom && a.AbsentDate <= prevMonthTo)
+                .Select(a => a.AbsentDate).ToListAsync();
+
+            var stats = CalculateStats(inv.DateFrom, studentInfo.stu.SchoolId, settings,
+                mealStats.Select(x => (object)x).Cast<dynamic>().ToList(), attendances);
+
+            return new InvoiceDetailDto
+            {
+                InvoiceId = inv.InvoiceId,
+                InvoiceCode = inv.InvoiceCode,
+                StudentName = studentInfo.stu.FullName,
+                ClassName = studentInfo.ClassName,
+                SchoolName = studentInfo.sch.SchoolName,
+                MonthNo = inv.MonthNo,
+                DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
+                DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
+                AbsentDay = inv.AbsentDay,
+                Holiday = stats.HolidayCount,
+                Status = inv.Status,
+                MealPricePerDay = stats.Setting?.MealPricePerDay ?? 0,
+                MealPricePerDayLastMonth = prevMonthSetting != null? prevMonthSetting.MealPricePerDay: 0,
+                TotalMealLastMonth = stats.ValidMealDays,
+                AmountToPay = inv.TotalPrice,
+                AmountTotal = stats.Setting?.TotalAmount ?? 0,
+                SettlementBankCode = studentInfo.sch.SettlementBankCode ?? string.Empty,
+                SettlementAccountNo = studentInfo.sch.SettlementAccountNo ?? string.Empty,
+                SettlementAccountName = studentInfo.sch.SettlementAccountName ?? string.Empty,
+            };
+        }
+
+        private (int AbsentCount, int HolidayCount, int ValidMealDays, SchoolPaymentSetting? Setting)
+            CalculateStats(DateOnly dateFrom, Guid schoolId, List<SchoolPaymentSetting> settings, dynamic mealDates,
+                List<DateOnly> attendances)
+        {
+            var firstDayOfCurrentMonth = new DateOnly(dateFrom.Year, dateFrom.Month, 1);
+            var prevMonthFrom = firstDayOfCurrentMonth.AddMonths(-1);
+            var prevMonthTo = firstDayOfCurrentMonth.AddDays(-1);
+
+            var setting = settings.FirstOrDefault(s => s.FromMonth == dateFrom.Month);
+
+            var monthlyMeals = ((IEnumerable<dynamic>)mealDates)
+                .Where(m => m.MealDate >= prevMonthFrom && m.MealDate <= prevMonthTo).ToList();
+
+            var holidayCount = monthlyMeals.Count(m => m.IsHoliday);
+            var plannedMealDates = monthlyMeals.Where(m => !m.IsHoliday).Select(m => (DateOnly)m.MealDate).ToList();
+
+            var absentInMealDays = attendances
+                .Count(a => a >= prevMonthFrom && a <= prevMonthTo && plannedMealDates.Contains(a));
+
+            int validMealDays = Math.Max(0, plannedMealDates.Count - absentInMealDays);
+
+            return (absentInMealDays, holidayCount, validMealDays, setting);
         }
 
         public Task<BillingInvoice?> GetByIdAsync(long invoiceId, CancellationToken ct)
         {
-            return _context.Invoices
-                .FirstOrDefaultAsync(i => i.InvoiceId == invoiceId, ct);
+            return _context.Invoices.FirstOrDefaultAsync(i => i.InvoiceId == invoiceId, ct);
         }
     }
 }

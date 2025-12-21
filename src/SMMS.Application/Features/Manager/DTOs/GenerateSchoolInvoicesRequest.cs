@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace SMMS.Application.Features.Manager.DTOs;
+
 public class GenerateSchoolInvoicesRequest
 {
     /// <summary>Ngày bắt đầu kỳ tính tiền (chỉ lấy phần Date)</summary>
@@ -25,6 +26,7 @@ public class UpdateInvoiceRequest
     public int AbsentDay { get; set; }
     public string Status { get; set; } = "Unpaid"; // 'Unpaid','Paid','Refunded'
 }
+
 public class InvoiceDto1
 {
     public long InvoiceId { get; set; }

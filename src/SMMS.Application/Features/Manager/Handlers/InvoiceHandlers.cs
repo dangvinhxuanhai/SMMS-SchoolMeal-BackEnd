@@ -232,12 +232,13 @@ public class GenerateSchoolInvoicesHandler
                 continue;
 
             var absentCur = absentCurMap.TryGetValue(sid, out var c) ? c : 0;
-
+            var absentPrev = 0;
+            if (monthNo > 1)
+                absentPrev = absentPrevMap.TryGetValue(sid, out var ap) ? ap : 0;
             decimal totalPrice = baseAmount;
 
             if (monthNo > 1)
             {
-                var absentPrev = absentPrevMap.TryGetValue(sid, out var ap) ? ap : 0;
                 totalPrice = baseAmount - (prevPerDay * (holidayPrev + absentPrev));
                 if (totalPrice < 0) totalPrice = 0; // optional
             }
@@ -249,7 +250,7 @@ public class GenerateSchoolInvoicesHandler
                 MonthNo = monthNo,
                 DateFrom = fromD,
                 DateTo = toD,
-                AbsentDay = absentCur,
+                AbsentDay = absentPrev,
                 Status = "Unpaid",
                 TotalPrice = totalPrice
             });
