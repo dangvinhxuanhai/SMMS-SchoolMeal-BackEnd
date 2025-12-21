@@ -250,7 +250,7 @@ public class GenerateSchoolInvoicesHandler
                 MonthNo = monthNo,
                 DateFrom = fromD,
                 DateTo = toD,
-                AbsentDay = absentCur + absentPrev,
+                AbsentDay = absentPrev,
                 Status = "Unpaid",
                 TotalPrice = totalPrice
             });
