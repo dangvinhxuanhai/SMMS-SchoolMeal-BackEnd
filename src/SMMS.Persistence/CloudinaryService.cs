@@ -73,4 +73,20 @@ public class CloudinaryService
 
         return uploadResult.SecureUrl?.ToString();
     }
+    public async Task<string?> UploadBillImageAsync(IFormFile file)
+    {
+        if (file == null || file.Length == 0) return null;
+
+        using var stream = file.OpenReadStream();
+
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(file.FileName, stream),
+            Folder = "Image_Bill" // Tạo folder trên Cloudinary
+        };
+
+        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+        return uploadResult.SecureUrl?.ToString();
+    }
 }

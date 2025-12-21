@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using MediatR;
+using Microsoft.AspNetCore.Http;
 
 namespace SMMS.Application.Features.Plan.DTOs;
 public class CreatePurchaseOrderFromPlanDto
@@ -12,5 +13,7 @@ public class CreatePurchaseOrderFromPlanDto
     public int PlanId { get; set; }
     public string SupplierName { get; set; } = default!;
     public string? Note { get; set; }
+    // ✅ 1 ảnh bill duy nhất
+    public IFormFile? BillImage { get; set; }
     public List<CreatePurchaseOrderLineFromPlanDto> Lines { get; set; } = new();
 }

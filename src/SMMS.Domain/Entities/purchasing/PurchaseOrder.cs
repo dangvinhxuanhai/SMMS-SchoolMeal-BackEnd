@@ -31,6 +31,9 @@ public partial class PurchaseOrder
 
     public Guid? StaffInCharged { get; set; }
 
+    [StringLength(500)]
+    public string? BillImageUrl { get; set; }
+
     [ForeignKey("PlanId")]
     [InverseProperty("PurchaseOrders")]
     public virtual PurchasePlan? Plan { get; set; }
