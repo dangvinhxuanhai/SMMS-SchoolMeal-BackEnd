@@ -4,6 +4,7 @@ using SMMS.Application.Features.billing.Interfaces;
 using SMMS.Persistence.Data;
 using SMMS.Domain.Entities.billing;
 using BillingInvoice = SMMS.Domain.Entities.billing.Invoice;
+using SMMS.Domain.Entities.school;
 
 namespace SMMS.Persistence.Repositories.billing
 {
@@ -61,7 +62,7 @@ namespace SMMS.Persistence.Repositories.billing
                 .AsNoTracking()
                 .Where(s => s.SchoolId == student.SchoolId && s.IsActive)
                 .ToListAsync();
-
+         
             var allMealStats = await (from dm in _context.DailyMeals
                     join sm in _context.ScheduleMeals on dm.ScheduleMealId equals sm.ScheduleMealId
                     where sm.SchoolId == student.SchoolId &&
@@ -80,6 +81,15 @@ namespace SMMS.Persistence.Repositories.billing
             var result = new List<InvoiceDto>();
             foreach (var inv in invoices)
             {
+                //// 👉 Setting tháng trước
+                var prevMonthDate = inv.DateFrom.AddMonths(-1);
+
+                var prevMonthSetting = await _context.SchoolPaymentSettings
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s =>
+                        s.SchoolId == student.SchoolId &&
+                        s.FromMonth == prevMonthDate.Month &&
+                        s.IsActive);
                 var stats = CalculateStats(inv.DateFrom, student.SchoolId, allSettings, allMealStats, allAttendances);
 
                 result.Add(new InvoiceDto
@@ -90,9 +100,10 @@ namespace SMMS.Persistence.Repositories.billing
                     MonthNo = inv.MonthNo,
                     DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
                     DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
-                    AbsentDay = stats.AbsentCount,
+                    AbsentDay = inv.AbsentDay,
                     Holiday = stats.HolidayCount,
                     Status = inv.Status,
+                    MealPricePerDayLastMonth = prevMonthSetting != null? prevMonthSetting.MealPricePerDay: 0,
                     MealPricePerDay = stats.Setting?.MealPricePerDay ?? 0,
                     AmountTotal = stats.Setting?.TotalAmount ?? 0,
                     TotalMealLastMonth = stats.ValidMealDays,
@@ -124,6 +135,15 @@ namespace SMMS.Persistence.Repositories.billing
 
             var settings = await _context.SchoolPaymentSettings
                 .Where(s => s.SchoolId == studentInfo.stu.SchoolId && s.IsActive).ToListAsync();
+            // Lấy setting của tháng trước
+            var prevMonthDate = inv.DateFrom.AddMonths(-1);
+
+            var prevMonthSetting = await _context.SchoolPaymentSettings
+            .AsNoTracking()
+                .FirstOrDefaultAsync(s =>
+                    s.SchoolId == studentInfo.stu.SchoolId &&
+                    s.FromMonth == prevMonthDate.Month &&
+                    s.IsActive);
             var mealStats = await (from dm in _context.DailyMeals
                 join sm in _context.ScheduleMeals on dm.ScheduleMealId equals sm.ScheduleMealId
                 where sm.SchoolId == studentInfo.stu.SchoolId && dm.MealDate >= prevMonthFrom &&
@@ -146,10 +166,11 @@ namespace SMMS.Persistence.Repositories.billing
                 MonthNo = inv.MonthNo,
                 DateFrom = inv.DateFrom.ToDateTime(TimeOnly.MinValue),
                 DateTo = inv.DateTo.ToDateTime(TimeOnly.MinValue),
-                AbsentDay = stats.AbsentCount,
+                AbsentDay = inv.AbsentDay,
                 Holiday = stats.HolidayCount,
                 Status = inv.Status,
                 MealPricePerDay = stats.Setting?.MealPricePerDay ?? 0,
+                MealPricePerDayLastMonth = prevMonthSetting != null? prevMonthSetting.MealPricePerDay: 0,
                 TotalMealLastMonth = stats.ValidMealDays,
                 AmountToPay = inv.TotalPrice,
                 AmountTotal = stats.Setting?.TotalAmount ?? 0,
