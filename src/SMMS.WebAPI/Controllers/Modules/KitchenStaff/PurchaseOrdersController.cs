@@ -54,8 +54,6 @@ public class PurchaseOrdersController : ControllerBase
     public async Task<ActionResult<KsPurchaseOrderDto>> CreateFromPlan(
         [FromForm] CreatePurchaseOrderFromPlanDto request)
     {
-        var schoolId = GetSchoolIdFromToken();
-        var userId = GetCurrentUserId();
 
         string? billImageUrl = null;
 
