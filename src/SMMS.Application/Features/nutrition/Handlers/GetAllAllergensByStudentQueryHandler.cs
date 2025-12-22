@@ -47,17 +47,17 @@ namespace SMMS.Application.Features.nutrition.Handlers
         }
 
         public async Task Handle(
-            AddStudentAllergyCommand request,
-            CancellationToken cancellationToken)
+     AddStudentAllergyCommand request,
+     CancellationToken cancellationToken)
         {
             await _allergenRepository.AddStudentAllergyAsync(
                 request.UserId,
                 request.StudentId,
                 new AddStudentAllergyDTO
                 {
-                    AllergenId = request.AllergenId,
-                    AllergenName = request.AllergenName,
-                    AllergenInfo = request.AllergenInfo
+                    IngredientId = request.IngredientId,
+                    Notes = request.Notes,
+                    ReactionNotes = request.ReactionNotes,
                 });
         }
     }

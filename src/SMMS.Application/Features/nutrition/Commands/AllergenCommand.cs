@@ -14,9 +14,11 @@ namespace SMMS.Application.Features.nutrition.Commands
         public Guid UserId { get; set; }
         public Guid StudentId { get; set; }
 
-        public int? AllergenId { get; set; }
-        public string? AllergenName { get; set; }
+        public int IngredientId { get; set; }
 
-        public string? AllergenInfo { get; set; }
+        public int? SeverityLevel { get; set; }
+        public string? Notes { get; set; }
+        public string? ReactionNotes { get; set; }
+        public string? HandlingNotes { get; set; }
     }
 }
