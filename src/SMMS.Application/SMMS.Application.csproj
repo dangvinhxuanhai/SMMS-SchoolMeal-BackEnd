@@ -50,6 +50,8 @@
     <Compile Include="Features\Plan\Commands\UpdatePurchasePlanCommand.cs" />
     <Compile Include="Features\Plan\DTOs\CreatePurchaseOrderFromPlanDto.cs" />
     <Compile Include="Features\Plan\DTOs\CreatePurchaseOrderLineFromPlanDto.cs" />
+    <Compile Include="Features\Plan\DTOs\CreatePurchasePlanResult.cs" />
+    <Compile Include="Features\Plan\DTOs\CreatePurchasePlanResultDto.cs" />
     <Compile Include="Features\Plan\DTOs\KsPurchaseOrderDto.cs" />
     <Compile Include="Features\Plan\DTOs\PurchasePlanDto.cs" />
     <Compile Include="Features\Plan\Handlers\CreatePurchasePlanFromScheduleHandler.cs" />
