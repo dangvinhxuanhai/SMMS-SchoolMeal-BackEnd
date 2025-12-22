@@ -15,5 +15,6 @@ public class KsPurchaseOrderDetailDto
     public string? Note { get; set; }
     public int? PlanId { get; set; }
     public Guid? StaffInCharged { get; set; }
+    public string? BillImageUrl { get; set; }
     public List<KsPurchaseOrderLineDto> Lines { get; set; } = new();
 }

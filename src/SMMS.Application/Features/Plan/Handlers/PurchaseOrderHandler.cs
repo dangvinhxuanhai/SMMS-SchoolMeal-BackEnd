@@ -339,6 +339,7 @@ public class PurchaseOrderHandler :
             Note = order.Note,
             PlanId = order.PlanId,
             StaffInCharged = order.StaffInCharged,
+            BillImageUrl = order.BillImageUrl,
             Lines = order.PurchaseOrderLines?
                 .Select(MapToLine)
                 .ToList() ?? new List<KsPurchaseOrderLineDto>()
