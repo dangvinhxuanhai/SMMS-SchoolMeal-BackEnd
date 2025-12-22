@@ -10,6 +10,7 @@ using SMMS.Domain.Entities.purchasing;
 using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.purchasing;
+
 public class PurchasePlanRepository : IPurchasePlanRepository
 {
     private readonly EduMealContext _context;
@@ -20,9 +21,9 @@ public class PurchasePlanRepository : IPurchasePlanRepository
     }
 
     public async Task<CreatePurchasePlanResult> CreateFromScheduleAsync(
-    long scheduleMealId,
-    Guid staffId,
-    CancellationToken cancellationToken)
+        long scheduleMealId,
+        Guid staffId,
+        CancellationToken cancellationToken)
     {
         // 1. Check đã có plan cho ScheduleMeal này chưa
         var existed = await _context.PurchasePlans
@@ -60,12 +61,9 @@ public class PurchasePlanRepository : IPurchasePlanRepository
             where st.SchoolId == schoolId
                   && a.AbsentDate >= weekStart
                   && a.AbsentDate <= weekEnd
-            group a by a.AbsentDate into g
-            select new
-            {
-                Date = g.Key,
-                Count = g.Count()
-            }
+            group a by a.AbsentDate
+            into g
+            select new { Date = g.Key, Count = g.Count() }
         ).ToListAsync(cancellationToken);
 
         var absenceByDate = absenceByDateList.ToDictionary(x => x.Date, x => x.Count);
@@ -81,9 +79,9 @@ public class PurchasePlanRepository : IPurchasePlanRepository
             where dm.ScheduleMealId == scheduleMealId
             select new
             {
-                dm.MealDate,          // ngày bữa ăn
-                fii.IngredientId,     // nguyên liệu
-                fii.QuantityGram      // gram cho 1 suất ăn
+                dm.MealDate, // ngày bữa ăn
+                fii.IngredientId, // nguyên liệu
+                fii.QuantityGram // gram cho 1 suất ăn
             }
         ).ToListAsync(cancellationToken); // từ đây trở xuống là LINQ to Objects
 
@@ -107,11 +105,7 @@ public class PurchasePlanRepository : IPurchasePlanRepository
                     totalGram += x.QuantityGram * participants;
                 }
 
-                return new
-                {
-                    IngredientId = g.Key,
-                    RqQuanityGram = totalGram
-                };
+                return new { IngredientId = g.Key, RqQuanityGram = totalGram };
             })
             .ToList();
         // 6.5 Lấy tồn kho hiện tại theo Ingredient (gram)
@@ -247,9 +241,7 @@ public class PurchasePlanRepository : IPurchasePlanRepository
                 // add mới
                 var newLine = new PurchasePlanLine
                 {
-                    PlanId = planId,
-                    IngredientId = dto.IngredientId,
-                    RqQuanityGram = dto.RqQuanityGram
+                    PlanId = planId, IngredientId = dto.IngredientId, RqQuanityGram = dto.RqQuanityGram
                 };
                 _context.PurchasePlanLines.Add(newLine);
             }
@@ -299,7 +291,7 @@ public class PurchasePlanRepository : IPurchasePlanRepository
         _context.PurchasePlans.Remove(plan);
         await _context.SaveChangesAsync(cancellationToken);
     }
-    
+
 
     // ------------------- NEW: GetPlansForSchoolAsync -------------------
     public async Task<List<PurchasePlanListItemDto>> GetPlansForSchoolAsync(
@@ -332,12 +324,10 @@ public class PurchasePlanRepository : IPurchasePlanRepository
                 GeneratedAt = x.Plan.GeneratedAt,
                 PlanStatus = x.Plan.PlanStatus,
                 AskToDelete = x.Plan.AskToDelete,
-
                 WeekStart = x.Schedule.WeekStart,
                 WeekEnd = x.Schedule.WeekEnd,
                 WeekNo = x.Schedule.WeekNo,
                 YearNo = x.Schedule.YearNo,
-
                 StaffId = x.Plan.StaffId,
                 StaffName = x.Staff.FullName
             })
@@ -348,9 +338,9 @@ public class PurchasePlanRepository : IPurchasePlanRepository
 
     // ------------------- NEW: GetPlanByDateAsync -------------------
     public async Task<PurchasePlanDto?> GetPlanByDateAsync(
-    Guid schoolId,
-    DateOnly nextWeekDate,
-    CancellationToken cancellationToken)
+        Guid schoolId,
+        DateOnly nextWeekDate,
+        CancellationToken cancellationToken)
     {
         // Lấy ngày bất kỳ của "tuần tới" so với date
         //var nextWeekDate = date.AddDays(7);
@@ -365,8 +355,8 @@ public class PurchasePlanRepository : IPurchasePlanRepository
                   && sm.WeekEnd >= nextWeekDate
                   && !p.AskToDelete
             orderby sm.YearNo descending,
-                    sm.WeekNo descending,
-                    p.GeneratedAt descending
+                sm.WeekNo descending,
+                p.GeneratedAt descending
             select p.PlanId
         ).FirstOrDefaultAsync(cancellationToken);
 
@@ -413,9 +403,7 @@ public class PurchasePlanRepository : IPurchasePlanRepository
             orderby ing.IngredientName
             select new PurchasePlanLineDto
             {
-                IngredientId = l.IngredientId,
-                IngredientName = ing.IngredientName,
-                RqQuanityGram = l.RqQuanityGram
+                IngredientId = l.IngredientId, IngredientName = ing.IngredientName, RqQuanityGram = l.RqQuanityGram
             }
         ).ToListAsync(cancellationToken);
 
@@ -430,10 +418,11 @@ public class PurchasePlanRepository : IPurchasePlanRepository
             Lines = lines
         };
     }
+
     // ------------------- SoftDeletePlanAsync -------------------
     public async Task SoftDeletePlanAsync(
-    int planId,
-    CancellationToken cancellationToken)
+        int planId,
+        CancellationToken cancellationToken)
     {
         var plan = await _context.PurchasePlans
             .FirstOrDefaultAsync(p => p.PlanId == planId, cancellationToken);

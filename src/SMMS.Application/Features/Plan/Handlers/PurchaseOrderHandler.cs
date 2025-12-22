@@ -14,22 +14,25 @@ using SMMS.Application.Features.Plan.Queries;
 using SMMS.Domain.Entities.purchasing;
 
 namespace SMMS.Application.Features.Plan.Handlers;
+
 public class PurchaseOrderHandler :
-        IRequestHandler<CreatePurchaseOrderFromPlanCommand, KsPurchaseOrderDto>,
-        IRequestHandler<UpdatePurchaseOrderHeaderCommand, KsPurchaseOrderDetailDto>,
-        IRequestHandler<DeletePurchaseOrderCommand, Unit>,
-        IRequestHandler<GetPurchaseOrderByIdQuery, KsPurchaseOrderDetailDto?>,
-        IRequestHandler<GetPurchaseOrdersBySchoolQuery, List<PurchaseOrderSummaryDto>>,
-        IRequestHandler<UpdatePurchaseOrderLinesCommand, List<KsPurchaseOrderLineDto>>,
-        IRequestHandler<DeletePurchaseOrderLineCommand, Unit>,
-        IRequestHandler<ConfirmPurchaseOrderCommand, KsPurchaseOrderDetailDto>,
-        IRequestHandler<RejectPurchaseOrderCommand, KsPurchaseOrderDetailDto>
+    IRequestHandler<CreatePurchaseOrderFromPlanCommand, KsPurchaseOrderDto>,
+    IRequestHandler<UpdatePurchaseOrderHeaderCommand, KsPurchaseOrderDetailDto>,
+    IRequestHandler<DeletePurchaseOrderCommand, Unit>,
+    IRequestHandler<GetPurchaseOrderByIdQuery, KsPurchaseOrderDetailDto?>,
+    IRequestHandler<GetPurchaseOrdersBySchoolQuery, List<PurchaseOrderSummaryDto>>,
+    IRequestHandler<UpdatePurchaseOrderLinesCommand, List<KsPurchaseOrderLineDto>>,
+    IRequestHandler<DeletePurchaseOrderLineCommand, Unit>,
+    IRequestHandler<ConfirmPurchaseOrderCommand, KsPurchaseOrderDetailDto>,
+    IRequestHandler<RejectPurchaseOrderCommand, KsPurchaseOrderDetailDto>
 {
     private readonly IPurchaseOrderRepository _repository;
     private readonly IPurchasePlanRepository _planRepository;
     private readonly IInventoryRepository _inventoryRepository;
     private readonly IUnitOfWork _unitOfWork;
-    public PurchaseOrderHandler(IPurchaseOrderRepository repository, IUnitOfWork unitOfWork, IPurchasePlanRepository planRepository, IInventoryRepository inventoryRepository)
+
+    public PurchaseOrderHandler(IPurchaseOrderRepository repository, IUnitOfWork unitOfWork,
+        IPurchasePlanRepository planRepository, IInventoryRepository inventoryRepository)
     {
         _repository = repository;
         _unitOfWork = unitOfWork;
@@ -38,8 +41,8 @@ public class PurchaseOrderHandler :
     }
 
     public async Task<KsPurchaseOrderDto> Handle(
-                CreatePurchaseOrderFromPlanCommand request,
-                CancellationToken cancellationToken)
+        CreatePurchaseOrderFromPlanCommand request,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(request.SupplierName))
             throw new ArgumentException("SupplierName is required", nameof(request.SupplierName));
@@ -78,7 +81,7 @@ public class PurchaseOrderHandler :
         {
             SchoolId = schoolId,
             OrderDate = DateTime.UtcNow,
-            PurchaseOrderStatus = "Draft",       // hoặc "Created" tùy convention
+            PurchaseOrderStatus = "Draft", // hoặc "Created" tùy convention
             SupplierName = request.SupplierName.Trim(),
             Note = request.Note,
             PlanId = plan.PlanId,
@@ -159,8 +162,8 @@ public class PurchaseOrderHandler :
             cancellationToken);
 
         var order = await _repository.GetByIdAsync(
-            request.OrderId, request.SchoolId, cancellationToken)
-            ?? throw new Exception("Purchase order not found after update.");
+                        request.OrderId, request.SchoolId, cancellationToken)
+                    ?? throw new Exception("Purchase order not found after update.");
 
         return MapToDetail(order);
     }
@@ -227,15 +230,15 @@ public class PurchaseOrderHandler :
     }
 
     public async Task<KsPurchaseOrderDetailDto> Handle(
-    ConfirmPurchaseOrderCommand request,
-    CancellationToken cancellationToken)
+        ConfirmPurchaseOrderCommand request,
+        CancellationToken cancellationToken)
     {
         // 1) Load order (kèm lines)
         var order = await _repository.GetByIdAsync(
-            request.OrderId,
-            request.SchoolId,
-            cancellationToken)
-            ?? throw new KeyNotFoundException("Purchase order not found.");
+                        request.OrderId,
+                        request.SchoolId,
+                        cancellationToken)
+                    ?? throw new KeyNotFoundException("Purchase order not found.");
 
         if (!string.Equals(order.PurchaseOrderStatus, "Draft", StringComparison.OrdinalIgnoreCase))
         {
@@ -247,7 +250,7 @@ public class PurchaseOrderHandler :
 
         // 2) Load plan + schedule meal
         var plan = await _planRepository.GetByIdAsync(order.PlanId.Value, cancellationToken)
-                  ?? throw new KeyNotFoundException($"Purchase plan {order.PlanId} not found.");
+                   ?? throw new KeyNotFoundException($"Purchase plan {order.PlanId} not found.");
 
         // Giả sử GetByIdAsync include luôn ScheduleMeal navigation.
         plan.PlanStatus = "Confirmed";
@@ -257,6 +260,11 @@ public class PurchaseOrderHandler :
         if (plan.ScheduleMeal != null)
         {
             plan.ScheduleMeal.Status = "Confirmed";
+        }
+        else
+        {
+            throw new InvalidOperationException(
+                "Không thể tìm thấy Schedule Meal liên kết với Plan này. Kiểm tra lại dữ liệu!");
         }
 
         // 3) Đổi status order
@@ -274,7 +282,7 @@ public class PurchaseOrderHandler :
                 line.ExpiryDate,
                 line.BatchNo,
                 line.Origin,
-                request.ManagerUserId,    // CreatedBy = manager duyệt
+                request.ManagerUserId, // CreatedBy = manager duyệt
                 cancellationToken);
 
             await _inventoryRepository.AddInboundTransactionAsync(
@@ -291,14 +299,14 @@ public class PurchaseOrderHandler :
     }
 
     public async Task<KsPurchaseOrderDetailDto> Handle(
-    RejectPurchaseOrderCommand request,
-    CancellationToken cancellationToken)
+        RejectPurchaseOrderCommand request,
+        CancellationToken cancellationToken)
     {
         var order = await _repository.GetByIdAsync(
-            request.OrderId,
-            request.SchoolId,
-            cancellationToken)
-            ?? throw new KeyNotFoundException("Purchase order not found.");
+                        request.OrderId,
+                        request.SchoolId,
+                        cancellationToken)
+                    ?? throw new KeyNotFoundException("Purchase order not found.");
 
         if (!string.Equals(order.PurchaseOrderStatus, "Draft", StringComparison.OrdinalIgnoreCase))
         {
@@ -309,7 +317,7 @@ public class PurchaseOrderHandler :
             throw new InvalidOperationException("Purchase order is not linked to a purchase plan.");
 
         var plan = await _planRepository.GetByIdAsync(order.PlanId.Value, cancellationToken)
-                  ?? throw new KeyNotFoundException($"Purchase plan {order.PlanId} not found.");
+                   ?? throw new KeyNotFoundException($"Purchase plan {order.PlanId} not found.");
 
         // Đổi status sang Exported, không nhập kho
         order.PurchaseOrderStatus = "Rejected";
@@ -374,7 +382,9 @@ public class PurchaseOrderHandler :
             UnitPrice = line.UnitPrice,
             BatchNo = line.BatchNo,
             Origin = line.Origin,
-            ExpiryDate = line.ExpiryDate.HasValue ? line.ExpiryDate.Value.ToDateTime(TimeOnly.MinValue) : (DateTime?)null
+            ExpiryDate = line.ExpiryDate.HasValue
+                ? line.ExpiryDate.Value.ToDateTime(TimeOnly.MinValue)
+                : (DateTime?)null
         };
     }
 
