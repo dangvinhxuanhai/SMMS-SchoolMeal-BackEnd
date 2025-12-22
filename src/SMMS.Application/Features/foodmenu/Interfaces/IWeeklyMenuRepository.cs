@@ -13,7 +13,8 @@ public interface IWeeklyMenuRepository
     /// Nếu không có lịch tuần được Publish, trả về null.
     /// </summary>
     Task<WeekMenuDto?> GetWeekMenuAsync(Guid studentId, DateTime anyDateInWeek, CancellationToken ct = default);
-
+    //GetAll
+    Task<IReadOnlyList<WeekMenuDto>> GetAllWeekMenusAsync(Guid studentId,CancellationToken ct = default);
     /// <summary>
     /// Danh sách các tuần đã được lập lịch cho học sinh (để fill dropdown).
     /// Optional filter theo khoảng ngày.
