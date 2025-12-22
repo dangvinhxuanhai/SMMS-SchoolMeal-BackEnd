@@ -43,13 +43,14 @@ public class PurchasePlansController : ControllerBase
 
     // POST api/purchase-plans/from-schedule?scheduleMealId=123
     [HttpPost("from-schedule")]
-    public async Task<ActionResult<PurchasePlanDto>> CreateFromSchedule(
-        [FromQuery] long scheduleMealId)
+    public async Task<ActionResult> CreateFromSchedule(
+        [FromQuery] long scheduleMealId,
+        CancellationToken ct)
     {
         var staffId = GetCurrentUserId();
 
         var result = await _mediator.Send(
-            new CreatePurchasePlanFromScheduleCommand(scheduleMealId, staffId));
+            new CreatePurchasePlanFromScheduleCommand(scheduleMealId, staffId), ct);
 
         return Ok(result);
     }
