@@ -60,5 +60,19 @@ namespace SMMS.WebAPI.Controllers.Modules.Parent
 
             return Ok(result);
         }
+        //Lấy danh sách toàn bộ
+        [HttpGet("all")]
+        [ProducesResponseType(typeof(IReadOnlyList<WeekMenuDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetAllWeekMenus(
+          [FromQuery] Guid studentId)
+        {
+            if (studentId == Guid.Empty)
+                return BadRequest("studentId is required.");
+
+            var result = await _mediator.Send(
+                new GetAllWeekMenusQuery(studentId));
+
+            return Ok(result);
+        }
     }
 }
