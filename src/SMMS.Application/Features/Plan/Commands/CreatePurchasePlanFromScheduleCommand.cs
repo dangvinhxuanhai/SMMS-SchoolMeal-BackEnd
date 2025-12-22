@@ -10,4 +10,4 @@ namespace SMMS.Application.Features.Plan.Commands;
 public sealed record CreatePurchasePlanFromScheduleCommand(
     long ScheduleMealId,
     Guid StaffId
-) : IRequest<PurchasePlanDto>;
+) : IRequest<CreatePurchasePlanResultDto>;

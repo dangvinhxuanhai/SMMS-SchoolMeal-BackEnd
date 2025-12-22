@@ -51,10 +51,7 @@ public class PurchasePlansController : ControllerBase
         var result = await _mediator.Send(
             new CreatePurchasePlanFromScheduleCommand(scheduleMealId, staffId));
 
-        return CreatedAtAction(
-            nameof(GetById),
-            new { planId = result.PlanId },
-            result);
+        return Ok(result);
     }
 
     // GET api/purchase-plans/{planId}
