@@ -16,7 +16,8 @@ using SMMS.Domain.Entities.foodmenu;
 namespace SMMS.Application.Features.foodmenu.Handlers;
 public sealed class WeeklyMenuHandler :
     IRequestHandler<GetWeekMenuQuery, WeekMenuDto?>,
-    IRequestHandler<GetAvailableWeeksQuery, IReadOnlyList<WeekOptionDto>>
+    IRequestHandler<GetAvailableWeeksQuery, IReadOnlyList<WeekOptionDto>>,
+     IRequestHandler<GetAllWeekMenusQuery, IReadOnlyList<WeekMenuDto>>
 {
     private readonly IWeeklyMenuRepository _repo;
     private readonly ILogger<WeeklyMenuHandler> _logger;
@@ -58,5 +59,11 @@ public sealed class WeeklyMenuHandler :
             _logger.LogError(rex, "WeeklyMenuHandler.GetAvailableWeeks failed. studentId={StudentId}", request.StudentId);
             throw;
         }
+    }
+    public async Task<IReadOnlyList<WeekMenuDto>> Handle(
+     GetAllWeekMenusQuery request,
+     CancellationToken ct)
+    {
+        return await _repo.GetAllWeekMenusAsync(request.StudentId, ct);
     }
 }
