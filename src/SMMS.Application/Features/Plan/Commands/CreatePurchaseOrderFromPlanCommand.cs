@@ -17,6 +17,8 @@ public sealed record CreatePurchaseOrderFromPlanCommand
     public string? Note { get; set; }
     // User hiện tại (staff) – sau này bạn có thể lấy từ Claims thay vì để FE gửi
     public Guid StaffUserId { get; set; }
+    // ✅ ADD
+    public string? BillImageUrl { get; init; }
     public List<CreatePurchaseOrderLineFromPlanDto> Lines { get; set; } = new();
 }
 

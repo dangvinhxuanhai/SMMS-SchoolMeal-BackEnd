@@ -362,6 +362,8 @@ public partial class EduMealContext : DbContext
 
         modelBuilder.Entity<Invoice>(entity =>
         {
+            entity.HasKey(e => e.InvoiceId).HasName("PK__Invoices__D796AAB50A2DAF75");
+
             entity.Property(e => e.InvoiceCode).HasDefaultValueSql("(newid())");
 
             entity.HasOne(d => d.Student).WithMany(p => p.Invoices)
@@ -467,6 +469,8 @@ public partial class EduMealContext : DbContext
 
         modelBuilder.Entity<Payment>(entity =>
         {
+            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A38557E6E14");
+
             entity.Property(e => e.ExpectedAmount).HasDefaultValue(600m);
             entity.Property(e => e.PaidAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.PaymentCode).HasDefaultValueSql("(newid())");
@@ -517,7 +521,9 @@ public partial class EduMealContext : DbContext
 
             entity.HasOne(d => d.ConfirmedByNavigation).WithMany(p => p.PurchasePlanConfirmedByNavigations).HasConstraintName("FK_PurchasePlans_ConfirmedBy");
 
-            entity.HasOne(d => d.ScheduleMeal).WithMany(p => p.PurchasePlans).HasConstraintName("FK_PurchasePlans_ScheduleMeal");
+            entity.HasOne(d => d.ScheduleMeal).WithMany(p => p.PurchasePlans)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PurchasePlans_ScheduleMeal");
 
             entity.HasOne(d => d.Staff).WithMany(p => p.PurchasePlanStaffs)
                 .OnDelete(DeleteBehavior.ClientSetNull)

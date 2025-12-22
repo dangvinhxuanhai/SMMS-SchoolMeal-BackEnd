@@ -83,6 +83,7 @@ public class PurchaseOrderHandler :
             Note = request.Note,
             PlanId = plan.PlanId,
             StaffInCharged = request.StaffUserId,
+            BillImageUrl = request.BillImageUrl,
             PurchaseOrderLines = new List<PurchaseOrderLine>()
         };
 
