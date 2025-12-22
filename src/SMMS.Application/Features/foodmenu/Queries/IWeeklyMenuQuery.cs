@@ -11,3 +11,5 @@ namespace SMMS.Application.Features.foodmenu.Queries;
 public record GetWeekMenuQuery(Guid StudentId, DateTime AnyDateInWeek) : IRequest<WeekMenuDto?>;
 public record GetAvailableWeeksQuery(Guid StudentId, DateTime? From = null, DateTime? To = null)
         : IRequest<IReadOnlyList<WeekOptionDto>>;
+public record GetAllWeekMenusQuery(Guid StudentId)
+    : IRequest<IReadOnlyList<WeekMenuDto>>;
