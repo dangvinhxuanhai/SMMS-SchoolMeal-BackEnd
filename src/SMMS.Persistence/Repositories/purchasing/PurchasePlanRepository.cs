@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Plan.DTOs;
 using SMMS.Application.Features.Plan.Interfaces;
+using SMMS.Domain.Entities.foodmenu;
 using SMMS.Domain.Entities.purchasing;
 using SMMS.Persistence.Data;
 
@@ -85,6 +86,38 @@ public class PurchasePlanRepository : IPurchasePlanRepository
             }
         ).ToListAsync(cancellationToken); // từ đây trở xuống là LINQ to Objects
 
+        var dailyIngredientUsage = ingredientPerMeal
+            .GroupBy(x => new { x.MealDate, x.IngredientId })
+            .Select(g =>
+            {
+                absenceByDate.TryGetValue(g.Key.MealDate, out var absent);
+                var participants = totalActiveStudents - absent;
+                if (participants < 0) participants = 0;
+
+                var gram = g.Sum(x => x.QuantityGram) * participants;
+
+                return new
+                {
+                    MealDate = g.Key.MealDate,
+                    IngredientId = g.Key.IngredientId,
+                    ActualQtyGram = gram
+                };
+            })
+            .Where(x => x.ActualQtyGram > 0)
+            .ToList();
+
+        var dailyMealMap = await _context.DailyMeals
+            .Where(dm => dm.ScheduleMealId == scheduleMealId)
+            .Select(dm => new
+            {
+                dm.DailyMealId,
+                dm.MealDate
+            })
+            .ToDictionaryAsync(
+                x => x.MealDate,
+                x => x.DailyMealId,
+                cancellationToken);
+
         // 6. Tính tổng gram cho từng ingredient, đã nhân số HS tham gia (đã trừ vắng)
         var ingredientRequirements = ingredientPerMeal
             .GroupBy(x => x.IngredientId)
@@ -144,6 +177,28 @@ public class PurchasePlanRepository : IPurchasePlanRepository
 
         _context.PurchasePlans.Add(plan);
         await _context.SaveChangesAsync(cancellationToken); // để có PlanId
+
+        var actualIngredients = new List<DailyMealActualIngredient>();
+
+        foreach (var item in dailyIngredientUsage)
+        {
+            if (!dailyMealMap.TryGetValue(item.MealDate, out var dailyMealId))
+                continue;
+
+            actualIngredients.Add(new DailyMealActualIngredient
+            {
+                DailyMealId = dailyMealId,
+                IngredientId = item.IngredientId,
+                ActualQtyGram = item.ActualQtyGram,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        if (actualIngredients.Count > 0)
+        {
+            _context.DailyMealActualIngredients.AddRange(actualIngredients);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
 
         // 8. Tạo lines: chỉ thêm nguyên liệu còn thiếu trong kho
         var lines = new List<PurchasePlanLine>();
