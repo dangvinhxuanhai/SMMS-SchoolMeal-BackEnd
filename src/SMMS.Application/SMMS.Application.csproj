@@ -40,7 +40,9 @@
     <Compile Include="Features\Meal\DTOs\KsMenuListItemDto.cs" />
     <Compile Include="Features\Meal\DTOs\MenuDayFoodItemDto.cs" />
     <Compile Include="Features\Meal\DTOs\MenuDetailDto.cs" />
+    <Compile Include="Features\Meal\DTOs\OffDateCheckResultDto.cs" />
     <Compile Include="Features\Meal\DTOs\UpdateDailyMealActualIngredientsRequest.cs" />
+    <Compile Include="Features\Meal\Handlers\CheckOffDatesQueryHandler.cs" />
     <Compile Include="Features\Meal\Handlers\CreateDailyMealEvidenceCommandHandler.cs" />
     <Compile Include="Features\Meal\Handlers\CreateScheduleMealCommandHandler.cs" />
     <Compile Include="Features\Meal\Handlers\DeleteDailyMealEvidenceCommandHandler.cs" />
@@ -53,6 +55,7 @@
     <Compile Include="Features\Meal\Interfaces\IDailyMealEvidenceRepository.cs" />
     <Compile Include="Features\Meal\Interfaces\IDailyMealRepository.cs" />
     <Compile Include="Features\Meal\Interfaces\IMenuRepository.cs" />
+    <Compile Include="Features\Meal\Queries\CheckOffDatesQuery.cs" />
     <Compile Include="Features\Meal\Queries\GetDailyMealDetailQuery.cs" />
     <Compile Include="Features\Meal\Queries\GetMenuDetailQuery.cs" />
     <Compile Include="Features\Meal\Queries\GetMenuListQuery.cs" />

@@ -14,6 +14,6 @@ public class OffDateCheckResultDto
 public class OffDateItemDto
 {
     public DateOnly Date { get; set; }
-    public string DayOfWeek { get; set; } = null!; // T2, T3, ...
+    public string DayOfWeek { get; set; } = null!;
 }
 
