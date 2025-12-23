@@ -28,18 +28,32 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Features\Meal\Command\CreateDailyMealEvidenceCommand.cs" />
     <Compile Include="Features\Meal\Command\CreateScheduleMealCommand.cs" />
+    <Compile Include="Features\Meal\Command\DeleteDailyMealEvidenceCommand.cs" />
     <Compile Include="Features\Meal\Command\DeleteMenuHardCommand.cs" />
+    <Compile Include="Features\Meal\Command\UpdateDailyMealActualIngredientsCommand.cs" />
+    <Compile Include="Features\Meal\DTOs\CreateDailyMealEvidenceRequest.cs" />
+    <Compile Include="Features\Meal\DTOs\DailyMealDetailPopupDto.cs" />
     <Compile Include="Features\Meal\DTOs\DailyMealRequestDto.cs" />
     <Compile Include="Features\Meal\DTOs\KsMenuDetailDto.cs" />
     <Compile Include="Features\Meal\DTOs\KsMenuListItemDto.cs" />
     <Compile Include="Features\Meal\DTOs\MenuDayFoodItemDto.cs" />
     <Compile Include="Features\Meal\DTOs\MenuDetailDto.cs" />
+    <Compile Include="Features\Meal\DTOs\UpdateDailyMealActualIngredientsRequest.cs" />
+    <Compile Include="Features\Meal\Handlers\CreateDailyMealEvidenceCommandHandler.cs" />
     <Compile Include="Features\Meal\Handlers\CreateScheduleMealCommandHandler.cs" />
+    <Compile Include="Features\Meal\Handlers\DeleteDailyMealEvidenceCommandHandler.cs" />
     <Compile Include="Features\Meal\Handlers\DeleteMenuHardCommandHandler.cs" />
+    <Compile Include="Features\Meal\Handlers\GetDailyMealDetailQueryHandler.cs" />
     <Compile Include="Features\Meal\Handlers\GetMenuDetailQueryHandler.cs" />
     <Compile Include="Features\Meal\Handlers\GetMenuListQueryHandler.cs" />
+    <Compile Include="Features\Meal\Handlers\UpdateDailyMealActualIngredientsCommandHandler.cs" />
+    <Compile Include="Features\Meal\Interfaces\IDailyMealActualIngredientRepository.cs" />
+    <Compile Include="Features\Meal\Interfaces\IDailyMealEvidenceRepository.cs" />
+    <Compile Include="Features\Meal\Interfaces\IDailyMealRepository.cs" />
     <Compile Include="Features\Meal\Interfaces\IMenuRepository.cs" />
+    <Compile Include="Features\Meal\Queries\GetDailyMealDetailQuery.cs" />
     <Compile Include="Features\Meal\Queries\GetMenuDetailQuery.cs" />
     <Compile Include="Features\Meal\Queries\GetMenuListQuery.cs" />
     <Compile Include="Features\Plan\Commands\ConfirmPurchaseOrderCommand.cs" />
