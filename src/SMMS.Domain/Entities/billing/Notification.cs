@@ -21,7 +21,7 @@ public partial class Notification
     [StringLength(300)]
     public string? AttachmentUrl { get; set; }
 
-    public Guid SenderId { get; set; }
+    public Guid? SenderId { get; set; }
 
     [StringLength(20)]
     public string SendType { get; set; } = null!;
@@ -31,6 +31,7 @@ public partial class Notification
 
     public DateTime CreatedAt { get; set; }
 
+    public DateTime? OffDate { get; set; }
 
     [InverseProperty("Notification")]
     public virtual ICollection<NotificationRecipient> NotificationRecipients { get; set; } = new List<NotificationRecipient>();
