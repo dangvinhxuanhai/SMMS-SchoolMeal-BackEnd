@@ -24,6 +24,12 @@ public partial class DailyMeal
     public string? Notes { get; set; }
 
     [InverseProperty("DailyMeal")]
+    public virtual ICollection<DailyMealActualIngredient> DailyMealActualIngredients { get; set; } = new List<DailyMealActualIngredient>();
+
+    [InverseProperty("DailyMeal")]
+    public virtual ICollection<DailyMealEvidence> DailyMealEvidences { get; set; } = new List<DailyMealEvidence>();
+
+    [InverseProperty("DailyMeal")]
     public virtual ICollection<Feedback> Feedbacks { get; set; } = new List<Feedback>();
 
     [InverseProperty("DailyMeal")]

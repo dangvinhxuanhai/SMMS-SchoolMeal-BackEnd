@@ -46,6 +46,10 @@ public partial class EduMealContext : DbContext
 
     public virtual DbSet<DailyMeal> DailyMeals { get; set; }
 
+    public virtual DbSet<DailyMealActualIngredient> DailyMealActualIngredients { get; set; }
+
+    public virtual DbSet<DailyMealEvidence> DailyMealEvidences { get; set; }
+
     public virtual DbSet<ExternalProvider> ExternalProviders { get; set; }
 
     public virtual DbSet<Feedback> Feedbacks { get; set; }
@@ -212,6 +216,34 @@ public partial class EduMealContext : DbContext
             entity.HasOne(d => d.ScheduleMeal).WithMany(p => p.DailyMeals)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_DailyMeals_Schedule");
+        });
+
+        modelBuilder.Entity<DailyMealActualIngredient>(entity =>
+        {
+            entity.HasKey(e => e.ActualId).HasName("PK__DailyMea__0585DAE91CCC737F");
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
+
+            entity.HasOne(d => d.DailyMeal).WithMany(p => p.DailyMealActualIngredients)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DMAI_DailyMeal");
+
+            entity.HasOne(d => d.Ingredient).WithMany(p => p.DailyMealActualIngredients)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DMAI_Ingredient");
+        });
+
+        modelBuilder.Entity<DailyMealEvidence>(entity =>
+        {
+            entity.HasKey(e => e.EvidenceId).HasName("PK__DailyMea__FA39D7AD5F342EB8");
+
+            entity.Property(e => e.UploadedAt).HasDefaultValueSql("(sysdatetime())");
+
+            entity.HasOne(d => d.DailyMeal).WithMany(p => p.DailyMealEvidences)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DME_DailyMeal");
+
+            entity.HasOne(d => d.UploadedByNavigation).WithMany(p => p.DailyMealEvidences).HasConstraintName("FK_DME_User");
         });
 
         modelBuilder.Entity<ExternalProvider>(entity =>
