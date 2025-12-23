@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Plan.DTOs;
 using SMMS.Application.Features.Plan.Interfaces;
+using SMMS.Domain.Entities.foodmenu;
 using SMMS.Domain.Entities.purchasing;
 using SMMS.Persistence.Data;
 
@@ -20,7 +21,7 @@ public class PurchasePlanRepository : IPurchasePlanRepository
         _context = context;
     }
 
-    public async Task<int> CreateFromScheduleAsync(
+    public async Task<CreatePurchasePlanResult> CreateFromScheduleAsync(
         long scheduleMealId,
         Guid staffId,
         CancellationToken cancellationToken)
@@ -85,6 +86,38 @@ public class PurchasePlanRepository : IPurchasePlanRepository
             }
         ).ToListAsync(cancellationToken); // từ đây trở xuống là LINQ to Objects
 
+        var dailyIngredientUsage = ingredientPerMeal
+            .GroupBy(x => new { x.MealDate, x.IngredientId })
+            .Select(g =>
+            {
+                absenceByDate.TryGetValue(g.Key.MealDate, out var absent);
+                var participants = totalActiveStudents - absent;
+                if (participants < 0) participants = 0;
+
+                var gram = g.Sum(x => x.QuantityGram) * participants;
+
+                return new
+                {
+                    MealDate = g.Key.MealDate,
+                    IngredientId = g.Key.IngredientId,
+                    ActualQtyGram = gram
+                };
+            })
+            .Where(x => x.ActualQtyGram > 0)
+            .ToList();
+
+        var dailyMealMap = await _context.DailyMeals
+            .Where(dm => dm.ScheduleMealId == scheduleMealId)
+            .Select(dm => new
+            {
+                dm.DailyMealId,
+                dm.MealDate
+            })
+            .ToDictionaryAsync(
+                x => x.MealDate,
+                x => x.DailyMealId,
+                cancellationToken);
+
         // 6. Tính tổng gram cho từng ingredient, đã nhân số HS tham gia (đã trừ vắng)
         var ingredientRequirements = ingredientPerMeal
             .GroupBy(x => x.IngredientId)
@@ -108,7 +141,30 @@ public class PurchasePlanRepository : IPurchasePlanRepository
                 return new { IngredientId = g.Key, RqQuanityGram = totalGram };
             })
             .ToList();
+        // 6.5 Lấy tồn kho hiện tại theo Ingredient (gram)
+        var ingredientIds = ingredientRequirements
+            .Select(x => x.IngredientId)
+            .ToList();
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var inventoryByIngredient = await _context.InventoryItems
+            .Where(i =>
+                i.SchoolId == schoolId &&
+                i.IsActive &&
+                ingredientIds.Contains(i.IngredientId) &&
+                (i.ExpirationDate == null || i.ExpirationDate >= today))
+            .GroupBy(i => i.IngredientId)
+            .Select(g => new
+            {
+                IngredientId = g.Key,
+                AvailableGram = g.Sum(x => x.QuantityGram)
+            })
+            .ToDictionaryAsync(
+                x => x.IngredientId,
+                x => x.AvailableGram,
+                cancellationToken);
+        
         // 7. Tạo header PurchasePlan
         var plan = new PurchasePlan
         {
@@ -122,11 +178,65 @@ public class PurchasePlanRepository : IPurchasePlanRepository
         _context.PurchasePlans.Add(plan);
         await _context.SaveChangesAsync(cancellationToken); // để có PlanId
 
-        // 8. Tạo lines từ kết quả đã tính
-        var lines = ingredientRequirements.Select(x => new PurchasePlanLine
+        var actualIngredients = new List<DailyMealActualIngredient>();
+
+        foreach (var item in dailyIngredientUsage)
         {
-            PlanId = plan.PlanId, IngredientId = x.IngredientId, RqQuanityGram = x.RqQuanityGram
-        }).ToList();
+            if (!dailyMealMap.TryGetValue(item.MealDate, out var dailyMealId))
+                continue;
+
+            actualIngredients.Add(new DailyMealActualIngredient
+            {
+                DailyMealId = dailyMealId,
+                IngredientId = item.IngredientId,
+                ActualQtyGram = item.ActualQtyGram,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        if (actualIngredients.Count > 0)
+        {
+            _context.DailyMealActualIngredients.AddRange(actualIngredients);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        // 8. Tạo lines: chỉ thêm nguyên liệu còn thiếu trong kho
+        var lines = new List<PurchasePlanLine>();
+
+        foreach (var req in ingredientRequirements)
+        {
+            inventoryByIngredient.TryGetValue(
+                req.IngredientId,
+                out var availableGram);
+
+            if (availableGram < 0)
+                availableGram = 0;
+
+            var missingGram = req.RqQuanityGram - availableGram;
+
+            // Nếu kho đủ → bỏ qua
+            if (missingGram <= 0)
+                continue;
+
+            lines.Add(new PurchasePlanLine
+            {
+                PlanId = plan.PlanId,
+                IngredientId = req.IngredientId,
+                RqQuanityGram = missingGram
+            });
+        }
+
+        // Nếu không thiếu nguyên liệu nào → không cần tạo plan
+        if (lines.Count == 0)
+        {
+            return new CreatePurchasePlanResult
+            {
+                IsCreated = false,
+                PurchasePlanId = null,
+                Reason = PurchasePlanResultReason.InventoryEnough,
+                Message = "Inventory hiện tại đủ cho toàn bộ thực đơn"
+            };
+        }
 
         if (lines.Count > 0)
         {
@@ -134,7 +244,13 @@ public class PurchasePlanRepository : IPurchasePlanRepository
             await _context.SaveChangesAsync(cancellationToken);
         }
 
-        return plan.PlanId;
+        return new CreatePurchasePlanResult
+        {
+            IsCreated = true,
+            PurchasePlanId = plan.PlanId,
+            Reason = PurchasePlanResultReason.Created,
+            Message = "Purchase plan được tạo thành công"
+        };
     }
 
     // ------------------- UpdatePlanWithLinesAsync -------------------

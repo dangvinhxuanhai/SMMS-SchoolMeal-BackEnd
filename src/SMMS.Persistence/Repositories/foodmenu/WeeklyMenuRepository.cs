@@ -256,7 +256,8 @@ public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
                     w.WeekStart,
                     w.WeekEnd,
                     w.Status,
-                    w.Notes
+                    w.Notes,
+                    w.CreatedAt
                 })
                 .ToListAsync(ct);
 
@@ -326,7 +327,9 @@ public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
             }
 
             // 7) Build kết quả theo từng tuần
-            var result = schedules.Select(schedule =>
+            var result = schedules
+                .OrderByDescending(s => s.CreatedAt)
+                .Select(schedule =>
             {
                 var days = dailyMeals
                     .Where(d => d.ScheduleMealId == schedule.ScheduleMealId)

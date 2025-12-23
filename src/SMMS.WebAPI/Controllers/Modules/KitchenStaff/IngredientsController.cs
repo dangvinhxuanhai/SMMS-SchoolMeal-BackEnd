@@ -10,7 +10,7 @@ using SMMS.Domain.Entities.school;
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 [ApiController]
 [Route("api/nutrition/[controller]")]
-[Authorize(Roles = "KitchenStaff, Parent")]
+[Authorize(Roles = "KitchenStaff,Parent")]
 public class IngredientsController : ControllerBase
 {
     private readonly IMediator _mediator;

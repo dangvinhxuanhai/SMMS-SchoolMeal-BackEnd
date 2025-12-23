@@ -31,6 +31,7 @@ public partial class Notification
 
     public DateTime CreatedAt { get; set; }
 
+    public DateTime? OffDate { get; set; }
 
     [InverseProperty("Notification")]
     public virtual ICollection<NotificationRecipient> NotificationRecipients { get; set; } = new List<NotificationRecipient>();

@@ -16,7 +16,7 @@ public class ManagerNotificationDto
 
     public string SendType { get; set; } = "Immediate"; // Immediate / Scheduled / Recurring
     public string? ScheduleCron { get; set; }
-
+    public DateTime? OffDate { get; set; }
     public DateTime CreatedAt { get; set; }
 
     public int TotalRecipients { get; set; }
@@ -33,7 +33,7 @@ public class CreateManagerNotificationRequest
     public bool SendToParents { get; set; } = true;
     public bool SendToKitchenStaff { get; set; } = false;
     public bool SendToTeachers { get; set; } = false;
-
+    public DateTime? OffDate { get; set; }
     // Optional: scheduled
     public string SendType { get; set; } = "Immediate"; // "Immediate" | "Scheduled" | "Recurring"
     public string? ScheduleCron { get; set; }
@@ -46,6 +46,7 @@ public class UpdateManagerNotificationRequest
     public string? AttachmentUrl { get; set; }
 
     // Cho phép đổi loại gửi nếu muốn
+    public DateTime? OffDate { get; set; }
     public string SendType { get; set; } = "Immediate";
     public string? ScheduleCron { get; set; }
 }
