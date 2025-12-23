@@ -58,6 +58,8 @@ namespace SMMS.Application.Features.nutrition.Handlers
                     IngredientId = request.IngredientId,
                     Notes = request.Notes,
                     ReactionNotes = request.ReactionNotes,
+                    HandlingNotes = request.HandlingNotes,
+                    SeverityLevel = request.SeverityLevel
                 });
         }
     }

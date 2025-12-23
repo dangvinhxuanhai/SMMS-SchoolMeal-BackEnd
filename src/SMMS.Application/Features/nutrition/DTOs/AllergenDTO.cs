@@ -13,7 +13,11 @@ namespace SMMS.Application.Features.nutrition.DTOs
         public string? AllergenMatter { get; set; }
         public string? AllergenInfo { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        public string? ReactionNotes { get; set; }
+        public string? Notes { get; set; }
     }
+
     public class AddStudentAllergyDTO
     {
         public int IngredientId { get; set; }

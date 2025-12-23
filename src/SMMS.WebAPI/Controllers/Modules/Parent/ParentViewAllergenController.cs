@@ -66,7 +66,10 @@ namespace SMMS.WebAPI.Controllers.Modules.Parent
                 StudentId = studentId,
                 UserId = userId,
                 IngredientId = request.IngredientId,
-                ReactionNotes = request.ReactionNotes
+                ReactionNotes = request.ReactionNotes,
+                Notes = request.Notes,
+                HandlingNotes = request.HandlingNotes,
+                SeverityLevel = request.SeverityLevel
             };
 
             // 3️⃣ Send MediatR
