@@ -108,6 +108,7 @@ public sealed class GetWeeklyScheduleByDateQueryHandler
 
                     return new DailyMealDto
                     {
+                        DailyMealId = g.First().DailyMealId,
                         MealDate = g.Key.ToDateTime(TimeOnly.MinValue),
 
                         // ✅ MealType không còn dùng → null

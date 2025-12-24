@@ -79,6 +79,10 @@ public static class RepositoryDI
         services.AddScoped<ISchoolInvoiceRepository, SchoolInvoiceRepository>();
         services.AddScoped<IStudentAllergenRepository, StudentAllergenRepository>();
         services.AddScoped<IAllergenRepository, AllergenRepository>();
+        services.AddScoped<IDailyMealRepository, DailyMealRepository>();
+        services.AddScoped<IDailyMealEvidenceRepository, DailyMealEvidenceRepository>();
+        services.AddScoped<IDailyMealActualIngredientRepository, DailyMealActualIngredientRepository>();
+        services.AddScoped<IInventoryConsumptionRepository, InventoryConsumptionRepository>();
 
         return services;
     }

@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Mvc;
 using SMMS.Application.Features.foodmenu.DTOs;
 using SMMS.Application.Features.foodmenu.Queries;
 using SMMS.Application.Features.Meal.Command;
+using SMMS.Application.Features.Meal.DTOs;
+using SMMS.Application.Features.Meal.Queries;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
@@ -70,17 +72,6 @@ public class ScheduleMealsController : ControllerBase
         return Ok(result);
     }
 
-    // ================== helpers lấy claim ==================
-
-    private Guid GetSchoolIdFromToken()
-    {
-        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
-        if (string.IsNullOrEmpty(schoolIdClaim))
-            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
-
-        return Guid.Parse(schoolIdClaim);
-    }
-
     [HttpPost]
     public async Task<ActionResult<long>> Create(
         [FromBody] CreateScheduleMealCommand command,
@@ -99,6 +90,44 @@ public class ScheduleMealsController : ControllerBase
         {
             return BadRequest(new { error = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Check ngày nghỉ trong khoảng thời gian
+    /// </summary>
+    /// GET /api/meal/ScheduleMeals/check?fromDate=2025-03-10&toDate=2025-03-16
+    [HttpGet("check")]
+    public async Task<ActionResult<OffDateCheckResultDto>> Check(
+        [FromQuery] DateOnly fromDate,
+        [FromQuery] DateOnly toDate,
+        CancellationToken ct)
+    {
+        try
+        {
+            var result = await _mediator.Send(
+                new CheckOffDatesQuery(
+                    fromDate,
+                    toDate,
+                    GetSchoolIdFromToken()),
+                ct);
+
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    // ================== helpers lấy claim ==================
+
+    private Guid GetSchoolIdFromToken()
+    {
+        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
+        if (string.IsNullOrEmpty(schoolIdClaim))
+            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
+
+        return Guid.Parse(schoolIdClaim);
     }
 
     private Guid GetCurrentUserId()

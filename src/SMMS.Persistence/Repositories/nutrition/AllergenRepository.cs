@@ -13,64 +13,42 @@ namespace SMMS.Persistence.Repositories.nutrition;
 public class AllergenRepository : IAllergenRepository
 {
     private readonly EduMealContext _context;
-
-    public AllergenRepository(EduMealContext context)
-    {
-        _context = context;
-    }
+    public AllergenRepository(EduMealContext context) => _context = context;
 
     public async Task<List<AllergenDTO>> GetAllAsync(Guid studentId)
     {
-        var schoolId = await _context.Students
-            .Where(s => s.StudentId == studentId)
-            .Select(s => s.SchoolId)
-            .FirstOrDefaultAsync();
-
-        return await _context.Allergens
-            .Where(a => a.SchoolId == schoolId)
-            .OrderByDescending(a => a.CreatedAt)
-            .Select(a => new AllergenDTO
+        return await _context.StudentAllergens
+            .Where(sa => sa.StudentId == studentId)
+            .OrderByDescending(sa => sa.Allergen.CreatedAt)
+            .Select(sa => new AllergenDTO
             {
-                AllergenId = a.AllergenId,
-                AllergenName = a.AllergenName,
-                AllergenMatter = a.AllergenMatter,
-                AllergenInfo = a.AllergenInfo,
-                CreatedAt = a.CreatedAt
+                AllergenId = sa.AllergenId,
+                AllergenName = sa.Allergen.AllergenName,
+                AllergenMatter = sa.Allergen.AllergenMatter,
+                AllergenInfo = sa.Allergen.AllergenInfo,
+                CreatedAt = sa.Allergen.CreatedAt,
+                ReactionNotes = sa.ReactionNotes,
+                Notes = sa.Notes,
             })
             .ToListAsync();
     }
 
-    public async Task AddStudentAllergyAsync(
-        Guid userId,
-        Guid studentId,
-        AddStudentAllergyDTO dto)
+    public async Task AddStudentAllergyAsync(Guid userId, Guid studentId, AddStudentAllergyDTO dto)
     {
-        // 1️⃣ Lấy SchoolId của học sinh
-        var schoolId = await _context.Students
-            .Where(s => s.StudentId == studentId)
-            .Select(s => s.SchoolId)
-            .FirstOrDefaultAsync();
+        var student = await _context.Students.FirstOrDefaultAsync(s => s.StudentId == studentId);
+        if (student == null) throw new Exception("Không tìm thấy học sinh.");
+        var schoolId = student.SchoolId;
 
-        if (schoolId == Guid.Empty)
-            throw new Exception("Student not found");
-
-        // 2️⃣ Lấy Ingredient
         var ingredient = await _context.Ingredients
-            .Where(i => i.IngredientId == dto.IngredientId && i.IsActive)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(i => i.IngredientId == dto.IngredientId && i.IsActive);
+        if (ingredient == null) throw new Exception("Ingredient không tồn tại hoặc đã bị ẩn.");
 
-        if (ingredient == null)
-            throw new Exception("Ingredient không tồn tại");
-
-        // 3️⃣ Kiểm tra Allergen đã tồn tại chưa (theo IngredientName + School)
         var allergen = await _context.Allergens
-            .FirstOrDefaultAsync(a =>
-                a.SchoolId == schoolId &&
-                a.AllergenName.ToLower() == ingredient.IngredientName.ToLower());
+            .FirstOrDefaultAsync(a => a.SchoolId == schoolId &&
+                                      a.AllergenName.ToLower() == ingredient.IngredientName.ToLower());
 
         if (allergen == null)
         {
-            // 4️⃣ Tạo mới Allergen
             allergen = new Allergen
             {
                 AllergenName = ingredient.IngredientName,
@@ -78,43 +56,47 @@ public class AllergenRepository : IAllergenRepository
                 SchoolId = schoolId,
                 CreatedBy = userId,
                 CreatedAt = DateTime.UtcNow,
-                AllergenInfo = "Dị ứng từ nguyên liệu"
+                AllergenInfo = $"Dị ứng tự động tạo từ: {ingredient.IngredientName}"
             };
-
             _context.Allergens.Add(allergen);
-            await _context.SaveChangesAsync(); // để có AllergenId
+            await _context.SaveChangesAsync(); // Lưu để lấy AllergenId
         }
 
-        // 5️⃣ Kiểm tra đã khai báo dị ứng nguyên liệu này chưa
-        var existing = await _context.AllergeticIngredients
-            .FirstOrDefaultAsync(ai =>
-                ai.IngredientId == ingredient.IngredientId &&
-                ai.AllergenId == allergen.AllergenId);
+        var alreadyLinked = await _context.StudentAllergens
+            .AnyAsync(sa => sa.StudentId == studentId && sa.AllergenId == allergen.AllergenId);
+        if (alreadyLinked) throw new Exception("Học sinh này đã được khai báo dị ứng này rồi.");
 
-        if (existing != null)
-            throw new Exception("Nguyên liệu này đã được khai báo dị ứng");
-
-        // 6️⃣ Lưu vào bảng AllergeticIngredients
-        var allergenicIngredient = new AllergeticIngredient
+        var studentAllergen = new StudentAllergen
         {
-            IngredientId = ingredient.IngredientId,
+            StudentId = studentId,
             AllergenId = allergen.AllergenId,
-            ReportedAt = DateTime.UtcNow,
-            DiagnosedAt = DateTime.UtcNow,
             Notes = dto.Notes,
             ReactionNotes = dto.ReactionNotes,
-            HandlingNotes = dto.HandlingNotes
+            HandlingNotes = dto.HandlingNotes,
+            DiagnosedAt = DateTime.UtcNow
         };
+        _context.StudentAllergens.Add(studentAllergen);
 
-        _context.AllergeticIngredients.Add(allergenicIngredient);
+        var isLinkExist = await _context.AllergeticIngredients
+            .AnyAsync(ai => ai.IngredientId == ingredient.IngredientId && ai.AllergenId == allergen.AllergenId);
+
+        if (!isLinkExist)
+        {
+            _context.AllergeticIngredients.Add(new AllergeticIngredient
+            {
+                IngredientId = ingredient.IngredientId,
+                AllergenId = allergen.AllergenId,
+                ReportedAt = DateTime.UtcNow
+            });
+        }
+
         await _context.SaveChangesAsync();
     }
-
 
     public async Task<List<IngredientDto>> Search(string keyword)
     {
         return await _context.Ingredients
-            .Where(i => i.IngredientName.Contains(keyword))
+            .Where(i => i.IngredientName.Contains(keyword) && i.IsActive)
             .Take(10)
             .Select(i => new IngredientDto { IngredientId = i.IngredientId, IngredientName = i.IngredientName })
             .ToListAsync();
@@ -129,8 +111,7 @@ public class AllergenRepository : IAllergenRepository
 
         return await _context.Allergens
             .Where(a => a.SchoolId == schoolId)
-            .OrderByDescending(a =>
-                a.StudentAllergens.Count) // Sửa thành StudentAllergens.Count để đếm chính xác số HS bị
+            .OrderByDescending(a => a.StudentAllergens.Count)
             .Take(top)
             .Select(a => new AllergenDTO { AllergenId = a.AllergenId, AllergenName = a.AllergenName })
             .ToListAsync();
