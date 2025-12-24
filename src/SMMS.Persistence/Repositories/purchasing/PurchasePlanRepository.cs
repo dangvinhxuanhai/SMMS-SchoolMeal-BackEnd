@@ -73,79 +73,62 @@ public class PurchasePlanRepository : IPurchasePlanRepository
         //    Mỗi record: 1 ingredient dùng trong 1 DailyMeal, với QuantityGram cho 1 suất
         var ingredientPerMeal = await (
             from dm in _context.DailyMeals
-            join mfi in _context.MenuFoodItems
-                on dm.DailyMealId equals mfi.DailyMealId
-            join fii in _context.FoodItemIngredients
-                on mfi.FoodId equals fii.FoodId
+            join mfi in _context.MenuFoodItems on dm.DailyMealId equals mfi.DailyMealId
+            join fii in _context.FoodItemIngredients on mfi.FoodId equals fii.FoodId
             where dm.ScheduleMealId == scheduleMealId
             select new
             {
-                dm.MealDate, // ngày bữa ăn
-                fii.IngredientId, // nguyên liệu
-                fii.QuantityGram // gram cho 1 suất ăn
+                dm.DailyMealId,
+                dm.MealDate,
+                fii.IngredientId,
+                fii.QuantityGram
             }
-        ).ToListAsync(cancellationToken); // từ đây trở xuống là LINQ to Objects
+        ).ToListAsync(cancellationToken);
 
-        var dailyIngredientUsage = ingredientPerMeal
-            .GroupBy(x => new { x.MealDate, x.IngredientId })
+        if (!ingredientPerMeal.Any())
+            throw new InvalidOperationException("No ingredient usage found for schedule.");
+
+        // ===== PHASE A: LUÔN TẠO ACTUAL INGREDIENT =====
+        var actualIngredients = ingredientPerMeal
+            .GroupBy(x => new { x.DailyMealId, x.MealDate, x.IngredientId })
             .Select(g =>
             {
                 absenceByDate.TryGetValue(g.Key.MealDate, out var absent);
                 var participants = totalActiveStudents - absent;
                 if (participants < 0) participants = 0;
 
-                var gram = g.Sum(x => x.QuantityGram) * participants;
+                var actualGram = g.Sum(x => x.QuantityGram) * participants;
 
-                return new
+                return new DailyMealActualIngredient
                 {
-                    MealDate = g.Key.MealDate,
+                    DailyMealId = g.Key.DailyMealId,
                     IngredientId = g.Key.IngredientId,
-                    ActualQtyGram = gram
+                    ActualQtyGram = actualGram,
+                    CreatedAt = DateTime.UtcNow
                 };
             })
             .Where(x => x.ActualQtyGram > 0)
             .ToList();
 
-        var dailyMealMap = await _context.DailyMeals
-            .Where(dm => dm.ScheduleMealId == scheduleMealId)
-            .Select(dm => new
-            {
-                dm.DailyMealId,
-                dm.MealDate
-            })
-            .ToDictionaryAsync(
-                x => x.MealDate,
-                x => x.DailyMealId,
-                cancellationToken);
+        if (actualIngredients.Count == 0)
+            throw new InvalidOperationException("Failed to generate DailyMealActualIngredient.");
 
-        // 6. Tính tổng gram cho từng ingredient, đã nhân số HS tham gia (đã trừ vắng)
-        var ingredientRequirements = ingredientPerMeal
-            .GroupBy(x => x.IngredientId)
-            .Select(g =>
-            {
-                decimal totalGram = 0;
+        _context.DailyMealActualIngredients.AddRange(actualIngredients);
+        await _context.SaveChangesAsync(cancellationToken);
 
-                foreach (var x in g)
-                {
-                    // Số HS vắng ngày đó
-                    absenceByDate.TryGetValue(x.MealDate, out var absentCount);
+        var ingredientRequirements = actualIngredients
+        .GroupBy(x => x.IngredientId)
+        .Select(g => new
+        {
+            IngredientId = g.Key,
+            RqQuanityGram = g.Sum(x => x.ActualQtyGram)
+        })
+        .ToList();
 
-                    // Số HS tham gia bữa ăn
-                    var participants = totalActiveStudents - absentCount;
-                    if (participants < 0) participants = 0;
-
-                    // QuantityGram là gram cho 1 học sinh → nhân số HS tham gia
-                    totalGram += x.QuantityGram * participants;
-                }
-
-                return new { IngredientId = g.Key, RqQuanityGram = totalGram };
-            })
-            .ToList();
-        // 6.5 Lấy tồn kho hiện tại theo Ingredient (gram)
-        var ingredientIds = ingredientRequirements
-            .Select(x => x.IngredientId)
-            .ToList();
-
+        // =========================================================
+        // 6. Lấy inventory hiện tại
+        // =========================================================
+        var ingredientIds = ingredientRequirements.Select(x => x.IngredientId).ToList();
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
         var inventoryByIngredient = await _context.InventoryItems
@@ -160,12 +143,43 @@ public class PurchasePlanRepository : IPurchasePlanRepository
                 IngredientId = g.Key,
                 AvailableGram = g.Sum(x => x.QuantityGram)
             })
-            .ToDictionaryAsync(
-                x => x.IngredientId,
-                x => x.AvailableGram,
-                cancellationToken);
-        
-        // 7. Tạo header PurchasePlan
+            .ToDictionaryAsync(x => x.IngredientId, x => x.AvailableGram, cancellationToken);
+
+        // =========================================================
+        // 7. Tính phần thiếu → PurchasePlanLine
+        // =========================================================
+        var lines = new List<PurchasePlanLine>();
+
+        foreach (var req in ingredientRequirements)
+        {
+            inventoryByIngredient.TryGetValue(req.IngredientId, out var available);
+            if (available < 0) available = 0;
+
+            var missing = req.RqQuanityGram - available;
+            if (missing <= 0) continue;
+
+            lines.Add(new PurchasePlanLine
+            {
+                IngredientId = req.IngredientId,
+                RqQuanityGram = missing
+            });
+        }
+
+        // =========================================================
+        // 8. Nếu inventory đủ → kết thúc
+        // =========================================================
+        if (lines.Count == 0)
+        {
+            return new CreatePurchasePlanResult
+            {
+                IsCreated = false,
+                PurchasePlanId = null,
+                Reason = PurchasePlanResultReason.InventoryEnough,
+                Message = "Inventory đủ – đã tạo DailyMealActualIngredient, không cần mua"
+            };
+        }
+
+        // 9. Tạo header PurchasePlan
         var plan = new PurchasePlan
         {
             GeneratedAt = DateTime.UtcNow,
@@ -178,71 +192,11 @@ public class PurchasePlanRepository : IPurchasePlanRepository
         _context.PurchasePlans.Add(plan);
         await _context.SaveChangesAsync(cancellationToken); // để có PlanId
 
-        var actualIngredients = new List<DailyMealActualIngredient>();
+        foreach (var line in lines)
+            line.PlanId = plan.PlanId;
 
-        foreach (var item in dailyIngredientUsage)
-        {
-            if (!dailyMealMap.TryGetValue(item.MealDate, out var dailyMealId))
-                continue;
-
-            actualIngredients.Add(new DailyMealActualIngredient
-            {
-                DailyMealId = dailyMealId,
-                IngredientId = item.IngredientId,
-                ActualQtyGram = item.ActualQtyGram,
-                CreatedAt = DateTime.UtcNow
-            });
-        }
-
-        if (actualIngredients.Count > 0)
-        {
-            _context.DailyMealActualIngredients.AddRange(actualIngredients);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
-
-        // 8. Tạo lines: chỉ thêm nguyên liệu còn thiếu trong kho
-        var lines = new List<PurchasePlanLine>();
-
-        foreach (var req in ingredientRequirements)
-        {
-            inventoryByIngredient.TryGetValue(
-                req.IngredientId,
-                out var availableGram);
-
-            if (availableGram < 0)
-                availableGram = 0;
-
-            var missingGram = req.RqQuanityGram - availableGram;
-
-            // Nếu kho đủ → bỏ qua
-            if (missingGram <= 0)
-                continue;
-
-            lines.Add(new PurchasePlanLine
-            {
-                PlanId = plan.PlanId,
-                IngredientId = req.IngredientId,
-                RqQuanityGram = missingGram
-            });
-        }
-
-        // Nếu không thiếu nguyên liệu nào → không cần tạo plan
-        if (lines.Count == 0)
-        {
-            return new CreatePurchasePlanResult
-            {
-                IsCreated = false,
-                PurchasePlanId = null,
-                Reason = PurchasePlanResultReason.InventoryEnough,
-                Message = "Inventory hiện tại đủ cho toàn bộ thực đơn"
-            };
-        }
-
-        if (lines.Count > 0)
-        {
-            _context.PurchasePlanLines.AddRange(lines);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        _context.PurchasePlanLines.AddRange(lines);
+        await _context.SaveChangesAsync(cancellationToken);
 
         return new CreatePurchasePlanResult
         {

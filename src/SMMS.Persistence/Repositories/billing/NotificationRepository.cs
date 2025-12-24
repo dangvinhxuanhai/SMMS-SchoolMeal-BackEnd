@@ -74,5 +74,25 @@ namespace SMMS.Infrastructure.Repositories
             recipient.ReadAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
         }
+        public async Task<HashSet<DateOnly>> GetOffDatesAsync(
+            Guid schoolId,
+            DateOnly from,
+            DateOnly to,
+            CancellationToken ct)
+        {
+            var dates = await _context.Notifications
+                .AsNoTracking()
+                .Where(n =>
+                    n.OffDate != null &&
+                    DateOnly.FromDateTime(n.OffDate.Value) >= from &&
+                    DateOnly.FromDateTime(n.OffDate.Value) <= to)
+                .Select(n => DateOnly.FromDateTime(n.OffDate.Value))
+                .Distinct()
+                .OrderBy(d => d)    
+                .ToListAsync(ct);
+
+            return dates.ToHashSet();
+        }
+
     }
 }

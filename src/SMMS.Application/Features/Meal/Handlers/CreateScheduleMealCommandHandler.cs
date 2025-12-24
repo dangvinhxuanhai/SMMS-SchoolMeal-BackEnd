@@ -10,6 +10,7 @@ using SMMS.Application.Features.Identity.Interfaces;
 using SMMS.Application.Features.Meal.Command;
 using SMMS.Application.Features.Meal.DTOs;
 using SMMS.Application.Features.Meal.Interfaces;
+using SMMS.Application.Features.notification.Interfaces;
 using SMMS.Domain.Entities.foodmenu;
 
 namespace SMMS.Application.Features.Meal.Handlers;
@@ -19,15 +20,18 @@ public class CreateScheduleMealCommandHandler
 {
     private readonly IMenuRepository _menuRepository;
     private readonly IScheduleMealRepository _scheduleMealRepository;
+    private readonly INotificationRepository _notificationRepository;
     private readonly IUnitOfWork _unitOfWork;
 
     public CreateScheduleMealCommandHandler(
         IMenuRepository menuRepository,
         IScheduleMealRepository scheduleMealRepository,
+        INotificationRepository notificationRepository,
         IUnitOfWork unitOfWork)
     {
         _menuRepository = menuRepository;
         _scheduleMealRepository = scheduleMealRepository;
+        _notificationRepository = notificationRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -98,7 +102,13 @@ public class CreateScheduleMealCommandHandler
         }
         else
         {
-            BuildWeekdayDailyMeals(request, scheduleMeal);
+            var offDates = await _notificationRepository.GetOffDatesAsync(
+                request.SchoolId,
+                DateOnly.FromDateTime(request.WeekStart),
+                DateOnly.FromDateTime(request.WeekEnd),
+                cancellationToken);
+
+            BuildWeekdayDailyMeals(request, scheduleMeal, offDates);
         }
 
         await _scheduleMealRepository.AddAsync(scheduleMeal, cancellationToken);
@@ -185,7 +195,8 @@ public class CreateScheduleMealCommandHandler
     /// </summary>
     private static void BuildWeekdayDailyMeals(
         CreateScheduleMealCommand request,
-        ScheduleMeal schedule)
+        ScheduleMeal schedule,
+        HashSet<DateOnly> offDates)
     {
         var requestMap = request.DailyMeals
             .Where(d => d.MealDate.DayOfWeek >= DayOfWeek.Monday
@@ -199,13 +210,25 @@ public class CreateScheduleMealCommandHandler
         for (int i = 0; i < 5; i++)
         {
             var date = weekStart.AddDays(i);
+            var dateOnly = DateOnly.FromDateTime(date);
+
+            // ✅ NGÀY NGHỈ
+            if (offDates.Contains(dateOnly))
+            {
+                schedule.DailyMeals.Add(new DailyMeal
+                {
+                    MealDate = dateOnly,
+                    MealType = "Lunch",
+                    Notes = $"Được nghỉ ngày {dateOnly:dd/MM/yyyy}",
+                    MenuFoodItems = new List<MenuFoodItem>()
+                });
+                continue;
+            }
 
             if (requestMap.TryGetValue(date, out var meals))
             {
                 foreach (var dto in meals)
                 {
-                    ValidateDailyMeal(dto);
-
                     schedule.DailyMeals.Add(CreateDailyMeal(dto));
                 }
             }
@@ -220,19 +243,6 @@ public class CreateScheduleMealCommandHandler
                     MenuFoodItems = new List<MenuFoodItem>()
                 });
             }
-        }
-    }
-
-    private static void ValidateDailyMeal(DailyMealRequestDto dto)
-    {
-        var hasFood = dto.FoodIds != null && dto.FoodIds.Count > 0;
-
-        if (!hasFood && string.IsNullOrWhiteSpace(dto.Notes))
-        {
-            var dateStr = dto.MealDate.ToString("yyyy-MM-dd");
-            throw new InvalidOperationException(
-                $"Lỗi ngày {dateStr} ({dto.MealType}): Nếu không chọn món ăn, bạn bắt buộc phải nhập ghi chú (ví dụ: 'Nghỉ lễ', 'Tự túc')."
-            );
         }
     }
 
