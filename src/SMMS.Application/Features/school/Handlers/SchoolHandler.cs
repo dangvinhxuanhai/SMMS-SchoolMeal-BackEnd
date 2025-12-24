@@ -15,7 +15,8 @@ namespace SMMS.Application.Features.school.Handlers
     public class SchoolCommandHandler :
        IRequestHandler<CreateSchoolCommand, Guid>,
        IRequestHandler<UpdateSchoolCommand, Unit>,
-       IRequestHandler<DeleteSchoolCommand, Unit>
+       IRequestHandler<DeleteSchoolCommand, Unit>,
+       IRequestHandler<UpdateManagerStatusCommand, bool>
     {
         private readonly ISchoolRepository _repo;
 
@@ -57,7 +58,7 @@ namespace SMMS.Application.Features.school.Handlers
             existing.IsActive = dto.IsActive;
             existing.UpdatedAt = DateTime.UtcNow;
             existing.UpdatedBy = request.UpdatedBy;
-            await _repo.UpdateAsync(existing);
+            await _repo.UpdateAsync(existing, dto.ManagerIsActive);
             return Unit.Value;
         }
 
@@ -68,14 +69,18 @@ namespace SMMS.Application.Features.school.Handlers
 
             school.IsActive = false;
             school.UpdatedAt = DateTime.UtcNow;
-
-            await _repo.UpdateAsync(school);
+            await _repo.UpdateAsync(school, false);
             return Unit.Value;
+        }
+        public async Task<bool> Handle(UpdateManagerStatusCommand request, CancellationToken cancellationToken)
+        {
+            return await _repo.UpdateManagerStatusAsync(request.SchoolId, request.IsActive);
         }
     }
     public class SchoolQueryHandler :
         IRequestHandler<GetAllSchoolsQuery, IEnumerable<SchoolDTO>>,
-        IRequestHandler<GetSchoolByIdQuery, SchoolDTO?>
+        IRequestHandler<GetSchoolByIdQuery, SchoolDTO?>,
+        IRequestHandler<GetManagerStatusQuery, bool?>
     {
         private readonly ISchoolRepository _repo;
 
@@ -96,7 +101,11 @@ namespace SMMS.Application.Features.school.Handlers
                     SchoolAddress = s.SchoolAddress,
                     IsActive = s.IsActive,
                     CreatedAt = s.CreatedAt,
-                    StudentCount = s.Students.Count()
+                    StudentCount = s.Students.Count(),
+                    ManagerIsActive = s.Users
+                    .Where(u => u.RoleId == 2)
+                     .Select(u => (bool)u.IsActive)
+                     .FirstOrDefault()
                 });
 
             return schools;
@@ -106,7 +115,7 @@ namespace SMMS.Application.Features.school.Handlers
         {
             var s = await _repo.GetByIdAsync(request.SchoolId);
             if (s == null) return null;
-
+             var manager = s.Users?.FirstOrDefault(u => u.RoleId == 2);
             return new SchoolDTO
             {
                 SchoolId = s.SchoolId,
@@ -116,8 +125,13 @@ namespace SMMS.Application.Features.school.Handlers
                 SchoolAddress = s.SchoolAddress,
                 IsActive = s.IsActive,
                 CreatedAt = s.CreatedAt,
-                StudentCount = s.Students.Count()
+                StudentCount = s.Students?.Count() ?? 0,
+                ManagerIsActive = manager.IsActive
             };
+        }
+        public async Task<bool?> Handle(GetManagerStatusQuery request, CancellationToken cancellationToken)
+        {
+            return await _repo.GetManagerStatusAsync(request.SchoolId);
         }
     }
 }

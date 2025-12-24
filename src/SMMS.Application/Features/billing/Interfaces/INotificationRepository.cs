@@ -9,6 +9,11 @@ namespace SMMS.Application.Features.notification.Interfaces
         Task<Notification?> GetByIdAsync(long id);
         Task DeleteNotificationAsync(Notification notification);
         Task MarkAsReadAsync(long notificationId, Guid userId);
+        Task<HashSet<DateOnly>> GetOffDatesAsync(
+            Guid schoolId,
+            DateOnly from,
+            DateOnly to,
+            CancellationToken ct);
 
     }
 }

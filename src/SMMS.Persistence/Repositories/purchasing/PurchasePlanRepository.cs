@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Application.Features.Plan.DTOs;
 using SMMS.Application.Features.Plan.Interfaces;
+using SMMS.Domain.Entities.foodmenu;
 using SMMS.Domain.Entities.purchasing;
 using SMMS.Persistence.Data;
 
 namespace SMMS.Persistence.Repositories.purchasing;
+
 public class PurchasePlanRepository : IPurchasePlanRepository
 {
     private readonly EduMealContext _context;
@@ -19,10 +21,10 @@ public class PurchasePlanRepository : IPurchasePlanRepository
         _context = context;
     }
 
-    public async Task<int> CreateFromScheduleAsync(
-    long scheduleMealId,
-    Guid staffId,
-    CancellationToken cancellationToken)
+    public async Task<CreatePurchasePlanResult> CreateFromScheduleAsync(
+        long scheduleMealId,
+        Guid staffId,
+        CancellationToken cancellationToken)
     {
         // 1. Check đã có plan cho ScheduleMeal này chưa
         var existed = await _context.PurchasePlans
@@ -60,12 +62,9 @@ public class PurchasePlanRepository : IPurchasePlanRepository
             where st.SchoolId == schoolId
                   && a.AbsentDate >= weekStart
                   && a.AbsentDate <= weekEnd
-            group a by a.AbsentDate into g
-            select new
-            {
-                Date = g.Key,
-                Count = g.Count()
-            }
+            group a by a.AbsentDate
+            into g
+            select new { Date = g.Key, Count = g.Count() }
         ).ToListAsync(cancellationToken);
 
         var absenceByDate = absenceByDateList.ToDictionary(x => x.Date, x => x.Count);
@@ -74,48 +73,113 @@ public class PurchasePlanRepository : IPurchasePlanRepository
         //    Mỗi record: 1 ingredient dùng trong 1 DailyMeal, với QuantityGram cho 1 suất
         var ingredientPerMeal = await (
             from dm in _context.DailyMeals
-            join mfi in _context.MenuFoodItems
-                on dm.DailyMealId equals mfi.DailyMealId
-            join fii in _context.FoodItemIngredients
-                on mfi.FoodId equals fii.FoodId
+            join mfi in _context.MenuFoodItems on dm.DailyMealId equals mfi.DailyMealId
+            join fii in _context.FoodItemIngredients on mfi.FoodId equals fii.FoodId
             where dm.ScheduleMealId == scheduleMealId
             select new
             {
-                dm.MealDate,          // ngày bữa ăn
-                fii.IngredientId,     // nguyên liệu
-                fii.QuantityGram      // gram cho 1 suất ăn
+                dm.DailyMealId,
+                dm.MealDate,
+                fii.IngredientId,
+                fii.QuantityGram
             }
-        ).ToListAsync(cancellationToken); // từ đây trở xuống là LINQ to Objects
+        ).ToListAsync(cancellationToken);
 
-        // 6. Tính tổng gram cho từng ingredient, đã nhân số HS tham gia (đã trừ vắng)
-        var ingredientRequirements = ingredientPerMeal
-            .GroupBy(x => x.IngredientId)
+        if (!ingredientPerMeal.Any())
+            throw new InvalidOperationException("No ingredient usage found for schedule.");
+
+        // ===== PHASE A: LUÔN TẠO ACTUAL INGREDIENT =====
+        var actualIngredients = ingredientPerMeal
+            .GroupBy(x => new { x.DailyMealId, x.MealDate, x.IngredientId })
             .Select(g =>
             {
-                decimal totalGram = 0;
+                absenceByDate.TryGetValue(g.Key.MealDate, out var absent);
+                var participants = totalActiveStudents - absent;
+                if (participants < 0) participants = 0;
 
-                foreach (var x in g)
+                var actualGram = g.Sum(x => x.QuantityGram) * participants;
+
+                return new DailyMealActualIngredient
                 {
-                    // Số HS vắng ngày đó
-                    absenceByDate.TryGetValue(x.MealDate, out var absentCount);
-
-                    // Số HS tham gia bữa ăn
-                    var participants = totalActiveStudents - absentCount;
-                    if (participants < 0) participants = 0;
-
-                    // QuantityGram là gram cho 1 học sinh → nhân số HS tham gia
-                    totalGram += x.QuantityGram * participants;
-                }
-
-                return new
-                {
-                    IngredientId = g.Key,
-                    RqQuanityGram = totalGram
+                    DailyMealId = g.Key.DailyMealId,
+                    IngredientId = g.Key.IngredientId,
+                    ActualQtyGram = actualGram,
+                    CreatedAt = DateTime.UtcNow
                 };
             })
+            .Where(x => x.ActualQtyGram > 0)
             .ToList();
 
-        // 7. Tạo header PurchasePlan
+        if (actualIngredients.Count == 0)
+            throw new InvalidOperationException("Failed to generate DailyMealActualIngredient.");
+
+        _context.DailyMealActualIngredients.AddRange(actualIngredients);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var ingredientRequirements = actualIngredients
+        .GroupBy(x => x.IngredientId)
+        .Select(g => new
+        {
+            IngredientId = g.Key,
+            RqQuanityGram = g.Sum(x => x.ActualQtyGram)
+        })
+        .ToList();
+
+        // =========================================================
+        // 6. Lấy inventory hiện tại
+        // =========================================================
+        var ingredientIds = ingredientRequirements.Select(x => x.IngredientId).ToList();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var inventoryByIngredient = await _context.InventoryItems
+            .Where(i =>
+                i.SchoolId == schoolId &&
+                i.IsActive &&
+                ingredientIds.Contains(i.IngredientId) &&
+                (i.ExpirationDate == null || i.ExpirationDate >= today))
+            .GroupBy(i => i.IngredientId)
+            .Select(g => new
+            {
+                IngredientId = g.Key,
+                AvailableGram = g.Sum(x => x.QuantityGram)
+            })
+            .ToDictionaryAsync(x => x.IngredientId, x => x.AvailableGram, cancellationToken);
+
+        // =========================================================
+        // 7. Tính phần thiếu → PurchasePlanLine
+        // =========================================================
+        var lines = new List<PurchasePlanLine>();
+
+        foreach (var req in ingredientRequirements)
+        {
+            inventoryByIngredient.TryGetValue(req.IngredientId, out var available);
+            if (available < 0) available = 0;
+
+            var missing = req.RqQuanityGram - available;
+            if (missing <= 0) continue;
+
+            lines.Add(new PurchasePlanLine
+            {
+                IngredientId = req.IngredientId,
+                RqQuanityGram = missing
+            });
+        }
+
+        // =========================================================
+        // 8. Nếu inventory đủ → kết thúc
+        // =========================================================
+        if (lines.Count == 0)
+        {
+            return new CreatePurchasePlanResult
+            {
+                IsCreated = false,
+                PurchasePlanId = null,
+                Reason = PurchasePlanResultReason.InventoryEnough,
+                Message = "Inventory đủ – đã tạo DailyMealActualIngredient, không cần mua"
+            };
+        }
+
+        // 9. Tạo header PurchasePlan
         var plan = new PurchasePlan
         {
             GeneratedAt = DateTime.UtcNow,
@@ -128,21 +192,19 @@ public class PurchasePlanRepository : IPurchasePlanRepository
         _context.PurchasePlans.Add(plan);
         await _context.SaveChangesAsync(cancellationToken); // để có PlanId
 
-        // 8. Tạo lines từ kết quả đã tính
-        var lines = ingredientRequirements.Select(x => new PurchasePlanLine
-        {
-            PlanId = plan.PlanId,
-            IngredientId = x.IngredientId,
-            RqQuanityGram = x.RqQuanityGram
-        }).ToList();
+        foreach (var line in lines)
+            line.PlanId = plan.PlanId;
 
-        if (lines.Count > 0)
-        {
-            _context.PurchasePlanLines.AddRange(lines);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        _context.PurchasePlanLines.AddRange(lines);
+        await _context.SaveChangesAsync(cancellationToken);
 
-        return plan.PlanId;
+        return new CreatePurchasePlanResult
+        {
+            IsCreated = true,
+            PurchasePlanId = plan.PlanId,
+            Reason = PurchasePlanResultReason.Created,
+            Message = "Purchase plan được tạo thành công"
+        };
     }
 
     // ------------------- UpdatePlanWithLinesAsync -------------------
@@ -188,9 +250,7 @@ public class PurchasePlanRepository : IPurchasePlanRepository
                 // add mới
                 var newLine = new PurchasePlanLine
                 {
-                    PlanId = planId,
-                    IngredientId = dto.IngredientId,
-                    RqQuanityGram = dto.RqQuanityGram
+                    PlanId = planId, IngredientId = dto.IngredientId, RqQuanityGram = dto.RqQuanityGram
                 };
                 _context.PurchasePlanLines.Add(newLine);
             }
@@ -240,7 +300,7 @@ public class PurchasePlanRepository : IPurchasePlanRepository
         _context.PurchasePlans.Remove(plan);
         await _context.SaveChangesAsync(cancellationToken);
     }
-    
+
 
     // ------------------- NEW: GetPlansForSchoolAsync -------------------
     public async Task<List<PurchasePlanListItemDto>> GetPlansForSchoolAsync(
@@ -273,12 +333,10 @@ public class PurchasePlanRepository : IPurchasePlanRepository
                 GeneratedAt = x.Plan.GeneratedAt,
                 PlanStatus = x.Plan.PlanStatus,
                 AskToDelete = x.Plan.AskToDelete,
-
                 WeekStart = x.Schedule.WeekStart,
                 WeekEnd = x.Schedule.WeekEnd,
                 WeekNo = x.Schedule.WeekNo,
                 YearNo = x.Schedule.YearNo,
-
                 StaffId = x.Plan.StaffId,
                 StaffName = x.Staff.FullName
             })
@@ -289,9 +347,9 @@ public class PurchasePlanRepository : IPurchasePlanRepository
 
     // ------------------- NEW: GetPlanByDateAsync -------------------
     public async Task<PurchasePlanDto?> GetPlanByDateAsync(
-    Guid schoolId,
-    DateOnly nextWeekDate,
-    CancellationToken cancellationToken)
+        Guid schoolId,
+        DateOnly nextWeekDate,
+        CancellationToken cancellationToken)
     {
         // Lấy ngày bất kỳ của "tuần tới" so với date
         //var nextWeekDate = date.AddDays(7);
@@ -306,8 +364,8 @@ public class PurchasePlanRepository : IPurchasePlanRepository
                   && sm.WeekEnd >= nextWeekDate
                   && !p.AskToDelete
             orderby sm.YearNo descending,
-                    sm.WeekNo descending,
-                    p.GeneratedAt descending
+                sm.WeekNo descending,
+                p.GeneratedAt descending
             select p.PlanId
         ).FirstOrDefaultAsync(cancellationToken);
 
@@ -354,9 +412,7 @@ public class PurchasePlanRepository : IPurchasePlanRepository
             orderby ing.IngredientName
             select new PurchasePlanLineDto
             {
-                IngredientId = l.IngredientId,
-                IngredientName = ing.IngredientName,
-                RqQuanityGram = l.RqQuanityGram
+                IngredientId = l.IngredientId, IngredientName = ing.IngredientName, RqQuanityGram = l.RqQuanityGram
             }
         ).ToListAsync(cancellationToken);
 
@@ -371,10 +427,11 @@ public class PurchasePlanRepository : IPurchasePlanRepository
             Lines = lines
         };
     }
+
     // ------------------- SoftDeletePlanAsync -------------------
     public async Task SoftDeletePlanAsync(
-    int planId,
-    CancellationToken cancellationToken)
+        int planId,
+        CancellationToken cancellationToken)
     {
         var plan = await _context.PurchasePlans
             .FirstOrDefaultAsync(p => p.PlanId == planId, cancellationToken);
@@ -396,6 +453,7 @@ public class PurchasePlanRepository : IPurchasePlanRepository
     public Task<PurchasePlan?> GetByIdAsync(int planId, CancellationToken ct = default)
     {
         return _context.PurchasePlans
+            .Include(p => p.ScheduleMeal)
             .FirstOrDefaultAsync(p => p.PlanId == planId, ct);
     }
 

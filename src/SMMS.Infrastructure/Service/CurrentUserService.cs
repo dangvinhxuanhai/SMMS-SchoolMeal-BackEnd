@@ -1,6 +1,7 @@
 using System;
 using Microsoft.AspNetCore.Http;
-using SMMS.Application.Features.Identity.Interfaces;
+using System.Security.Claims;
+using SMMS.Application.Abstractions;
 
 namespace SMMS.Infrastructure.Services
 {
@@ -18,13 +19,16 @@ namespace SMMS.Infrastructure.Services
             get
             {
                 // ✅ Lấy userId từ claim (nếu có token)
-                var userId = _httpContextAccessor.HttpContext?.User?.FindFirst("userId")?.Value;
+                var user = _httpContextAccessor.HttpContext?.User
+                   ?? throw new UnauthorizedAccessException("No HttpContext or User.");
 
-                // ✅ Nếu chưa đăng nhập thì dùng ID thật bạn cung cấp
-                if (string.IsNullOrEmpty(userId))
-                    return Guid.Parse("736CB98F-15BE-4E38-80C0-02066F3B6755");
+                var userIdString =
+                        user.FindFirst("UserId")?.Value
+                        ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                        ?? user.FindFirst("sub")?.Value
+                        ?? user.FindFirst("id")?.Value;
 
-                return Guid.Parse(userId);
+                return Guid.TryParse(userIdString, out var id) ? id : null;
             }
         }
 

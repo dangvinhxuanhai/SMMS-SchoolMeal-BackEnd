@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using CloudinaryDotNet;
 using DocumentFormat.OpenXml.ExtendedProperties;
 using DocumentFormat.OpenXml.Wordprocessing;
 using MediatR;
@@ -8,6 +9,7 @@ using SMMS.Application.Features.Manager.DTOs;
 using SMMS.Application.Features.Plan.Commands;
 using SMMS.Application.Features.Plan.DTOs;
 using SMMS.Application.Features.Plan.Queries;
+using SMMS.Persistence.Service;
 
 namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 
@@ -17,10 +19,11 @@ namespace SMMS.WebAPI.Controllers.Modules.KitchenStaff;
 public class PurchaseOrdersController : ControllerBase
 {
     private readonly IMediator _mediator;
-
-    public PurchaseOrdersController(IMediator mediator)
+    private readonly CloudinaryService _cloudinary;
+    public PurchaseOrdersController(IMediator mediator, CloudinaryService cloudinary)
     {
         _mediator = mediator;
+        _cloudinary = cloudinary;
     }
 
     private Guid GetSchoolIdFromToken()
@@ -47,18 +50,28 @@ public class PurchaseOrdersController : ControllerBase
     //api nay se tao purchase order de xem bill dong thoi cung update inventory,
     //trigger khi nguoi dung xac nhan da xong don hang purchase plan
     [HttpPost("from-plan")]
+    [Consumes("multipart/form-data")]
     public async Task<ActionResult<KsPurchaseOrderDto>> CreateFromPlan(
-        [FromBody] CreatePurchaseOrderFromPlanDto request)
+        [FromForm] CreatePurchaseOrderFromPlanDto request)
     {
+
+        string? billImageUrl = null;
+
+        // ✅ Upload Cloudinary nếu có ảnh
+        if (request.BillImage != null)
+        {
+            billImageUrl = await _cloudinary.UploadImageAsync(request.BillImage);
+        }
         try
         {
             var command = new CreatePurchaseOrderFromPlanCommand
         {
-            PlanId = request.PlanId,
-            SupplierName = request.SupplierName,
-            Note = request.Note,
-            StaffUserId = GetCurrentUserId(),
-            Lines = request.Lines
+             PlanId = request.PlanId,
+             SupplierName = request.SupplierName,
+             Note = request.Note,
+             StaffUserId = GetCurrentUserId(),
+             BillImageUrl = billImageUrl,
+             Lines = request.Lines
         };
         var result = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { orderId = result.OrderId }, result);

@@ -2,13 +2,16 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.OData;
 using Microsoft.AspNetCore.SignalR;
+using SMMS.Application.Abstractions;
 using SMMS.Application.Common.Interfaces;
 using SMMS.Application.Common.Validators;
 using SMMS.Application.Features.auth.Handlers;
 using SMMS.Application.Features.auth.Interfaces;
+using SMMS.Application.Features.billing.Commands;
 using SMMS.Application.Features.billing.Handlers;
 using SMMS.Application.Features.foodmenu.Handlers;
 using SMMS.Application.Features.Identity.Interfaces;
+using SMMS.Application.Features.Manager.Commands;
 using SMMS.Application.Features.Manager.Handlers;
 using SMMS.Application.Features.Manager.Interfaces;
 using SMMS.Application.Features.school.Handlers;
@@ -17,6 +20,7 @@ using SMMS.Infrastructure.Security;
 using SMMS.Infrastructure.Service;
 using SMMS.Infrastructure.Services;
 using SMMS.Persistence;
+using SMMS.Persistence.Interceptors;
 using SMMS.Persistence.Service;
 using SMMS.WebAPI.Hubs;
 
@@ -44,7 +48,9 @@ public static class SerivceDI
         {
             cfg.RegisterServicesFromAssemblyContaining<ParentProfileHandler>();
         });
-
+        services.AddHttpContextAccessor();
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<AuditSaveChangesInterceptor>();
         //  mediatr
         services.AddMediatR(cfg =>
         {
@@ -63,7 +69,8 @@ public static class SerivceDI
         });
 
         services.AddMediatR(cfg =>
-            cfg.RegisterServicesFromAssembly(typeof(SMMS.Application.Features.foodmenu.Queries.GetWeekMenuQuery).Assembly));
+            cfg.RegisterServicesFromAssembly(typeof(SMMS.Application.Features.foodmenu.Queries.GetWeekMenuQuery)
+                .Assembly));
 
         services.AddValidatorsFromAssembly(typeof(WeeklyMenuHandler).Assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
@@ -76,15 +83,15 @@ public static class SerivceDI
         //  Odata
         services.AddControllers()
             .AddOData(opt => opt
-                        .Select()
-                        .Filter()
-                        .OrderBy()
-                        .Expand()
-                        .Count()
-                        .SetMaxTop(100)
-                        .AddRouteComponents("odata",
-                                            ODataConfig.GetEdmModel())
-        );
+                .Select()
+                .Filter()
+                .OrderBy()
+                .Expand()
+                .Count()
+                .SetMaxTop(100)
+                .AddRouteComponents("odata",
+                    ODataConfig.GetEdmModel())
+            );
 
         return services;
     }

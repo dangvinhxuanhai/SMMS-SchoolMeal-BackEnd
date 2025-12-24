@@ -58,6 +58,7 @@ public class ManagerNotificationHandler :
             SendType = req.SendType, // "Immediate" | "Scheduled" | "Recurring"
             ScheduleCron = req.ScheduleCron,
             CreatedAt = DateTime.UtcNow,
+            OffDate = req.OffDate
         };
 
         await _repo.AddNotificationAsync(notif);
@@ -83,6 +84,7 @@ public class ManagerNotificationHandler :
             SendType = notif.SendType,
             ScheduleCron = notif.ScheduleCron,
             CreatedAt = notif.CreatedAt,
+            OffDate = notif.OffDate,
             TotalRecipients = userIds.Count,
         };
 
@@ -110,7 +112,7 @@ public class ManagerNotificationHandler :
         notif.AttachmentUrl = command.Request.AttachmentUrl;
         notif.SendType = command.Request.SendType;
         notif.ScheduleCron = command.Request.ScheduleCron;
-
+        notif.OffDate = command.Request.OffDate;
         await _repo.UpdateAsync(notif);
         await _repo.SaveChangesAsync();
 
@@ -126,6 +128,7 @@ public class ManagerNotificationHandler :
             SendType = notif.SendType,
             ScheduleCron = notif.ScheduleCron,
             CreatedAt = notif.CreatedAt,
+            OffDate = notif.OffDate,
             TotalRecipients = totalRecipients,
         };
     }
@@ -184,6 +187,7 @@ public class ManagerNotificationHandler :
             SendType = notif.SendType,
             ScheduleCron = notif.ScheduleCron,
             CreatedAt = notif.CreatedAt,
+            OffDate = notif.OffDate,
             TotalRecipients = totalRecipients,
         };
     }
@@ -216,6 +220,7 @@ public class ManagerNotificationHandler :
                     SendType = n.SendType,
                     ScheduleCron = n.ScheduleCron,
                     CreatedAt = n.CreatedAt,
+                    OffDate = n.OffDate,
                     TotalRecipients = totalRecipients,
                 });
             }

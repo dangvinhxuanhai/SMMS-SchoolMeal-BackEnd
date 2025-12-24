@@ -121,7 +121,10 @@ public class UpdateFoodItemCommandHandler
         food.FoodName = request.FoodName.Trim();
         food.FoodType = request.FoodType;
         food.FoodDesc = request.FoodDesc;
-        food.ImageUrl = request.ImageUrl;
+        if (!string.IsNullOrWhiteSpace(request.ImageUrl))
+        {
+            food.ImageUrl = request.ImageUrl;
+        }
         food.IsMainDish = request.IsMainDish;
 
         await _foodItemRepository.UpdateAsync(food, cancellationToken);

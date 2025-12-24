@@ -28,15 +28,17 @@ public class AiMenuAdminClient : IAiMenuAdminClient
 
     /// <summary>
     /// Gửi request sang Python để gen file AI cho tất cả trường NeedRebuildAiIndex = 0.
+    /// Endpoint được đọc từ AiMenuOptions.AdminRebuildEndpoint.
     /// </summary>
     public async Task RebuildForPendingSchoolsAsync(CancellationToken ct = default)
     {
-        // nếu HttpClient chưa có BaseAddress thì có thể đặt ở DI:
-        // _httpClient.BaseAddress = new Uri(_options.BaseUrl);
+        var endpoint = string.IsNullOrWhiteSpace(_options.AdminRebuildEndpoint)
+            ? "/api/v1/admin/rebuild"
+            : _options.AdminRebuildEndpoint;
 
         using var response = await _httpClient.PostAsync(
-            "/api/v1/admin/rebuild",
-            content: null,  
+            endpoint,
+            content: null,
             cancellationToken: ct);
 
         var content = await response.Content.ReadAsStringAsync(ct);
@@ -52,6 +54,4 @@ public class AiMenuAdminClient : IAiMenuAdminClient
 
         _logger.LogInformation("AI rebuild success for pending schools: {Result}", content);
     }
-
 }
-

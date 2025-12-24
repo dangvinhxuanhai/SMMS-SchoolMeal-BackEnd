@@ -21,3 +21,17 @@ public class CreateFoodItemRequest
 
     public List<FoodItemIngredientRequestDto>? Ingredients { get; set; }
 }
+
+public class UpdateFoodItemRequest
+{
+    public string FoodName { get; set; } = null!;
+    public string? FoodType { get; set; }
+    public string? FoodDesc { get; set; }
+    public bool IsMainDish { get; set; }
+
+    // ⭐ Ảnh mới (optional)
+    public IFormFile? ImageFile { get; set; }
+
+    // Danh sách nguyên liệu
+    public List<FoodItemIngredientRequestDto>? Ingredients { get; set; }
+}

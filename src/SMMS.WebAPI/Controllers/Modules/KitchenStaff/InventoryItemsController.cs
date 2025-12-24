@@ -113,15 +113,4 @@ public class InventoryItemsController : ControllerBase
 
         return Guid.Parse(schoolIdClaim);
     }
-
-    private Guid GetCurrentUserId()
-    {
-        var userIdString = User.FindFirst("UserId")?.Value
-                           ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                           ?? User.FindFirst("sub")?.Value
-                           ?? User.FindFirst("id")?.Value
-                           ?? throw new Exception("Token does not contain UserId.");
-
-        return Guid.Parse(userIdString);
-    }
 }

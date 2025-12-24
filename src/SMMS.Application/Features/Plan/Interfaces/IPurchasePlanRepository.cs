@@ -9,7 +9,7 @@ using SMMS.Domain.Entities.purchasing;
 namespace SMMS.Application.Features.Plan.Interfaces;
 public interface IPurchasePlanRepository
 {
-    Task<int> CreateFromScheduleAsync(
+    Task<CreatePurchasePlanResult> CreateFromScheduleAsync(
         long scheduleMealId,
         Guid staffId,
         CancellationToken cancellationToken);

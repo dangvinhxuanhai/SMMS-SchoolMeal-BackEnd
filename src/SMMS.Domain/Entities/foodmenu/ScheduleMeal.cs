@@ -41,6 +41,8 @@ public partial class ScheduleMeal
 
     public Guid? CreatedBy { get; set; }
 
+    public bool IsInventoryDeducted { get; set; }
+
     [ForeignKey("CreatedBy")]
     [InverseProperty("ScheduleMeals")]
     public virtual User? CreatedByNavigation { get; set; }

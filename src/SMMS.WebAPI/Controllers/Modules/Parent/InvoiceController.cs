@@ -27,8 +27,7 @@ namespace SMMS.WebAPI.Controllers.Modules.Parent
                 return BadRequest(new { message = "Vui lòng nhập StudentId hợp lệ." });
             var invoices = await _mediator.Send(new GetInvoicesByParentQuery(studentId));
             if (invoices == null || !invoices.Any())
-                return NotFound(new { message = "Không có hóa đơn nào cho học sinh này." });
-
+                return Ok(new List<object>());
             return Ok(invoices);
         }
 
@@ -57,15 +56,6 @@ namespace SMMS.WebAPI.Controllers.Modules.Parent
                 return NotFound(new { message = "Không có hóa đơn nào chưa thanh toán." });
 
             return Ok(invoices);
-        }
-
-        // ✅ Helper: Lấy ParentId từ JWT token
-        private Guid GetCurrentUserId()
-        {
-            var idClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!Guid.TryParse(idClaim, out var parentId))
-                throw new UnauthorizedAccessException("Token không hợp lệ.");
-            return parentId;
         }
     }
 }

@@ -11,18 +11,25 @@ using SMMS.Domain.Entities.nutrition;
 using SMMS.Domain.Entities.purchasing;
 using SMMS.Domain.Entities.rag;
 using SMMS.Domain.Entities.school;
+using SMMS.Persistence.Interceptors;
 
 namespace SMMS.Persistence.Data;
 
 public partial class EduMealContext : DbContext
 {
-    public EduMealContext()
-    {
-    }
+    private readonly AuditSaveChangesInterceptor _auditInterceptor;
 
-    public EduMealContext(DbContextOptions<EduMealContext> options)
+    public EduMealContext(
+        DbContextOptions<EduMealContext> options,
+        AuditSaveChangesInterceptor auditInterceptor)
         : base(options)
     {
+        _auditInterceptor = auditInterceptor;
+    }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        optionsBuilder.AddInterceptors(_auditInterceptor);
     }
 
     public virtual DbSet<AcademicYear> AcademicYears { get; set; }
@@ -38,6 +45,10 @@ public partial class EduMealContext : DbContext
     public virtual DbSet<Class> Classes { get; set; }
 
     public virtual DbSet<DailyMeal> DailyMeals { get; set; }
+
+    public virtual DbSet<DailyMealActualIngredient> DailyMealActualIngredients { get; set; }
+
+    public virtual DbSet<DailyMealEvidence> DailyMealEvidences { get; set; }
 
     public virtual DbSet<ExternalProvider> ExternalProviders { get; set; }
 
@@ -177,10 +188,6 @@ public partial class EduMealContext : DbContext
 
             entity.Property(e => e.LogId).HasDefaultValueSql("(newid())");
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
-
-            entity.HasOne(d => d.User).WithMany(p => p.AuditLogs)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_AuditLogs_User");
         });
 
         modelBuilder.Entity<Class>(entity =>
@@ -209,6 +216,34 @@ public partial class EduMealContext : DbContext
             entity.HasOne(d => d.ScheduleMeal).WithMany(p => p.DailyMeals)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_DailyMeals_Schedule");
+        });
+
+        modelBuilder.Entity<DailyMealActualIngredient>(entity =>
+        {
+            entity.HasKey(e => e.ActualId).HasName("PK__DailyMea__0585DAE91CCC737F");
+
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("(sysdatetime())");
+
+            entity.HasOne(d => d.DailyMeal).WithMany(p => p.DailyMealActualIngredients)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DMAI_DailyMeal");
+
+            entity.HasOne(d => d.Ingredient).WithMany(p => p.DailyMealActualIngredients)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DMAI_Ingredient");
+        });
+
+        modelBuilder.Entity<DailyMealEvidence>(entity =>
+        {
+            entity.HasKey(e => e.EvidenceId).HasName("PK__DailyMea__FA39D7AD5F342EB8");
+
+            entity.Property(e => e.UploadedAt).HasDefaultValueSql("(sysdatetime())");
+
+            entity.HasOne(d => d.DailyMeal).WithMany(p => p.DailyMealEvidences)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DME_DailyMeal");
+
+            entity.HasOne(d => d.UploadedByNavigation).WithMany(p => p.DailyMealEvidences).HasConstraintName("FK_DME_User");
         });
 
         modelBuilder.Entity<ExternalProvider>(entity =>
@@ -359,6 +394,8 @@ public partial class EduMealContext : DbContext
 
         modelBuilder.Entity<Invoice>(entity =>
         {
+            entity.HasKey(e => e.InvoiceId).HasName("PK__Invoices__D796AAB50A2DAF75");
+
             entity.Property(e => e.InvoiceCode).HasDefaultValueSql("(newid())");
 
             entity.HasOne(d => d.Student).WithMany(p => p.Invoices)
@@ -464,6 +501,8 @@ public partial class EduMealContext : DbContext
 
         modelBuilder.Entity<Payment>(entity =>
         {
+            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A38557E6E14");
+
             entity.Property(e => e.ExpectedAmount).HasDefaultValue(600m);
             entity.Property(e => e.PaidAt).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.PaymentCode).HasDefaultValueSql("(newid())");
@@ -514,7 +553,9 @@ public partial class EduMealContext : DbContext
 
             entity.HasOne(d => d.ConfirmedByNavigation).WithMany(p => p.PurchasePlanConfirmedByNavigations).HasConstraintName("FK_PurchasePlans_ConfirmedBy");
 
-            entity.HasOne(d => d.ScheduleMeal).WithMany(p => p.PurchasePlans).HasConstraintName("FK_PurchasePlans_ScheduleMeal");
+            entity.HasOne(d => d.ScheduleMeal).WithMany(p => p.PurchasePlans)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PurchasePlans_ScheduleMeal");
 
             entity.HasOne(d => d.Staff).WithMany(p => p.PurchasePlanStaffs)
                 .OnDelete(DeleteBehavior.ClientSetNull)

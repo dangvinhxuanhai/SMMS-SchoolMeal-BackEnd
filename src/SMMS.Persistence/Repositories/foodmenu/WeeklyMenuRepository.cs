@@ -147,6 +147,7 @@ public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
                         .ToList();
 
                     return new DayMenuDto(
+                        d.DailyMealId,
                         d.MealDate.ToDateTime(TimeOnly.MinValue),
                         d.MealType,
                         d.Notes,
@@ -224,4 +225,178 @@ public sealed class WeeklyMenuRepository : IWeeklyMenuRepository
                 "Có lỗi khi truy vấn danh sách tuần.", ex);
         }
     }
+    //Get All
+    public async Task<IReadOnlyList<WeekMenuDto>> GetAllWeekMenusAsync(
+    Guid studentId,
+    CancellationToken ct = default)
+    {
+        try
+        {
+            // 1) Học sinh & trường
+            var student = await _db.Students.AsNoTracking()
+                .Where(s => s.StudentId == studentId)
+                .Select(s => new { s.StudentId, s.SchoolId })
+                .FirstOrDefaultAsync(ct);
+
+            if (student is null)
+                return Array.Empty<WeekMenuDto>();
+
+            // 2) Lấy tất cả schedule đã Confirmed
+            var schedules = await _db.ScheduleMeals.AsNoTracking()
+                .Where(w => w.SchoolId == student.SchoolId
+                            && w.Status == "Confirmed")
+                .OrderByDescending(w => w.YearNo)
+                .ThenByDescending(w => w.WeekNo)
+                .Select(w => new
+                {
+                    w.ScheduleMealId,
+                    w.SchoolId,
+                    w.WeekNo,
+                    w.YearNo,
+                    w.WeekStart,
+                    w.WeekEnd,
+                    w.Status,
+                    w.Notes,
+                    w.CreatedAt
+                })
+                .ToListAsync(ct);
+
+            if (schedules.Count == 0)
+                return Array.Empty<WeekMenuDto>();
+
+            var scheduleIds = schedules.Select(s => s.ScheduleMealId).ToArray();
+
+            // 3) DailyMeals của tất cả tuần
+            var dailyMeals = await _db.DailyMeals.AsNoTracking()
+                .Where(d => scheduleIds.Contains(d.ScheduleMealId))
+                .Select(d => new
+                {
+                    d.DailyMealId,
+                    d.ScheduleMealId,
+                    d.MealDate,
+                    d.MealType,
+                    d.Notes
+                })
+                .ToListAsync(ct);
+
+            var dailyMealIds = dailyMeals.Select(d => d.DailyMealId).ToArray();
+
+            // 4) FoodItems theo ngày
+            var dayFoods = await _db.MenuFoodItems.AsNoTracking()
+                .Where(mf => dailyMealIds.Contains(mf.DailyMealId))
+                .Join(_db.FoodItems.AsNoTracking(),
+                    mf => mf.FoodId,
+                    f => f.FoodId,
+                    (mf, f) => new
+                    {
+                        mf.DailyMealId,
+                        f.FoodId,
+                        f.FoodName,
+                        f.FoodType,
+                        f.ImageUrl,
+                        f.FoodDesc
+                    })
+                .ToListAsync(ct);
+
+            // 5) Dị ứng của học sinh
+            var studentAllergenIds = await _db.StudentAllergens.AsNoTracking()
+                .Where(sa => sa.StudentId == studentId)
+                .Select(sa => sa.AllergenId)
+                .ToListAsync(ct);
+
+            // 6) Map FoodId -> AllergenNames trùng
+            var riskyByFoodId = new Dictionary<int, List<string>>();
+
+            if (studentAllergenIds.Count > 0 && dayFoods.Count > 0)
+            {
+                var foodIds = dayFoods.Select(x => x.FoodId).Distinct().ToArray();
+
+                var riskPairs = await (
+                    from fii in _db.FoodItemIngredients.AsNoTracking()
+                    where foodIds.Contains(fii.FoodId)
+                    join ai in _db.AllergeticIngredients.AsNoTracking()
+                        on fii.IngredientId equals ai.IngredientId
+                    where studentAllergenIds.Contains(ai.AllergenId)
+                    join al in _db.Allergens.AsNoTracking()
+                        on ai.AllergenId equals al.AllergenId
+                    select new { fii.FoodId, al.AllergenName }
+                ).ToListAsync(ct);
+
+                foreach (var g in riskPairs.GroupBy(x => x.FoodId))
+                    riskyByFoodId[g.Key] = g.Select(x => x.AllergenName).Distinct().ToList();
+            }
+
+            // 7) Build kết quả theo từng tuần
+            var result = schedules
+                .OrderByDescending(s => s.CreatedAt)
+                .Select(schedule =>
+            {
+                var days = dailyMeals
+                    .Where(d => d.ScheduleMealId == schedule.ScheduleMealId)
+                    .OrderBy(d => d.MealDate)
+                    .ThenBy(d => d.MealType)
+                    .Select(d =>
+                    {
+                        var foods = dayFoods
+                            .Where(x => x.DailyMealId == d.DailyMealId)
+                            .Select(x =>
+                            {
+                                var matched = riskyByFoodId.TryGetValue(x.FoodId, out var names)
+                                    ? (true, (IReadOnlyList<string>)names)
+                                    : (false, Array.Empty<string>());
+
+                                return new MenuFoodItemDto(
+                                    x.FoodId,
+                                    x.FoodName,
+                                    x.FoodType,
+                                    x.ImageUrl,
+                                    x.FoodDesc,
+                                    matched.Item1,
+                                    matched.Item2);
+                            })
+                            .ToList();
+
+                        return new DayMenuDto(
+                            d.DailyMealId,
+                            d.MealDate.ToDateTime(TimeOnly.MinValue),
+                            d.MealType,
+                            d.Notes,
+                            foods);
+                    })
+                    .ToList();
+
+                return new WeekMenuDto(
+                    schedule.SchoolId,
+                    schedule.WeekNo,
+                    schedule.YearNo,
+                    schedule.WeekStart.ToDateTime(TimeOnly.MinValue),
+                    schedule.WeekEnd.ToDateTime(TimeOnly.MinValue),
+                    schedule.Status,
+                    schedule.Notes,
+                    days);
+            })
+            .ToList();
+
+            return result;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning(
+                "GetAllWeekMenusAsync was canceled. studentId={StudentId}",
+                studentId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "GetAllWeekMenusAsync failed. studentId={StudentId}",
+                studentId);
+            throw new RepositoryException(
+                nameof(WeeklyMenuRepository),
+                nameof(GetAllWeekMenusAsync),
+                "Có lỗi khi truy vấn tất cả thực đơn tuần.",
+                ex);
+        }
+    }
+
 }

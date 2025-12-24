@@ -25,7 +25,22 @@ public class CloudinaryService
 
         _cloudinary = new Cloudinary(acc);
     }
+    public async Task<string?> UploadAvatar(IFormFile file)
+    {
+        if (file == null || file.Length == 0) return null;
 
+        using var stream = file.OpenReadStream();
+
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(file.FileName, stream),
+            Folder = "UserAvatar" // Tạo folder trên Cloudinary
+        };
+
+        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+        return uploadResult.SecureUrl?.ToString();
+    }
     public async Task<string?> UploadImageAsync(IFormFile file)
     {
         if (file == null || file.Length == 0) return null;
@@ -36,6 +51,55 @@ public class CloudinaryService
         {
             File = new FileDescription(file.FileName, stream),
             Folder = "school_contracts" // Tạo folder trên Cloudinary
+        };
+
+        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+        return uploadResult.SecureUrl?.ToString();
+    }
+    public async Task<string?> UploadDishImageAsync(IFormFile file)
+    {
+        if (file == null || file.Length == 0) return null;
+
+        using var stream = file.OpenReadStream();
+
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(file.FileName, stream),
+            Folder = "Image_Dish" // Tạo folder trên Cloudinary
+        };
+
+        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+        return uploadResult.SecureUrl?.ToString();
+    }
+    public async Task<string?> UploadBillImageAsync(IFormFile file)
+    {
+        if (file == null || file.Length == 0) return null;
+
+        using var stream = file.OpenReadStream();
+
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(file.FileName, stream),
+            Folder = "Image_Bill" // Tạo folder trên Cloudinary
+        };
+
+        var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+
+        return uploadResult.SecureUrl?.ToString();
+    }
+
+    public async Task<string?> UploadEnvImageAsync(IFormFile file)
+    {
+        if (file == null || file.Length == 0) return null;
+
+        using var stream = file.OpenReadStream();
+
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(file.FileName, stream),
+            Folder = "Image_Env" // Tạo folder trên Cloudinary
         };
 
         var uploadResult = await _cloudinary.UploadAsync(uploadParams);

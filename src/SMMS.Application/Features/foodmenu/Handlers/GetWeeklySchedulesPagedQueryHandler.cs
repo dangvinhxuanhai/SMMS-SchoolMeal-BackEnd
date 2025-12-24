@@ -102,12 +102,22 @@ public class GetWeeklySchedulesPagedQueryHandler : IRequestHandler<GetWeeklySche
             {
                 dailyBySchedule.TryGetValue(s.ScheduleMealId, out var daysForSchedule);
                 var dayDtos = (daysForSchedule ?? new List<DailyMeal>())
-                    .Select(dm =>
+                    .GroupBy(dm => dm.MealDate)
+                    .OrderBy(g => g.Key)
+                    .Select(g =>
                     {
-                        menuFoodsByDaily.TryGetValue(dm.DailyMealId, out var foodsForDay);
-                        var foodDtos = (foodsForDay ?? new List<MenuFoodItemInfo>())
-                            .Select(f =>
+                        var foodDtos = g
+                            .SelectMany(dm =>
                             {
+                                menuFoodsByDaily.TryGetValue(dm.DailyMealId, out var foodsForDay);
+                                return foodsForDay ?? new List<MenuFoodItemInfo>();
+                            })
+                            // 🔥 tránh trùng FoodId giữa Lunch & Snack
+                            .GroupBy(f => f.FoodId)
+                            .Select(gf =>
+                            {
+                                var f = gf.First();
+
                                 ingredientsByFood.TryGetValue(f.FoodId, out var ingForFood);
 
                                 var ingredientDtos = (ingForFood ?? new List<FoodIngredientInfo>())
@@ -122,6 +132,7 @@ public class GetWeeklySchedulesPagedQueryHandler : IRequestHandler<GetWeeklySche
 
                                 return new ScheduledFoodItemDto
                                 {
+
                                     FoodId = f.FoodId,
                                     FoodName = f.FoodName,
                                     FoodType = f.FoodType,
@@ -132,18 +143,20 @@ public class GetWeeklySchedulesPagedQueryHandler : IRequestHandler<GetWeeklySche
                                     Ingredients = ingredientDtos
                                 };
                             })
+                            .OrderByDescending(f => f.IsMainDish)
+                            .ThenBy(f => f.SortOrder ?? int.MaxValue)
                             .ToList();
 
                         return new DailyMealDto
                         {
-                            DailyMealId = dm.DailyMealId,
-                            MealDate = dm.MealDate.ToDateTime(TimeOnly.MinValue),
-                            MealType = dm.MealType,
-                            Notes = dm.Notes,
+                            DailyMealId = g.First().DailyMealId,
+                            MealDate = g.Key.ToDateTime(TimeOnly.MinValue),
+                            Notes = null,
                             FoodItems = foodDtos
                         };
                     })
                     .ToList();
+
 
                 return new WeeklyScheduleDto
                 {

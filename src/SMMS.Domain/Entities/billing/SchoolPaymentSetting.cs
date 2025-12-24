@@ -17,7 +17,7 @@ public partial class SchoolPaymentSetting
 
     public byte FromMonth { get; set; }
 
-    public byte ToMonth { get; set; }
+    public byte? ToMonth { get; set; }
 
     [Column(TypeName = "decimal(18, 2)")]
     public decimal TotalAmount { get; set; }

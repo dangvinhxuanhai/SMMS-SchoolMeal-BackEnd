@@ -109,6 +109,7 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
         int take,
         CancellationToken cancellationToken)
     {
+        date.AddDays(-30); // lấy 30 ngày trước
         var query =
             from a in _context.Attendances
             join s in _context.Students
@@ -123,7 +124,6 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
             where s.SchoolId == schoolId
                   && a.AbsentDate >= date             // từ hôm nay trở đi
                   && (sc.LeftDate == null || sc.LeftDate >= a.AbsentDate)
-                  && sc.RegistStatus == true          // đã duyệt
             orderby a.AbsentDate descending, a.CreatedAt descending
             select new AbsenceRequestShortDto
             {
@@ -139,7 +139,6 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
             };
 
         return await query
-            .Take(take)
             .ToListAsync(cancellationToken);
     }
 
@@ -172,7 +171,6 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
             };
 
         return await query
-            .Take(take)
             .ToListAsync(cancellationToken);
     }
 
@@ -209,7 +207,6 @@ public class KitchenDashboardRepository : IKitchenDashboardRepository
             };
 
         return await query
-            .Take(take)
             .ToListAsync(cancellationToken);
     }
 }

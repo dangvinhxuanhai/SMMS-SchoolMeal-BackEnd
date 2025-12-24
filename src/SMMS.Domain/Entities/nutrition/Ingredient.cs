@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using SMMS.Domain.Entities.auth;
+using SMMS.Domain.Entities.foodmenu;
 using SMMS.Domain.Entities.fridge;
 using SMMS.Domain.Entities.inventory;
 using SMMS.Domain.Entities.purchasing;
@@ -49,6 +50,9 @@ public partial class Ingredient
     [ForeignKey("CreatedBy")]
     [InverseProperty("Ingredients")]
     public virtual User? CreatedByNavigation { get; set; }
+
+    [InverseProperty("Ingredient")]
+    public virtual ICollection<DailyMealActualIngredient> DailyMealActualIngredients { get; set; } = new List<DailyMealActualIngredient>();
 
     [InverseProperty("Ingredient")]
     public virtual ICollection<FoodItemIngredient> FoodItemIngredients { get; set; } = new List<FoodItemIngredient>();
