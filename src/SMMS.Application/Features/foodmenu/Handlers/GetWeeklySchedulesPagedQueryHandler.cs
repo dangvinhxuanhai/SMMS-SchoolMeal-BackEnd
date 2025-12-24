@@ -132,6 +132,7 @@ public class GetWeeklySchedulesPagedQueryHandler : IRequestHandler<GetWeeklySche
 
                                 return new ScheduledFoodItemDto
                                 {
+
                                     FoodId = f.FoodId,
                                     FoodName = f.FoodName,
                                     FoodType = f.FoodType,
@@ -148,6 +149,7 @@ public class GetWeeklySchedulesPagedQueryHandler : IRequestHandler<GetWeeklySche
 
                         return new DailyMealDto
                         {
+                            DailyMealId = g.First().DailyMealId,
                             MealDate = g.Key.ToDateTime(TimeOnly.MinValue),
                             Notes = null,
                             FoodItems = foodDtos

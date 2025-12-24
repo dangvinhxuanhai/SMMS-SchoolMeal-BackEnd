@@ -24,16 +24,6 @@ public class DailyMealsController : ControllerBase
         _cloudinary = cloudinary;
     }
 
-    private Guid GetSchoolIdFromToken()
-    {
-        var schoolIdClaim = User.FindFirst("SchoolId")?.Value;
-        if (string.IsNullOrEmpty(schoolIdClaim))
-            throw new UnauthorizedAccessException("Không tìm thấy SchoolId trong token.");
-
-        return Guid.Parse(schoolIdClaim);
-
-    }
-
     private Guid GetCurrentUserId()
     {
         var userIdString = User.FindFirst("UserId")?.Value

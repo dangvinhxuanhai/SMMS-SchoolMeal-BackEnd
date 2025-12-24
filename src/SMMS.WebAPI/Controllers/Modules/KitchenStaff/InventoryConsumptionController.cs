@@ -25,8 +25,15 @@ public class InventoryConsumptionController : ControllerBase
         long scheduleMealId,
         CancellationToken ct)
     {
-        var userId = Guid.Parse(User.FindFirst("UserId")!.Value);
-
+        var userClaim = User.FindFirst("UserId") ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+        if (userClaim == null)
+        {
+            return Unauthorized(new { message = "Không tìm thấy định danh người dùng trong Token" });
+        }
+        if (!Guid.TryParse(userClaim.Value, out Guid userId))
+        {
+            return BadRequest(new { message = "UserId không đúng định dạng Guid" });
+        }
         var result = await _mediator.Send(
             new ConsumeInventoryFromScheduleCommand(
                 scheduleMealId,
